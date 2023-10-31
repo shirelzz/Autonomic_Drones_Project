@@ -5,6 +5,7 @@
     import android.content.Context;
     import android.content.DialogInterface;
     import android.graphics.Bitmap;
+    import android.graphics.BitmapFactory;
     import android.graphics.Color;
     import android.graphics.SurfaceTexture;
     import android.util.Log;
@@ -30,6 +31,7 @@
     import com.dji.sdk.sample.internal.view.PresentableView;
 
     import boofcv.struct.image.GrayF32;
+    import boofcv.struct.image.Planar;
     import dji.common.error.DJIError;
     import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
     import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
@@ -407,6 +409,15 @@
                     //end
                 case R.id.pause_btn:
                     try{
+                        Bitmap loadedBitmap1 = BitmapFactory.decodeFile("images/image1.JPG");
+                        Planar<GrayF32> image1 = Stitching.convert(loadedBitmap1);
+
+                        Bitmap loadedBitmap2 = BitmapFactory.decodeFile("images/image2.JPG");
+                        Planar<GrayF32> image2 = Stitching.convert(loadedBitmap2);
+
+                        Stitching stitch = new Stitching(image1);
+                        int[] vec = stitch.process(image2);
+                        System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
                         // Assuming you have a videoDataListener set up to receive the live video feed.
 //                        VideoFeeder.VideoDataListener videoDataListener = videoData -> {
 //                            // Convert the video data to a format suitable for BoofCV processing (e.g., convert to GrayF32).

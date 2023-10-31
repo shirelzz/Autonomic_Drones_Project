@@ -28,6 +28,12 @@ android {
         }
     }
 
+    configurations {
+        all*.exclude group: "xmlpull", module: "xmlpull"
+        all*.exclude group: "org.apache.commons", module: "commons-compress"
+        all*.exclude group: "com.thoughtworks.xstream", module: "commons-compress"
+    }
+
     buildTypes {
         release {
             minifyEnabled true
@@ -103,11 +109,8 @@ dependencies {
     implementation "androidx.core:core-ktx:1.6.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.0.0-rc01"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation group: 'org.boofcv', name: 'boofcv-all', version: '0.44'
 
-    testImplementation platform('org.junit:junit-bom:5.9.1')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-
-    implementation 'com.quickbirdstudios:opencv:4.3.0-contrib'
+    implementation 'com.quickbirdstudios:opencv-contrib:4.5.3.0'
+    implementation group: 'org.boofcv', name: 'boofcv-core', version: '1.0.0'
 
 }

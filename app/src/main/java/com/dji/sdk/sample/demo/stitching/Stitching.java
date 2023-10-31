@@ -9,16 +9,10 @@ import boofcv.alg.sfm.d2.StitchingFromMotion2D;
 
 import boofcv.factory.sfm.FactoryMotion2D;
 import boofcv.factory.tracker.FactoryPointTracker;
-import boofcv.io.MediaManager;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-//import boofcv.android.ConvertBitmap;
+import android.graphics.Color;
 import boofcv.struct.image.GrayF32;
 import boofcv.struct.image.Planar;
-import boofcv.io.image.SimpleImageSequence;
-import boofcv.io.image.UtilImageIO;
-import boofcv.io.wrapper.DefaultMediaManager;
 import boofcv.struct.image.*;
 import georegression.struct.homography.Homography2D_F64;
 import georegression.struct.point.Point2D_I32;
@@ -117,6 +111,34 @@ public class Stitching {
         return new Point2D_I32((int)x,(int)y);
     }
 
+    public static Planar<GrayF32> convert(Bitmap bitmap) {
+        // Get the dimensions of the Bitmap
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        // Create a Planar<GrayF32> with the same dimensions
+        Planar<GrayF32> planarImage = new Planar<>(GrayF32.class, width, height, 3);
+
+        // Convert the Bitmap to Planar<GrayF32>
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int pixel = bitmap.getPixel(x, y);
+
+                // Extract the red, green, and blue components
+                int red = Color.red(pixel);
+                int green = Color.green(pixel);
+                int blue = Color.blue(pixel);
+
+                // Set the pixel values in the Planar channels
+                planarImage.getBand(0).set(x, y, red);
+                planarImage.getBand(1).set(x, y, green);
+                planarImage.getBand(2).set(x, y, blue);
+            }
+        }
+
+        return planarImage;
+    }
+
 //    public static Planar<GrayF32> convert(BufferedImage bufferedImage) {
 //        // Create a Planar<GrayF32> with the same dimensions as the BufferedImage
 //        int width = bufferedImage.getWidth();
@@ -145,26 +167,32 @@ public class Stitching {
 
     // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-
-    public static void main(String[] args) {
-
-//        Planar<GrayF32> image = convert(UtilImageIO.loadImageNotNull("Images/DJI_0021.JPG"));
-
-        MediaManager media = DefaultMediaManager.INSTANCE;
-        SimpleImageSequence<Planar<GrayF32>> video =
-                media.openVideo("Videos/DroneVideo2.mjpeg", ImageType.pl(3, GrayF32.class));
-        int count = 1;
-
-        Stitching stitch = new Stitching(video.next());
-        while (video.hasNext()) {
-            count++;
-            Planar<GrayF32> frame = video.next();
-            int[] vec = stitch.process(frame);
-            System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
-            if (count % 100 == 0) {
-                System.out.println("reset");
-                stitch.reset(frame);
-            }
-        }
-    }
+//    public static void main(String[] args) {
+//        Bitmap loadedBitmap1 = BitmapFactory.decodeFile("images/image1.JPG");
+//        Planar<GrayF32> image1 = convert(loadedBitmap1);
+//
+//        Bitmap loadedBitmap2 = BitmapFactory.decodeFile("images/image2.JPG");
+//        Planar<GrayF32> image2 = convert(loadedBitmap2);
+//
+//        Stitching stitch = new Stitching(image1);
+//            int[] vec = stitch.process(image2);
+//            System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
+//
+////        MediaManager media = DefaultMediaManager.INSTANCE;
+////        SimpleImageSequence<Planar<GrayF32>> video =
+////                media.openVideo("Videos/DroneVideo2.mjpeg", ImageType.pl(3, GrayF32.class));
+////        int count = 1;
+////
+////        Stitching stitch = new Stitching(video.next());
+////        while (video.hasNext()) {
+////            count++;
+////            Planar<GrayF32> frame = video.next();
+////            int[] vec = stitch.process(frame);
+////            System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
+////            if (count % 100 == 0) {
+////                System.out.println("reset");
+////                stitch.reset(frame);
+////            }
+////        }
+//    }
 }
