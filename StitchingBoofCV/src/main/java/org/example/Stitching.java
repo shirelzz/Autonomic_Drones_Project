@@ -94,7 +94,11 @@ public class Stitching {
      * @return vector from current point to center
      */
     public int[] process(Planar<GrayF32> image) {
-        stitch.process(image);
+        boolean success = stitch.process(image);
+        if (!success) {
+            reset(image);
+        }
+
         Quadrilateral_F64 corners = stitch.getImageCorners(image.width, image.height, null);
         Point2D_I32 newCenter = getCenter(corners);
 
@@ -155,10 +159,38 @@ public class Stitching {
         return new Point2D_I32((int)x,(int)y);
     }
 
+    public static Planar<GrayF32> convert(BufferedImage bufferedImage) {
+        // Create a Planar<GrayF32> with the same dimensions as the BufferedImage
+        int width = bufferedImage.getWidth();
+        int height = bufferedImage.getHeight();
+        Planar<GrayF32> planarImage = new Planar<>(GrayF32.class, width, height, 3);
+
+        // Loop through the pixels and copy the RGB values into the Planar channels
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int rgb = bufferedImage.getRGB(x, y);
+
+                // Extract the red, green, and blue components
+                int red = (rgb >> 16) & 0xFF;
+                int green = (rgb >> 8) & 0xFF;
+                int blue = rgb & 0xFF;
+
+                // Set the pixel values in the Planar channels
+                planarImage.getBand(0).set(x, y, red);
+                planarImage.getBand(1).set(x, y, green);
+                planarImage.getBand(2).set(x, y, blue);
+            }
+        }
+
+        return planarImage;
+    }
+
     // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 
     public static void main(String[] args) {
+
+        Planar<GrayF32> image = convert(UtilImageIO.loadImageNotNull("Images/DJI_0021.JPG"));
 
         MediaManager media = DefaultMediaManager.INSTANCE;
         SimpleImageSequence<Planar<GrayF32>> video =

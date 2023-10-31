@@ -1209,6 +1209,7 @@ public class ExampleImageStitching {
 
     public static void main(String[] args) {
 
+        UtilImageIO.loadImageNotNull("Images/DJI_0021.JPG");
         //analyseVideo("Videos/DroneVideo2.mjpeg");
         analyseVideo2Images("Videos/DroneVideo2.mjpeg");
         //nextImageButton2Images("Videos/DroneVideo3.mjpeg");
