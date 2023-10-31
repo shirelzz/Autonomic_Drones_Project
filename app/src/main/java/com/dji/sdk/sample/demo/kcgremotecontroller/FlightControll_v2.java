@@ -79,10 +79,11 @@ public class FlightControll_v2 implements gimbelListener{
 
     // todo: a bug patching.
     Double PP=0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
-
-    private VLD_PID roll_pid = new VLD_PID(PP,II,DD,MAX_I);
+    // PP, II, DD - משחקי בקרה.
+    // קיימים בקרים ימינה שמאלה,
+    private VLD_PID roll_pid = new VLD_PID(PP,II,DD,MAX_I); //
     private VLD_PID pitch_pid = new VLD_PID(PP,II,DD,MAX_I);
-    private VLD_PID yaw_pid = new VLD_PID(PP,II,DD,MAX_I);
+    private VLD_PID yaw_pid = new VLD_PID(PP,II,DD,MAX_I); // בקר על הגז - למעלה למטה
     private VLD_PID throttle_pid = new VLD_PID(PP,II,DD,MAX_I);
     private float p,r,t,gp= 0;
     //**
@@ -97,20 +98,21 @@ public class FlightControll_v2 implements gimbelListener{
     private float descentRate = 0;
     private Controller controller;
 
-    private float lastP=0,lastR=0;
+    private float lastP=0,lastR=0; // previous error
 
     private Map<String,Double> controlStatus = new HashMap<>();
 
-    private int maxGimbalDegree = 1000;
+    private int maxGimbalDegree = 1000; // Moving the camera
     private int minGimbalDegree = -1000;
 
     //aruco detection
     private Dictionary dictionary;
-    private List<Mat> corners;
+    private List<Mat> corners; // מחפש את הפינות של המטרה שלנו
     private ArrayList<ArucoMarker> arucos = new ArrayList<>();
 
     private Scalar red,green,blue;
 
+    // טורים של השגיאות
     private Queue<Double> errorQx = new LinkedList<Double>();
     private Queue<Double> errorQy = new LinkedList<Double>();
     private Queue<Double> errorQz = new LinkedList<Double>();
@@ -133,6 +135,7 @@ public class FlightControll_v2 implements gimbelListener{
         maxGimbalDegree = maxGimbal;
         minGimbalDegree = minGimbal;
 
+        // הצבע לא מעניין אותנו נעבוד בשחור לבן כנראה, המהירות סופר חשובה
         red = new Scalar(255,0,0);
         green = new Scalar(0,255,0);
         blue = new Scalar(0,0,255);
@@ -185,6 +188,7 @@ public class FlightControll_v2 implements gimbelListener{
 //        }
     }
 
+    // נותן לנו את הערכים
     public double[] getPIDs(String type){
         double[] ans = {-1,-1,-1};
         if (type.equals("roll")){
@@ -262,6 +266,7 @@ public class FlightControll_v2 implements gimbelListener{
        updateLog(result,arucos);
 
         //TODO why this ??
+        // בצד הציורי
         Utils.matToBitmap(imgToProcess,frame);
 
         return result;
@@ -272,17 +277,17 @@ public class FlightControll_v2 implements gimbelListener{
     //      pitch -  ==  back
     //      roll +  == right
     //      roll -  ==  left
-
+    // להחזיר פקודת שלט - 4 משתנים: מצלמה, למעלה למטה(גז או לא גז), כמה ימינה (ימינה או שמאלה), מהירות סביבובית
     @RequiresApi(api = Build.VERSION_CODES.N)
     public ControllCommand flightLogic(ArrayList<ArucoMarker> arucos,float aircraftHeight){
 
         long currTime = System.currentTimeMillis();
-        double dt = (currTime-prevTime) / 1000.0;
+        double dt = (currTime-prevTime) / 1000.0; // Give as the frame
         prevTime = currTime;
 
 
          /*
-            if no aruco - stay in place
+            if no aruco (not viewing the target) - stay in place
 
             if only 10 (big) - hover above it
 
@@ -295,7 +300,7 @@ public class FlightControll_v2 implements gimbelListener{
 
          */
         if (arucos.isEmpty()){ //nothing detected
-            lowerConfidence(10);
+            lowerConfidence(10); // How much I am confident in the system - how long I haven't seen the target
             return stayOnPlace(aircraftHeight);
         }
 
@@ -317,7 +322,7 @@ public class FlightControll_v2 implements gimbelListener{
 //            }
 //
 //            upperConfidence(1);
-//
+// // If your level of confidence dosent arrive to some point, dont land
 //            if (framesConfidence < 85){
 //                approachBig(big,dt,aircraftHeight);
 //            }
@@ -391,7 +396,7 @@ public class FlightControll_v2 implements gimbelListener{
 
 //        Core.gemm(a,b,1,new Mat(),0,temp_mat);
 
-
+        // שגיאה של המטרה ביחס למרכז
         double x_error = temp_mat.get(0,0)[0];
         double y_error = -temp_mat.get(1,0)[0];
 //        double z_error = temp_mat.get(2,0)[0];
@@ -416,7 +421,8 @@ public class FlightControll_v2 implements gimbelListener{
         if(aircraftHeight<2 && aircraftHeight>0.3) {
             double ah = Math.max(0.5,aircraftHeight);
             double NN = 1;
-            if(min_confidence<10) {NN = 2/ah;}
+            // Do proportional to the error
+            if(min_confidence<10) {NN = 2/ah;} //If your
             x_error *= NN;
             y_error *= NN;
         }
@@ -510,7 +516,7 @@ public class FlightControll_v2 implements gimbelListener{
 
 
 
-
+//  לפי המרחק שלי מהמטרה מחליט איזה ערכים להביא לו - פונקצייה java רגילה
     public float calcGimbalDegree(double distance2targetM){
         int min = minGimbalDegree;
         int max = maxGimbalDegree;
@@ -523,6 +529,7 @@ public class FlightControll_v2 implements gimbelListener{
         return (float)angle;
     }
 
+    // מחפש את הגדלים והפינות
     public ArrayList<ArucoMarker> MarkerFinder(Mat image){
 
         Mat temp = image.clone();
@@ -567,6 +574,7 @@ public class FlightControll_v2 implements gimbelListener{
         return arucos;
     }
 
+    // פונקצייה ששולחת כל מיני strings
     private void updateLog(ControllCommand control,ArrayList<ArucoMarker> arucos){
     //TODO fix the log, uncoment what is missing
 
@@ -618,7 +626,9 @@ public class FlightControll_v2 implements gimbelListener{
         framesConfidence = Math.min(100,framesConfidence);
     }
 
+    // מחזיר command control,
     private ControllCommand stayOnPlace(float aircraftHeight){
+        //  מאפס את כל הערכים לאפס - מתייצב
         roll_pid.reset();
         pitch_pid.reset();
         t = 0;
@@ -646,7 +656,7 @@ public class FlightControll_v2 implements gimbelListener{
         error_y = (frameHeight/2.0 - aruco.center.y)/100;
         error_x = (aruco.center.x - frameWidth/2.0)/100;
 
-        p = (float) pitch_pid.update(error_y,dt,maxSpeed);
+        p = (float) pitch_pid.update(error_y,dt,maxSpeed); // מעזכן את השגיאה בi
         r = (float) roll_pid.update(error_x,dt,maxSpeed);
 
 //        gp = -200;
@@ -716,7 +726,7 @@ public class FlightControll_v2 implements gimbelListener{
 //       }
 
 
-        if (aircraftHeight <= 0.3  && flag) {
+        if (aircraftHeight <= 0.3  && flag) { // Land
             t = -3;
         }
 

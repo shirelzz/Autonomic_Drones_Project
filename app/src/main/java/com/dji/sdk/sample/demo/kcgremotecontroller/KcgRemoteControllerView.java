@@ -25,33 +25,24 @@
     import androidx.appcompat.app.AlertDialog;
 
     import com.dji.sdk.sample.R;
-    import com.dji.sdk.sample.internal.utils.CallbackHandlers;
     import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
     import com.dji.sdk.sample.internal.utils.ToastUtils;
     import com.dji.sdk.sample.internal.view.PresentableView;
 
-
+    import boofcv.struct.image.GrayF32;
     import dji.common.error.DJIError;
-    import dji.common.flightcontroller.simulator.InitializationData;
     import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
     import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
     import dji.common.flightcontroller.virtualstick.VerticalControlMode;
     import dji.common.flightcontroller.virtualstick.YawControlMode;
     import dji.common.model.LocationCoordinate2D;
     import dji.common.util.CommonCallbacks;
-    import dji.common.util.CommonCallbacks.CompletionCallback;
-    import dji.common.util.DJIParamCapability;
-    import dji.common.util.DJIParamMinMaxCapability;
-    import dji.sdk.base.BaseProduct;
+    import dji.sdk.camera.VideoFeeder;
     import dji.sdk.codec.DJICodecManager;
     import dji.sdk.flightcontroller.FlightController;
-    import dji.sdk.flightcontroller.Simulator;
-    import dji.sdk.products.Aircraft;
-    import dji.sdk.sdkmanager.DJISDKManager;
-
+    import com.dji.sdk.sample.demo.stitching.Stitching;
     import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
-    import java.util.ArrayList;
 
     /**
      * Class for mobile remote controller.
@@ -66,6 +57,8 @@
 
         private Button btnDisableVirtualStick;
         private Button btnStart;
+
+        private Button btnPause;
         private Button btnLand;
 
         // Codec for video live view
@@ -73,6 +66,9 @@
 
         private Bitmap droneIMG;
         protected TextureView mVideoSurface = null;
+
+        private double latitude = 0;
+        private double longitude = 0;
 
         protected ImageView imgView;
         protected ImageView recIcon;
@@ -195,6 +191,7 @@
 
         btnDisableVirtualStick = findViewById(R.id.stop_btn);
         btnStart = findViewById(R.id.hover_btn);
+        btnPause = findViewById(R.id.pause_btn);
         btnLand = findViewById(R.id.land_btn);
 
         btnDisableVirtualStick.setOnClickListener(this);
@@ -203,6 +200,8 @@
         if (null != mVideoSurface) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
+
+        btnPause.setOnClickListener(this);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -243,42 +242,12 @@
 
         @Override
         public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-    //        if (compoundButton == btnSimulator) {
-    //            onClickSimulator(b);
-    //        }
         }
 
         @Override
         public int getDescription() {
             return R.string.component_listview_kcg_remote_controll;
         }
-
-        // video stream code
-
-//        private void initPreviewer() {
-//
-//
-//            BaseProduct product = DJISampleApplication.getProductInstance();
-//
-//            if (product == null || !product.isConnected()) {
-//                ToastUtils.setResultToToast("Disconnected!");
-//            } else {
-//                if (null != mVideoSurface) {
-//                    mVideoSurface.setSurfaceTextureListener(this);
-//                }
-//                if (!product.getModel().equals(Model.UNKNOWN_AIRCRAFT)) {
-//                    VideoFeeder.getInstance().getPrimaryVideoFeed().addVideoDataListener(mReceivedVideoDataListener);
-//                }
-//            }
-//        }
-//
-//        private void uninitPreviewer() {
-//    //        Camera camera = DJISampleApplication.getCameraInstance();
-//    //        if (camera != null){
-//                // Reset the callback
-//                VideoFeeder.getInstance().getPrimaryVideoFeed().removeVideoDataListener(mReceivedVideoDataListener);
-//    //        }
-//        }
 
         public void setVideoData(byte[] videoBuffer, int size) {
             if (mCodecManager != null) {
@@ -436,7 +405,45 @@
                     break;
 
                     //end
-
+                case R.id.pause_btn:
+                    try{
+                        // Assuming you have a videoDataListener set up to receive the live video feed.
+//                        VideoFeeder.VideoDataListener videoDataListener = videoData -> {
+//                            // Convert the video data to a format suitable for BoofCV processing (e.g., convert to GrayF32).
+//                            GrayF32 frame = convertVideoDataToGrayF32(videoData);
+//
+//                            // Perform BoofCV stitching or feature-based processing on the frame.
+//                            // You should implement the stitching logic here using BoofCV.
+//
+//                            // Display the processed frame in real-time on your user interface.
+//                            // Update the TextureView, SurfaceView, or any UI element.
+//                            updateUIWithProcessedFrame(frame);
+//                        };
+//                        latitude = latitude + 5 * ONE_METER_OFFSET; //dx
+//                        longitude = longitude + 5 * ONE_METER_OFFSET; //dy
+//                        LocationCoordinate2D newLocation = new LocationCoordinate2D(latitude, longitude);
+//                        followMeMissionOperator.updateFollowingTarget(newLocation, djiError1 -> {
+//                            try {
+//                                Thread.sleep(1500);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        });
+//                        Stitching stitch = new Stitching();
+//                        while (video.hasNext()) {
+                //            count++;
+                //            Planar<GrayF32> frame = video.next();
+                //            int[] vec = stitch.process(frame);
+                //            System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
+                //            if (count % 100 == 0) {
+                //                System.out.println("reset");
+                //                stitch.reset(frame);
+                //            }
+                //        }
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }
+                    break;
                 //--------- set vertical throttle
                 case R.id.t_minus_btn:
                     try {

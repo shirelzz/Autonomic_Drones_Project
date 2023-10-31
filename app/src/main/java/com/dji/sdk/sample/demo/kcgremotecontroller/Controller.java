@@ -31,7 +31,7 @@ public class Controller implements gimbelListener {
 
     private FPVControll drone;
 
-    private FlightControll_v2 flightControll;
+    private FlightControll_v2 flightControll; // הדבר המרכזי שמעניין אותנו
 
     //log vars
     private KcgLog log;
@@ -98,7 +98,7 @@ public class Controller implements gimbelListener {
         float droneHeight = drone.getAlt();
 
         ControllCommand command = flightControll.proccessImage(bitmap,droneHeight);
-
+        // החזירה פקודה
         if (command != null){
         //dislay on screen data
             final String debug = ""+String.format("%.01f", command.confidence)+","+displayFps+","+droneHeight+"\n"
@@ -110,7 +110,7 @@ public class Controller implements gimbelListener {
 //            command.getGimbalPitch()
 
 
-            drone.setControlCommand(command);
+            drone.setControlCommand(command); //This is the command that start the drone
 
             mainView.setDebugData(debug);
             //ugly way to overcome RunOnUiThread

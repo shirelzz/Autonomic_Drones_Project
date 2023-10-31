@@ -9,9 +9,9 @@ import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 public class ControllCommand {
 
     //data
-    private float pitch;
+    private float pitch; // The movement of the drawn forward and backward
 //    private float yaw;
-    private float roll;
+    private float roll; // The velocity rotation on the X axis
     private float verticalThrottle = 0;
     private float gimbalPitch = 0;
 

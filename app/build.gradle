@@ -17,6 +17,7 @@ android {
 //        applicationId "com.dji.sdk.sample"
         applicationId "com.kcg.kcgland"
         minSdkVersion 21
+        //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 30
         multiDexEnabled true
         //ndkVersion '21.4.7075529'
@@ -102,6 +103,10 @@ dependencies {
     implementation "androidx.core:core-ktx:1.6.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.0.0-rc01"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation group: 'org.boofcv', name: 'boofcv-all', version: '0.44'
+
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
 
     implementation 'com.quickbirdstudios:opencv:4.3.0-contrib'
 

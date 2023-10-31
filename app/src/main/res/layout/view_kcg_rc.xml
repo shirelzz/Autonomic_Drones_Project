@@ -253,12 +253,22 @@
         android:text="hover" />
 
     <Button
+        android:id="@+id/pause_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@id/hover_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="pause" />
+
+    <Button
         android:id="@+id/land_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="0dp"
-        android:layout_toRightOf="@id/hover_btn"
+        android:layout_toRightOf="@id/pause_btn"
         android:text="land" />
 
     <TextView

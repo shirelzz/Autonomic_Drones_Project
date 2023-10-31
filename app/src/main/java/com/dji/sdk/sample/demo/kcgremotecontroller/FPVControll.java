@@ -307,7 +307,7 @@ public class FPVControll implements CommonCallbacks.CompletionCallback{
         flightControlData.setVerticalThrottle(command.getVerticalThrottle());
 //        flightControlData.setPitch(command.getPitch());
 //        flightControlData.setRoll(command.getRoll());
-        //pithc and roll are oposite !!!! we still don't know why
+        //pithc and roll are opposite !!!! we still don't know why
         flightControlData.setRoll(command.getPitch());
         flightControlData.setPitch(command.getRoll());
         flightControlData.setYaw(droneTelemetry.get("yaw").floatValue());
@@ -322,6 +322,8 @@ public class FPVControll implements CommonCallbacks.CompletionCallback{
             if (command.getControllMode() == VerticalControlMode.VELOCITY){
                 flightController.confirmLanding(this);
             }
+            // This is the command that get command for virtual stick and completion callback
+            // Wait for
             flightController.sendVirtualStickFlightControlData(flightControlData,this);
         }
 
