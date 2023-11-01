@@ -45,6 +45,14 @@
     import com.dji.sdk.sample.demo.stitching.Stitching;
     import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
+    import dji.sdk.codec.DJICodecManager.VideoSource;
+//    import boofcv.android.VisualizeImageData;
+//    import boofcv.android.gui.VideoDisplayActivity;
+    import boofcv.core.image.ConvertImage;
+    import boofcv.struct.image.GrayU8;
+    import boofcv.struct.image.ImageBase;
+    import boofcv.struct.image.GrayF32;
+
 
     /**
      * Class for mobile remote controller.
@@ -57,9 +65,10 @@
 
         private Context ctx;
 
+        private Stitching stitching;
+
         private Button btnDisableVirtualStick;
         private Button btnStart;
-
         private Button btnPause;
         private Button btnLand;
 
@@ -93,6 +102,22 @@
             super(context);
             ctx = context;
             init(context);
+            stitching = new Stitching(null);
+
+
+            // Initialize the video feeder and set up the video data listener
+//            VideoFeeder videoFeeder = VideoFeeder.getInstance();
+
+//            VideoFeeder.getInstance()
+//                    .getPrimaryVideoFeed()
+//                    .addVideoDataListener(new VideoFeeder.VideoDataListener() {
+//
+//                @Override
+//                public void onReceive(byte[] videoData, int size) {
+//                    // Process the live video data here
+//                    processLiveVideoData(videoData, size);
+//                }
+//            });
 
         }
 
@@ -409,15 +434,87 @@
                     //end
                 case R.id.pause_btn:
                     try{
-                        Bitmap loadedBitmap1 = BitmapFactory.decodeFile("images/image1.JPG");
-                        Planar<GrayF32> image1 = Stitching.convert(loadedBitmap1);
 
-                        Bitmap loadedBitmap2 = BitmapFactory.decodeFile("images/image2.JPG");
-                        Planar<GrayF32> image2 = Stitching.convert(loadedBitmap2);
+                        VideoFeeder.getInstance()
+                                .getPrimaryVideoFeed()
+                                .addVideoDataListener(new VideoFeeder.VideoDataListener() {
+                                    @Override
+                                    public void onReceive(byte[] videoData, int size) {
 
-                        Stitching stitch = new Stitching(image1);
-                        int[] vec = stitch.process(image2);
-                        System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
+                                        int frameWidth = 3840;
+                                        int frameHeight = 2160;
+                                        // Convert the video data to GrayF32 format
+                                        GrayF32 frame = convertVideoDataToGrayF32(videoData, frameWidth, frameHeight);
+
+                                        // Create a Planar<GrayF32> image from the GrayF32 frame
+                                        Planar<GrayF32> planarFrame = new Planar<>(GrayF32.class, frameWidth, frameHeight, 1);
+                                        planarFrame.bands[0] = frame.clone(); // Clone the GrayF32 frame
+
+                                        // Perform your stitching or other processing here using the GrayF32 frame
+                                        int[] vec = stitching.process(planarFrame);
+                                        System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
+
+                                        // Update your UI with the processed frame if necessary
+                                        updateUIWithProcessedFrame(frame);
+                                    }
+                                });
+
+//                        // Initialize the video feeder and set up the video data listener
+//                        VideoFeeder videoFeeder = VideoFeeder.getInstance();
+//
+////                        VideoSource videoSource = videoFeeder.getPrimaryVideoFeed().getSource();
+//                        int frameWidth = 3840; // videoSource.getVideoSourceSize().width;
+//                        int frameHeight = 2160; // videoSource.getVideoSourceSize().height;
+//
+//                        VideoFeeder.getInstance()
+//                        .getPrimaryVideoFeed()
+//                        .addVideoDataListener(new VideoFeeder.VideoDataListener() {
+//
+//                            @Override
+//                            public void onReceive(byte[] videoData, int size) {
+//                                // Process the live video data here
+//                                processLiveVideoData(videoData, frameWidth, frameHeight);
+//                            }
+//                        });
+
+
+
+
+
+//                        // Assuming you have a videoDataListener set up to receive the live video feed.
+//                        VideoFeeder.VideoDataListener videoDataListener = new VideoFeeder.VideoDataListener() {
+//                            @Override
+//                            public void onReceive(byte[] videoData, int size) {
+//                                // Convert the video data to a format suitable for BoofCV processing (e.g., convert to GrayF32).
+//                                GrayF32 frame = convertVideoDataToGrayF32(videoData);
+//
+//                                // Perform BoofCV stitching or feature-based processing on the frame.
+//                                // You should implement the stitching logic here using BoofCV.
+//
+//                                // Display the processed frame in real-time on your user interface.
+//                                // Update the TextureView, SurfaceView, or any UI element.
+//                                updateUIWithProcessedFrame(frame);
+//                            }
+//                        };
+//
+//                        // Add the video data listener to receive live video data.
+//                        VideoFeeder.getInstance().getPrimaryVideoFeed().addVideoDataListener(videoDataListener);
+
+
+
+
+
+//                        Bitmap loadedBitmap1 = BitmapFactory.decodeFile("images/image1.JPG");
+//                        Planar<GrayF32> image1 = Stitching.convert(loadedBitmap1);
+//
+//                        Bitmap loadedBitmap2 = BitmapFactory.decodeFile("images/image2.JPG");
+//                        Planar<GrayF32> image2 = Stitching.convert(loadedBitmap2);
+//
+//                        Stitching stitch = new Stitching(image1);
+//                        int[] vec = stitch.process(image2);
+//                        System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
+
+
                         // Assuming you have a videoDataListener set up to receive the live video feed.
 //                        VideoFeeder.VideoDataListener videoDataListener = videoData -> {
 //                            // Convert the video data to a format suitable for BoofCV processing (e.g., convert to GrayF32).
@@ -430,6 +527,7 @@
 //                            // Update the TextureView, SurfaceView, or any UI element.
 //                            updateUIWithProcessedFrame(frame);
 //                        };
+
 //                        latitude = latitude + 5 * ONE_METER_OFFSET; //dx
 //                        longitude = longitude + 5 * ONE_METER_OFFSET; //dy
 //                        LocationCoordinate2D newLocation = new LocationCoordinate2D(latitude, longitude);
@@ -451,10 +549,15 @@
                 //                stitch.reset(frame);
                 //            }
                 //        }
+
+
+
                     }catch(Exception e){
                         e.printStackTrace();
                     }
                     break;
+
+
                 //--------- set vertical throttle
                 case R.id.t_minus_btn:
                     try {
@@ -606,4 +709,97 @@
 
             alertDialog.show();
         }
+
+
+
+
+
+
+
+
+
+        private void processLiveVideoData(byte[] videoData, int width, int height) {
+            // Convert the video data to a format suitable for your stitching technique
+            GrayF32 frame = convertVideoDataToGrayF32(videoData, width, height);
+
+            // Perform the stitching technique or any other video processing here
+            // You can use the frame for your processing
+
+            // Update the UI with the processed frame if necessary
+            updateUIWithProcessedFrame(frame);
+        }
+
+        private GrayF32 convertVideoDataToGrayF32(byte[] videoData, int width, int height) {
+            // Implement the conversion of video data to GrayF32 format here
+            // This will depend on the format of the video data and the libraries you're using
+            // You may need to decode the video data if it's in a compressed format
+
+            // Return the processed frame as a GrayF32 object
+            // Make sure to handle the conversion appropriately based on your video format
+            // For example, you can use BoofCV to process the data.
+
+            GrayF32 frame = new GrayF32(width, height);
+
+            // Copy the video data to the GrayF32 image. The conversion depends on the video data format.
+            // You'll need to adjust this part based on the actual data format you receive.
+            for (int i = 0; i < width * height; i++) {
+                // Assuming that the video data contains grayscale pixel values
+                float pixelValue = (float) (videoData[i] & 0xFF) / 255.0f;
+                frame.set(i % width, i / width, pixelValue);
+            }
+
+            return frame;
+
+//            // Implement the conversion of video data to GrayF32 format here
+//            // This will depend on the format of the video data and the libraries you're using
+//            // You may need to decode the video data if it's in a compressed format
+//
+//            // Return the processed frame as a GrayF32 object
+//            // Make sure to handle the conversion appropriately based on your video format
+//            // For example, you can use BoofCV to process the data.
+//
+//            // Create an image buffer to store the video data
+//            GrayU8 videoImage = new GrayU8(width, height);
+//            // Convert the video data to GrayU8 format (adjust this part as needed)
+//            ConvertImage.byteArrayToGray(videoData, videoImage);
+//
+//            // Convert the GrayU8 image to GrayF32
+//            GrayF32 frame = new GrayF32(width, height);
+//            ConvertImage.convert(videoImage, frame);
+//
+//            return frame;
+        }
+
+        private void updateUIWithProcessedFrame(GrayF32 frame) {
+            // Update your UI with the processed frame, e.g., display it on a TextureView or ImageView
+            // You can set the processed frame to your image view like this:
+            // imgView.setImageBitmap(convertGrayF32ToBitmap(frame));
+
+            // Example code to update an ImageView:
+            imgView.setImageBitmap(convertGrayF32ToBitmap(frame));
+
+            // Example code to use the displacement values:
+//            int dx = displacement[0]; // Displacement in the x direction
+//            int dy = displacement[1]; // Displacement in the y direction
+        }
+
+        // If needed, you can add a method to convert a GrayF32 image to a Bitmap
+        // You may need this for displaying the processed frame in an ImageView
+        private Bitmap convertGrayF32ToBitmap(GrayF32 frame) {
+
+            // Create a Bitmap from the GrayF32 image
+            Bitmap bitmap = Bitmap.createBitmap(frame.width, frame.height, Bitmap.Config.ARGB_8888);
+
+            // Convert the GrayF32 image to the Bitmap (adjust this part as needed)
+            for (int y = 0; y < frame.height; y++) {
+                for (int x = 0; x < frame.width; x++) {
+                    int pixelValue = (int) (255 * frame.get(x, y));
+                    int color = Color.rgb(pixelValue, pixelValue, pixelValue);
+                    bitmap.setPixel(x, y, color);
+                }
+            }
+
+            return bitmap;
+        }
+
     }

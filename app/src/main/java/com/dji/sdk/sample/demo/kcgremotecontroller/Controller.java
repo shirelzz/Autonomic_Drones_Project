@@ -100,7 +100,7 @@ public class Controller implements gimbelListener {
         ControllCommand command = flightControll.proccessImage(bitmap,droneHeight);
         // החזירה פקודה
         if (command != null){
-        //dislay on screen data
+        //display on screen data
             final String debug = ""+String.format("%.01f", command.confidence)+","+displayFps+","+droneHeight+"\n"
                     +"Err: "+String.format("%.01f", command.yError)+","+String.format("%.01f", command.xError)+","+String.format("%.01f", command.zError)+" || "
                     +"PRT: "+String.format("%.01f", command.getPitch())+","+String.format("%.01f", command.getRoll())+","+String.format("%.01f", command.getVerticalThrottle())+"\n"
