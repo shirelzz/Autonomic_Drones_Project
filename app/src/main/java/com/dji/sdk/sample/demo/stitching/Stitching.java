@@ -29,15 +29,22 @@ public class Stitching {
     private final int MAX_DISTANCE; // The maximum distance in pixels between the current image and the center image. Default = 50.
     private StitchingFromMotion2D<Planar<GrayF32>, Homography2D_F64> stitch;
     private Point2D_I32 center;
+    private boolean gotFirstImage;
 
 
     public Stitching(Planar<GrayF32> image) {
         init(image);
         MAX_DISTANCE = 50;
+        gotFirstImage = true;
     }
     public Stitching(Planar<GrayF32> image, int maxDistance) {
         init(image);
         MAX_DISTANCE = maxDistance;
+        gotFirstImage = true;
+    }
+    public Stitching() {
+        MAX_DISTANCE = 50;
+        gotFirstImage = false;
     }
 
     /**
@@ -46,6 +53,12 @@ public class Stitching {
      * @return vector from current point to center
      */
     public int[] process(Planar<GrayF32> image) {
+        if (!gotFirstImage) {
+            init(image);
+            gotFirstImage = true;
+            return null;
+        }
+
         boolean success = stitch.process(image);
         if (!success) {
             reset(image);
