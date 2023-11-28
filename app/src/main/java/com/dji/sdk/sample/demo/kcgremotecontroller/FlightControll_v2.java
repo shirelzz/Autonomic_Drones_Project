@@ -29,6 +29,7 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
+import com.dji.sdk.sample.demo.stitching.Stitching;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 
 import org.opencv.android.OpenCVLoader;
@@ -193,7 +194,7 @@ public class FlightControll_v2 implements gimbelListener{
         double[] ans = {-1,-1,-1};
         if (type.equals("roll")){
             if (roll_pid == null) {
-               return ans;
+                return ans;
             }
             else{
                 ans[0] = roll_pid.getP();
@@ -263,7 +264,7 @@ public class FlightControll_v2 implements gimbelListener{
 
 
         //update the log with results
-       updateLog(result,arucos);
+        updateLog(result,arucos);
 
         //TODO why this ??
         // בצד הציורי
@@ -272,6 +273,36 @@ public class FlightControll_v2 implements gimbelListener{
         return result;
         //#################################
     }
+
+    public ControllCommand proccessImage(Bitmap frame, float aircraftHeight, Stitching stitching){
+        Mat imgToProcess=new Mat();
+        Utils.bitmapToMat(frame,imgToProcess);
+
+        //#### put proc###################
+
+        int[] vec = stitching.process(frame);
+
+
+
+//        Mat a = imageCoordinates.MarkerFinder(imgToProcess,aircraftHeight);
+        ArrayList arucos = MarkerFinder(imgToProcess);
+
+//        ControllCommand result = doKalman(arucos,aircraftHeight);
+        ControllCommand result = flightLogic(arucos,aircraftHeight);
+
+
+
+        //update the log with results
+        updateLog(result,arucos);
+
+        //TODO why this ??
+        // בצד הציורי
+        Utils.matToBitmap(imgToProcess,frame);
+
+        return result;
+        //#################################
+    }
+
 
     //      pitch +  == forward
     //      pitch -  ==  back
@@ -413,10 +444,10 @@ public class FlightControll_v2 implements gimbelListener{
  * This is a BUG as even in low height the drone still needs to flow a moving targt.
  *
  * */
-      //  if(aircraftHeight > 4) {aircraftHeight = 4;}
-       // if(aircraftHeight < ) {aircraftHeight = 1;}
-      //  double NNN = 1.0;
-      //  double min_speed = 2, max_Speed=4;
+        //  if(aircraftHeight > 4) {aircraftHeight = 4;}
+        // if(aircraftHeight < ) {aircraftHeight = 1;}
+        //  double NNN = 1.0;
+        //  double min_speed = 2, max_Speed=4;
         double maxSpeed = 2;//aircraftHeight;
         if(aircraftHeight<2 && aircraftHeight>0.3) {
             double ah = Math.max(0.5,aircraftHeight);
@@ -426,8 +457,8 @@ public class FlightControll_v2 implements gimbelListener{
             x_error *= NN;
             y_error *= NN;
         }
-       // if(maxSpeed>max_Speed) {maxSpeed = max_Speed;}
-       // if(maxSpeed<min_speed) {maxSpeed = min_speed;}
+        // if(maxSpeed>max_Speed) {maxSpeed = max_Speed;}
+        // if(maxSpeed<min_speed) {maxSpeed = min_speed;}
         float p = (float) roll_pid.update(x_error,dt,maxSpeed);
         float r = (float) pitch_pid.update(y_error,dt,maxSpeed);
         float t = descentRate;//droneAlt;//
@@ -495,7 +526,7 @@ public class FlightControll_v2 implements gimbelListener{
             lastR = r*PP +lastR*(1-PP);
 
         }
-   //     ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY);
+        //     ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY);
         ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY,gp);
         ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
         ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
@@ -516,7 +547,7 @@ public class FlightControll_v2 implements gimbelListener{
 
 
 
-//  לפי המרחק שלי מהמטרה מחליט איזה ערכים להביא לו - פונקצייה java רגילה
+    //  לפי המרחק שלי מהמטרה מחליט איזה ערכים להביא לו - פונקצייה java רגילה
     public float calcGimbalDegree(double distance2targetM){
         int min = minGimbalDegree;
         int max = maxGimbalDegree;
@@ -576,7 +607,7 @@ public class FlightControll_v2 implements gimbelListener{
 
     // פונקצייה ששולחת כל מיני strings
     private void updateLog(ControllCommand control,ArrayList<ArucoMarker> arucos){
-    //TODO fix the log, uncoment what is missing
+        //TODO fix the log, uncoment what is missing
 
 //        MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,P,I,D,MaxI
 
@@ -637,7 +668,7 @@ public class FlightControll_v2 implements gimbelListener{
 //        y = 0;
 //        need to set another gp
 //        set first gimbal angle
-       gp = (float) gimbelValue;
+        gp = (float) gimbelValue;
         ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY,gp);
         ans.setErr(1000,0,0,0);
         ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
@@ -706,7 +737,7 @@ public class FlightControll_v2 implements gimbelListener{
 
         if ( gp < -5 && sum_x < 1 && sum_z < 1 && sum_y < 2 ){
             gp = (float) (gp + 0.2);
-           // error_z=error_z-(Distance*0.12/5)*2;
+            // error_z=error_z-(Distance*0.12/5)*2;
         }
 
         if (sum_x < 1 && sum_z < 1 && sum_y < 2 &&(gp < 20) && flag){
