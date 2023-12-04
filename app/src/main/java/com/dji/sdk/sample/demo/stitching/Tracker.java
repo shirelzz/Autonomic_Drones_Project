@@ -97,7 +97,7 @@ public class Tracker {
 
     public double[] process(Bitmap bitmapImage) {
         currentImage = bitmapImage;
-        return process(ConvertBitmapToBoof.bitmapToPlanarU8(bitmapImage));
+        return process(ConvertBitmapToBoof.bitmapToGrayU8(bitmapImage));
     }
 
     public Bitmap getImage() {

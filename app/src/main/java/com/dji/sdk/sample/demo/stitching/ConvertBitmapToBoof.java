@@ -62,6 +62,11 @@ public class ConvertBitmapToBoof {
         bitmapToBoof(input, image, null);
         return image;
     }
+    public static GrayU8 bitmapToGrayU8( Bitmap input) {
+        GrayU8 image = new GrayU8(1,1);
+        bitmapToBoof(input, image, null);
+        return image;
+    }
     /**
      * Converts a {@link Bitmap} into a BoofCV image. Type is determined at runtime.
      *
