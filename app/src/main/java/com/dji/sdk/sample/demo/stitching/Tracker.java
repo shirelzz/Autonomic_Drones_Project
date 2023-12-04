@@ -2,6 +2,9 @@ package com.dji.sdk.sample.demo.stitching;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 
 import boofcv.abst.tracker.ConfigComaniciu2003;
 import boofcv.abst.tracker.ConfigTrackerTld;
@@ -10,6 +13,7 @@ import boofcv.abst.tracker.TrackerObjectQuad;
 import boofcv.factory.tracker.FactoryTrackerObjectQuad;
 import boofcv.struct.image.*;
 import georegression.struct.point.Point2D_F64;
+import georegression.struct.point.Point2D_I32;
 import georegression.struct.shapes.Quadrilateral_F64;
 
 public class Tracker {
@@ -21,6 +25,7 @@ public class Tracker {
     private int size;
     private Quadrilateral_F64 location;
     private Point2D_F64 screenCen;
+    private Bitmap currentImage;
 
 
     public Tracker() {
@@ -91,7 +96,23 @@ public class Tracker {
     }
 
     public double[] process(Bitmap bitmapImage) {
+        currentImage = bitmapImage;
         return process(ConvertBitmapToBoof.bitmapToPlanarU8(bitmapImage));
+    }
+
+    public Bitmap getImage() {
+        Canvas canvas = new Canvas(currentImage);
+
+        Paint paint = new Paint();
+        paint.setColor(Color.RED);
+        paint.setStyle(Paint.Style.STROKE);
+
+        canvas.drawLine((float) location.a.x, (float) location.a.y, (float) location.b.x, (float) location.b.y, paint);
+        canvas.drawLine((float) location.b.x, (float) location.b.y, (float) location.c.x, (float) location.c.y, paint);
+        canvas.drawLine((float) location.c.x, (float) location.c.y, (float) location.d.x, (float) location.d.y, paint);
+        canvas.drawLine((float) location.d.x, (float) location.d.y, (float) location.a.x, (float) location.a.y, paint);
+
+        return currentImage;
     }
 
     // =-=-=-=-= Helper Functions =-=-=-=-=-=
@@ -107,11 +128,11 @@ public class Tracker {
 
     // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-    public static void main(String[] args) {
-        System.out.println("===============================");
-        Bitmap bitmapImage = BitmapFactory.decodeFile("C:\\Users\\adipe\\AndroidStudioProjects\\Autonomic_Drones_Project\\app\\src\\main\\java\\com\\dji\\sdk\\sample\\demo\\stitching\\images\\DJI_0023.bmp");
-        Planar<GrayF32> image = new Planar<GrayF32>(GrayF32.class, 3);
-        ConvertBitmapToBoof.bitmapToBoof(bitmapImage, image, null);
-    }
+//    public static void main(String[] args) {
+//        System.out.println("===============================");
+//        Bitmap bitmapImage = BitmapFactory.decodeFile("C:\\Users\\adipe\\AndroidStudioProjects\\Autonomic_Drones_Project\\app\\src\\main\\java\\com\\dji\\sdk\\sample\\demo\\stitching\\images\\DJI_0023.bmp");
+//        Planar<GrayF32> image = new Planar<GrayF32>(GrayF32.class, 3);
+//        ConvertBitmapToBoof.bitmapToBoof(bitmapImage, image, null);
+//    }
 
 }
