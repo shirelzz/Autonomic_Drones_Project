@@ -14,17 +14,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
-import androidx.annotation.Nullable;
-
-import org.ddogleg.struct.DogArray_I8;
-import org.opencv.core.Mat;
-
-import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.Vector;
 
 import boofcv.struct.image.GrayF32;
@@ -122,9 +114,7 @@ public class Stitching {
 
 
     public int[] process(Bitmap bitmapImage) {
-        Planar<GrayF32> image = new Planar<GrayF32>(GrayF32.class,3);
-        ImplConvertBitmap.bitmapToBoof(bitmapImage,image,null);
-        return process(image);
+        return process(ConvertBitmapToBoof.bitmapToPlanar(bitmapImage));
     }
 
     private void init(Planar<GrayF32> image) {

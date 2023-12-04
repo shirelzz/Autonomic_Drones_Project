@@ -39,13 +39,21 @@ import boofcv.struct.image.*;
  *
  * @author Peter Abeles
  */
-public class ImplConvertBitmap {
+public class ConvertBitmapToBoof {
 
     // storages values used to convert to 565 format
     private static final int[] table5 = new int[256];
     private static final int[] table6 = new int[256];
 
 
+    public static Planar<GrayF32> bitmapToPlanar( Bitmap input) {
+        Planar<GrayF32> image = new Planar<>(GrayF32.class, 3);
+        image.setBand(0,new GrayF32());
+        image.setBand(1,new GrayF32());
+        image.setBand(2,new GrayF32());
+        bitmapToBoof(input, image, null);
+        return image;
+    }
     public static <T extends ImageBase<T>>
     void bitmapToBoof( Bitmap input, T output, @Nullable DogArray_I8 storage ) {
         storage = resizeStorage(input, storage);
