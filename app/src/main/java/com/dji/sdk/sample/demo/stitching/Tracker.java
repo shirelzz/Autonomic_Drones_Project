@@ -59,14 +59,19 @@ public class Tracker {
         switch (ALG) {
             case "circulant":
                 tracker = FactoryTrackerObjectQuad.circulant(null, GrayU8.class);
+                break;
             case "sparseFlow":
                 tracker = FactoryTrackerObjectQuad.sparseFlow(null, GrayU8.class, null);
+                break;
             case "tld":
                 tracker = FactoryTrackerObjectQuad.tld(new ConfigTrackerTld(false), GrayU8.class);
+                break;
             case "meanShiftComaniciu2003":
                 tracker = FactoryTrackerObjectQuad.meanShiftComaniciu2003(new ConfigComaniciu2003(), ImageType.pl(3, GrayU8.class));
+                break;
             case "meanShiftLikelihood":
                 tracker = FactoryTrackerObjectQuad.meanShiftLikelihood(30, 5, 255, MeanShiftLikelihoodType.HISTOGRAM, ImageType.pl(3, GrayU8.class));
+                break;
         }
 
         Point2D_F64 p0 = new Point2D_F64(frame.getWidth() / 2 - size, frame.getHeight() / 2 - size);
