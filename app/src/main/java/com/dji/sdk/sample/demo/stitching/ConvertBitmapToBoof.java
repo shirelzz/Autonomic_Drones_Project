@@ -54,15 +54,102 @@ public class ConvertBitmapToBoof {
         bitmapToBoof(input, image, null);
         return image;
     }
+    /**
+     * Converts a {@link Bitmap} into a BoofCV image. Type is determined at runtime.
+     *
+     * @param input Bitmap image.
+     * @param output Output image. Automatically resized to match input shape.
+     * @param storage Byte array used for internal storage. If null it will be declared internally.
+     */
     public static <T extends ImageBase<T>>
     void bitmapToBoof( Bitmap input, T output, @Nullable DogArray_I8 storage ) {
         storage = resizeStorage(input, storage);
-        if (Objects.requireNonNull(output.getImageType().getFamily()) == ImageType.Family.PLANAR) {
-            Planar pl = (Planar) output;
-            bitmapToPlanar(input, pl, pl.getBandType(), storage);
-        } else {
-            throw new IllegalArgumentException("Unsupported BoofCV Image Type");
+
+        switch (output.getImageType().getFamily()) {
+            case GRAY: {
+                if (output.getClass() == GrayF32.class)
+                    bitmapToGray(input, (GrayF32)output, storage);
+                else if (output.getClass() == GrayU8.class)
+                    bitmapToGray(input, (GrayU8)output, storage);
+                else
+                    throw new IllegalArgumentException("Unsupported BoofCV Image Type");
+            }
+            break;
+
+            case PLANAR:
+                Planar pl = (Planar)output;
+                bitmapToPlanar(input, pl, pl.getBandType(), storage);
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unsupported BoofCV Image Type");
         }
+    }
+
+    /**
+     * Converts Bitmap image into a single band image of arbitrary type.
+     *
+     * @param input Input Bitmap image.
+     * @param output Output single band image. If null a new one will be declared.
+     * @param imageType Type of single band image.
+     * @param storage Byte array used for internal storage. If null it will be declared internally.
+     * @return The converted gray scale image.
+     */
+    public static <T extends ImageGray<T>>
+    T bitmapToGray( Bitmap input, T output, Class<T> imageType, @Nullable DogArray_I8 storage ) {
+        storage = resizeStorage(input, storage);
+        if (imageType == GrayF32.class)
+            return (T)bitmapToGray(input, (GrayF32)output, storage);
+        else if (imageType == GrayU8.class)
+            return (T)bitmapToGray(input, (GrayU8)output, storage);
+        else
+            throw new IllegalArgumentException("Unsupported BoofCV Image Type");
+    }
+
+    /**
+     * Converts Bitmap image into GrayU8.
+     *
+     * @param input Input Bitmap image.
+     * @param output Output image. If null a new one will be declared.
+     * @param storage Byte array used for internal storage. If null it will be declared internally.
+     * @return The converted gray scale image.
+     */
+    public static GrayU8 bitmapToGray( Bitmap input, GrayU8 output, @Nullable DogArray_I8 storage ) {
+        storage = resizeStorage(input, storage);
+        if (output == null) {
+            output = new GrayU8(input.getWidth(), input.getHeight());
+        } else {
+            output.reshape(input.getWidth(), input.getHeight());
+        }
+
+        input.copyPixelsToBuffer(ByteBuffer.wrap(storage.data));
+
+        arrayToGray(storage.data, input.getConfig(), output);
+
+        return output;
+    }
+
+    /**
+     * Converts Bitmap image into GrayF32.
+     *
+     * @param input Input Bitmap image.
+     * @param output Output image. If null a new one will be declared.
+     * @param storage Byte array used for internal storage. If null it will be declared internally.
+     * @return The converted gray scale image.
+     */
+    public static GrayF32 bitmapToGray( Bitmap input, GrayF32 output, @Nullable DogArray_I8 storage ) {
+        if (output == null) {
+            output = new GrayF32(input.getWidth(), input.getHeight());
+        } else {
+            output.reshape(input.getWidth(), input.getHeight());
+        }
+
+        storage = resizeStorage(input, storage);
+        input.copyPixelsToBuffer(ByteBuffer.wrap(storage.data));
+
+        arrayToGray(storage.data, input.getConfig(), output);
+
+        return output;
     }
 
     /**
