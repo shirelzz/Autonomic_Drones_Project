@@ -18,8 +18,13 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
+import androidx.annotation.Nullable;
+
+import org.ddogleg.struct.DogArray_I8;
 import org.opencv.core.Mat;
 
+import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.Vector;
 
 import boofcv.struct.image.GrayF32;
@@ -117,38 +122,65 @@ public class Stitching {
 
 
     public int[] process(Bitmap bitmapImage) {
-
-        Planar<GrayF32> image = convert(bitmapImage);
-
-//        ConvertBitmap.planarToBitmap(stitch.getStitchedImage(), ret, null);
-
-        if (!gotFirstImage) {
-            init(image);
-            gotFirstImage = true;
-            return new int[]{0, 0};
-        }
-
-        stitch.reset();
-        stitch.process(centerImage);
-
-        boolean success = stitch.process(image);
-        if (!success) {
-            reset(image);
-        }
-
-        Quadrilateral_F64 corners = stitch.getImageCorners(image.width, image.height, null);
-        Point2D_I32 newCenter = getCenter(corners);
-
-        if (center.distance(newCenter) > MAX_DISTANCE) {
-            center = newCenter;
-            centerImage = deepCopyPlanar(image);
-        }
-
-        vector_dx.add(String.valueOf(center.x - originalCenter.x));
-        vector_dy.add(String.valueOf(center.y - originalCenter.y));
-
-        return new int[]{center.x - newCenter.x, center.y - newCenter.y};
+        Planar<GrayF32> image = new Planar<GrayF32>(GrayF32.class,3);
+        bitmapToBoof(bitmapImage,image,null);
+        return process(image);
     }
+
+    public static <T extends ImageBase<T>>
+    void bitmapToBoof( Bitmap input, T output, @Nullable DogArray_I8 storage ) {
+        storage = resizeStorage(input, storage);
+        if (Objects.requireNonNull(output.getImageType().getFamily()) == ImageType.Family.PLANAR) {
+            Planar pl = (Planar) output;
+            bitmapToPlanar(input, pl, pl.getBandType(), storage);
+        } else {
+            throw new IllegalArgumentException("Unsupported BoofCV Image Type");
+        }
+    }
+
+    /**
+     * Converts Bitmap image into Planar image of the appropriate type.
+     *
+     * @param input Input Bitmap image.
+     * @param output Output image. If null a new one will be declared.
+     * @param type The type of internal single band image used in the Planar image.
+     * @param storage Byte array used for internal storage. If null it will be declared internally.
+     * @return The converted Planar image.
+     */
+    public static <T extends ImageGray<T>>
+    Planar<T> bitmapToPlanar( Bitmap input, Planar<T> output, Class<T> type, @Nullable DogArray_I8 storage ) {
+        if (output == null) {
+            output = new Planar<>(type, input.getWidth(), input.getHeight(), 3);
+        } else {
+            int numBands = Math.min(4, Math.max(3, output.getNumBands()));
+            output.reshape(input.getWidth(), input.getHeight(), numBands);
+        }
+
+        storage = resizeStorage(input, storage);
+        input.copyPixelsToBuffer(ByteBuffer.wrap(storage.data));
+
+        if (type == GrayU8.class)
+            ImplConvertBitmap.arrayToPlanar_U8(storage.data, input.getConfig(), (Planar)output);
+        else if (type == GrayF32.class)
+            ImplConvertBitmap.arrayToPlanar_F32(storage.data, input.getConfig(), (Planar)output);
+        else
+            throw new IllegalArgumentException("Unsupported BoofCV Type");
+
+        return output;
+    }
+
+    public static DogArray_I8 resizeStorage( Bitmap input, @Nullable DogArray_I8 storage ) {
+        int byteCount = input.getConfig() == Bitmap.Config.ARGB_8888 ? 4 : 2;
+        int length = input.getWidth()*input.getHeight()*byteCount;
+
+        if (storage == null)
+            return new DogArray_I8(length);
+        else {
+            storage.resize(length);
+            return storage;
+        }
+    }
+
 
     private void init(Planar<GrayF32> image) {
         // Configure the feature detector
