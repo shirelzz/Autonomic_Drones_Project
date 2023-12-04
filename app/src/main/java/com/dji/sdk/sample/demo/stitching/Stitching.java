@@ -114,7 +114,7 @@ public class Stitching {
 
 
     public int[] process(Bitmap bitmapImage) {
-        return process(ConvertBitmapToBoof.bitmapToPlanar(bitmapImage));
+        return process(ConvertBitmapToBoof.bitmapToPlanarF32(bitmapImage));
     }
 
     private void init(Planar<GrayF32> image) {

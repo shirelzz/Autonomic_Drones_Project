@@ -91,7 +91,7 @@ public class Tracker {
     }
 
     public double[] process(Bitmap bitmapImage) {
-        return process(ConvertBitmapToBoof.bitmapToPlanar(bitmapImage));
+        return process(ConvertBitmapToBoof.bitmapToPlanarU8(bitmapImage));
     }
 
     // =-=-=-=-= Helper Functions =-=-=-=-=-=

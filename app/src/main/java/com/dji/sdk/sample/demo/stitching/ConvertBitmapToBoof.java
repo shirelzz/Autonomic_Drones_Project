@@ -46,11 +46,19 @@ public class ConvertBitmapToBoof {
     private static final int[] table6 = new int[256];
 
 
-    public static Planar<GrayF32> bitmapToPlanar( Bitmap input) {
+    public static Planar<GrayF32> bitmapToPlanarF32( Bitmap input) {
         Planar<GrayF32> image = new Planar<>(GrayF32.class, 3);
         image.setBand(0,new GrayF32());
         image.setBand(1,new GrayF32());
         image.setBand(2,new GrayF32());
+        bitmapToBoof(input, image, null);
+        return image;
+    }
+    public static Planar<GrayU8> bitmapToPlanarU8( Bitmap input) {
+        Planar<GrayU8> image = new Planar<>(GrayU8.class, 3);
+        image.setBand(0,new GrayU8());
+        image.setBand(1,new GrayU8());
+        image.setBand(2,new GrayU8());
         bitmapToBoof(input, image, null);
         return image;
     }
