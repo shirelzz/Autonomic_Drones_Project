@@ -123,64 +123,9 @@ public class Stitching {
 
     public int[] process(Bitmap bitmapImage) {
         Planar<GrayF32> image = new Planar<GrayF32>(GrayF32.class,3);
-        bitmapToBoof(bitmapImage,image,null);
+        ImplConvertBitmap.bitmapToBoof(bitmapImage,image,null);
         return process(image);
     }
-
-    public static <T extends ImageBase<T>>
-    void bitmapToBoof( Bitmap input, T output, @Nullable DogArray_I8 storage ) {
-        storage = resizeStorage(input, storage);
-        if (Objects.requireNonNull(output.getImageType().getFamily()) == ImageType.Family.PLANAR) {
-            Planar pl = (Planar) output;
-            bitmapToPlanar(input, pl, pl.getBandType(), storage);
-        } else {
-            throw new IllegalArgumentException("Unsupported BoofCV Image Type");
-        }
-    }
-
-    /**
-     * Converts Bitmap image into Planar image of the appropriate type.
-     *
-     * @param input Input Bitmap image.
-     * @param output Output image. If null a new one will be declared.
-     * @param type The type of internal single band image used in the Planar image.
-     * @param storage Byte array used for internal storage. If null it will be declared internally.
-     * @return The converted Planar image.
-     */
-    public static <T extends ImageGray<T>>
-    Planar<T> bitmapToPlanar( Bitmap input, Planar<T> output, Class<T> type, @Nullable DogArray_I8 storage ) {
-        if (output == null) {
-            output = new Planar<>(type, input.getWidth(), input.getHeight(), 3);
-        } else {
-            int numBands = Math.min(4, Math.max(3, output.getNumBands()));
-            output.reshape(input.getWidth(), input.getHeight(), numBands);
-        }
-
-        storage = resizeStorage(input, storage);
-        input.copyPixelsToBuffer(ByteBuffer.wrap(storage.data));
-
-        if (type == GrayU8.class)
-            ImplConvertBitmap.arrayToPlanar_U8(storage.data, input.getConfig(), (Planar)output);
-        else if (type == GrayF32.class)
-            ImplConvertBitmap.arrayToPlanar_F32(storage.data, input.getConfig(), (Planar)output);
-        else
-            throw new IllegalArgumentException("Unsupported BoofCV Type");
-
-        return output;
-    }
-
-    public static DogArray_I8 resizeStorage( Bitmap input, @Nullable DogArray_I8 storage ) {
-        int byteCount = input.getConfig() == Bitmap.Config.ARGB_8888 ? 4 : 2;
-        int length = input.getWidth()*input.getHeight()*byteCount;
-
-        if (storage == null)
-            return new DogArray_I8(length);
-        else {
-            storage.resize(length);
-            return storage;
-        }
-    }
-
 
     private void init(Planar<GrayF32> image) {
         // Configure the feature detector
@@ -317,72 +262,6 @@ public class Stitching {
         vector_dx.clear();
         vector_dy.clear();
     }
-
-    public static Planar<GrayF32> convert(Bitmap bitmap) {
-        // Get the dimensions of the Bitmap
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-
-        // Create a Planar<GrayF32> with the same dimensions
-        Planar<GrayF32> planarImage = new Planar<>(GrayF32.class, width, height, 3);
-
-        // Convert the Bitmap to Planar<GrayF32>
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int pixel = bitmap.getPixel(x, y);
-
-                // Extract the red, green, and blue components
-                int red = Color.red(pixel);
-                int green = Color.green(pixel);
-                int blue = Color.blue(pixel);
-
-                // Set the pixel values in the Planar channels
-                planarImage.getBand(0).set(x, y, red);
-                planarImage.getBand(1).set(x, y, green);
-                planarImage.getBand(2).set(x, y, blue);
-            }
-        }
-
-        return planarImage;
-    }
-
-//    public static Planar<GrayF32> convert(BufferedImage bufferedImage) {
-//        // Create a Planar<GrayF32> with the same dimensions as the BufferedImage
-//        int width = bufferedImage.getWidth();
-//        int height = bufferedImage.getHeight();
-//        Planar<GrayF32> planarImage = new Planar<>(GrayF32.class, width, height, 3);
-//
-//        // Loop through the pixels and copy the RGB values into the Planar channels
-//        for (int y = 0; y < height; y++) {
-//            for (int x = 0; x < width; x++) {
-//                int rgb = bufferedImage.getRGB(x, y);
-//
-//                // Extract the red, green, and blue components
-//                int red = (rgb >> 16) & 0xFF;
-//                int green = (rgb >> 8) & 0xFF;
-//                int blue = rgb & 0xFF;
-//
-//                // Set the pixel values in the Planar channels
-//                planarImage.getBand(0).set(x, y, red);
-//                planarImage.getBand(1).set(x, y, green);
-//                planarImage.getBand(2).set(x, y, blue);
-//            }
-//        }
-//
-//        return planarImage;
-//    }
-
-//    @Override
-//    public void onSensorChanged(SensorEvent event) {
-//        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-//
-//        }
-//    }
-//
-//    @Override
-//    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-//
-//    }
 
     // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 

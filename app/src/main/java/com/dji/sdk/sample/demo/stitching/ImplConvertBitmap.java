@@ -19,6 +19,14 @@ package com.dji.sdk.sample.demo.stitching;
  */
 
 import android.graphics.Bitmap;
+
+import androidx.annotation.Nullable;
+
+import org.ddogleg.struct.DogArray_I8;
+
+import java.nio.ByteBuffer;
+import java.util.Objects;
+
 import boofcv.struct.image.*;
 
 /**
@@ -36,6 +44,62 @@ public class ImplConvertBitmap {
     // storages values used to convert to 565 format
     private static final int[] table5 = new int[256];
     private static final int[] table6 = new int[256];
+
+
+    public static <T extends ImageBase<T>>
+    void bitmapToBoof( Bitmap input, T output, @Nullable DogArray_I8 storage ) {
+        storage = resizeStorage(input, storage);
+        if (Objects.requireNonNull(output.getImageType().getFamily()) == ImageType.Family.PLANAR) {
+            Planar pl = (Planar) output;
+            bitmapToPlanar(input, pl, pl.getBandType(), storage);
+        } else {
+            throw new IllegalArgumentException("Unsupported BoofCV Image Type");
+        }
+    }
+
+    /**
+     * Converts Bitmap image into Planar image of the appropriate type.
+     *
+     * @param input Input Bitmap image.
+     * @param output Output image. If null a new one will be declared.
+     * @param type The type of internal single band image used in the Planar image.
+     * @param storage Byte array used for internal storage. If null it will be declared internally.
+     * @return The converted Planar image.
+     */
+    public static <T extends ImageGray<T>>
+    Planar<T> bitmapToPlanar( Bitmap input, Planar<T> output, Class<T> type, @Nullable DogArray_I8 storage ) {
+        if (output == null) {
+            output = new Planar<>(type, input.getWidth(), input.getHeight(), 3);
+        } else {
+            int numBands = Math.min(4, Math.max(3, output.getNumBands()));
+            output.reshape(input.getWidth(), input.getHeight(), numBands);
+        }
+
+        storage = resizeStorage(input, storage);
+        input.copyPixelsToBuffer(ByteBuffer.wrap(storage.data));
+
+        if (type == GrayU8.class)
+            arrayToPlanar_U8(storage.data, input.getConfig(), (Planar)output);
+        else if (type == GrayF32.class)
+            arrayToPlanar_F32(storage.data, input.getConfig(), (Planar)output);
+        else
+            throw new IllegalArgumentException("Unsupported BoofCV Type");
+
+        return output;
+    }
+
+    public static DogArray_I8 resizeStorage( Bitmap input, @Nullable DogArray_I8 storage ) {
+        int byteCount = input.getConfig() == Bitmap.Config.ARGB_8888 ? 4 : 2;
+        int length = input.getWidth()*input.getHeight()*byteCount;
+
+        if (storage == null)
+            return new DogArray_I8(length);
+        else {
+            storage.resize(length);
+            return storage;
+        }
+    }
+
 
     static {
         for (int i = 0; i < table5.length; i++) {
