@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -23,6 +24,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
 import com.dji.sdk.sample.R;
@@ -45,9 +47,11 @@ import dji.sdk.camera.VideoFeeder;
 import dji.sdk.codec.DJICodecManager;
 import dji.sdk.flightcontroller.FlightController;
 
-import com.dji.sdk.sample.demo.stitching.Stitching;
+import com.dji.sdk.sample.demo.stitching.Tracker;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
+
+import java.text.AttributedCharacterIterator;
 
 import dji.sdk.codec.DJICodecManager.VideoSource;
 //    import boofcv.android.VisualizeImageData;
@@ -72,7 +76,7 @@ public class KcgRemoteControllerView extends RelativeLayout
 
     private Context ctx;
 
-    private Stitching stitching = new Stitching();
+    private Tracker tracker = new Tracker();
 
     private Button btnDisableVirtualStick;
     private Button btnStart;
@@ -130,6 +134,18 @@ public class KcgRemoteControllerView extends RelativeLayout
 //                }
 //            });
 
+    }
+
+//    public KcgRemoteControllerView(Context context, AttributeSet attributeSet) {
+//        super(context, null);
+//        ctx = context;
+//        init(context);
+//    }
+
+    public KcgRemoteControllerView(Context context, @Nullable AttributeSet attributeSet) {
+        super(context, null);
+        ctx = context;
+        init(context);
     }
 
     @NonNull
@@ -331,7 +347,7 @@ public class KcgRemoteControllerView extends RelativeLayout
         droneIMG = mVideoSurface.getBitmap();
 
         cont.setBitmapFrame(droneIMG);
-        cont.setBitmapFrame(droneIMG, stitching);
+        cont.setBitmapFrame(droneIMG, tracker);
         imgView.setImageBitmap(droneIMG);
     }
 
@@ -500,7 +516,7 @@ public class KcgRemoteControllerView extends RelativeLayout
 
                                     planarFrame.bands[0] = frame.clone(); // Clone the GrayF32 frame
                                     dataTry.setText("hello33333");
-                                    int[] vec = stitching.process(planarFrame);
+                                    double[] vec = tracker.process(planarFrame);
                                     dataTry.setText("hello44444");
 
                                     System.out.println("dx: " + vec[0] + " dy: " + vec[1]);

@@ -10,7 +10,7 @@ or at least the main managment
 import android.graphics.Bitmap;
 import android.util.Log;
 
-import com.dji.sdk.sample.demo.stitching.Stitching;
+import com.dji.sdk.sample.demo.stitching.Tracker;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 
 import java.text.DateFormat;
@@ -118,7 +118,7 @@ public class Controller implements gimbelListener {
         }
     }
 
-    public void setBitmapFrame(Bitmap bitmap, Stitching stitching) {
+    public void setBitmapFrame(Bitmap bitmap, Tracker tracker) {
 
         if (t + 1000 < System.currentTimeMillis()) {
             t = System.currentTimeMillis();
@@ -131,7 +131,7 @@ public class Controller implements gimbelListener {
 
         float droneHeight = drone.getAlt();
 
-        ControllCommand command = flightControll.proccessImage(bitmap, droneHeight, stitching);
+        ControllCommand command = flightControll.proccessImage(bitmap, droneHeight, tracker);
         // החזירה פקודה
         if (command != null) {
             //display on screen data
