@@ -28,8 +28,8 @@
 
         <ImageView
             android:id="@+id/imgView"
-            android:layout_width="396dp"
-            android:layout_height="296dp"
+            android:layout_width="391dp"
+            android:layout_height="match_parent"
             android:layout_above="@+id/video_previewer_surface"
             android:layout_alignParentTop="true"
             android:layout_alignParentEnd="true"
@@ -57,7 +57,7 @@
         android:layout_marginStart="0dp"
         android:layout_marginTop="0dp"
         android:text="1234556678"
-        android:textSize="18dp" />
+        android:textSize="18sp" />
     <TextView
         android:id="@+id/data_try"
         android:layout_width="wrap_content"
@@ -67,7 +67,7 @@
         android:layout_marginStart="0dp"
         android:layout_marginTop="0dp"
         android:text="try dx dy"
-        android:textSize="18dp" />
+        android:textSize="18sp" />
 
     <TextView
 
@@ -75,7 +75,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="1234"
-        android:textSize="18dp"
+        android:textSize="18sp"
         android:visibility="gone"
         />
 
@@ -88,6 +88,20 @@
         android:layout_above="@+id/video_previewer_surface"
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
+        android:layout_gravity="top"
+        android:layout_marginBottom="-2dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginTop="0dp"
+        tools:ignore="NotSibling" />
+    <ImageView
+        android:id="@+id/audioIcon"
+        android:src="@drawable/mic_24"
+        android:visibility="invisible"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/video_previewer_surface"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@id/recIcon"
         android:layout_gravity="top"
         android:layout_marginBottom="-2dp"
         android:layout_marginEnd="0dp"
@@ -114,7 +128,7 @@
         android:layout_marginBottom="20dp"
         android:layout_marginTop="20dp"
         android:layout_above="@+id/i_minus_btn"
-        android:layout_toRightOf="@+id/d_plus_btn"/>
+        android:layout_toEndOf="@+id/d_plus_btn"/>
 
     <Button
         android:id="@+id/t_minus_btn"
@@ -130,7 +144,7 @@
         android:id="@+id/setT_tv"
         android:layout_width="70dp"
         android:layout_height="40dp"
-        android:layout_toRightOf="@id/d_minus_btn"
+        android:layout_toEndOf="@id/d_minus_btn"
         android:layout_above="@+id/p_minus_btn"
         android:layout_marginBottom="0dp"
         android:ems="100"
@@ -142,7 +156,7 @@
         android:id="@+id/t_plus_btn"
         android:layout_width="50dp"
         android:layout_height="40dp"
-        android:layout_toRightOf="@id/setD_tv"
+        android:layout_toEndOf="@id/setD_tv"
         android:layout_above="@+id/p_minus_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
@@ -162,7 +176,7 @@
         android:id="@+id/setP_tv"
         android:layout_width="70dp"
         android:layout_height="40dp"
-        android:layout_toRightOf="@id/d_minus_btn"
+        android:layout_toEndOf="@id/d_minus_btn"
         android:layout_above="@+id/i_minus_btn"
         android:layout_marginBottom="0dp"
         android:ems="100"
@@ -173,7 +187,7 @@
         android:id="@+id/p_plus_btn"
         android:layout_width="50dp"
         android:layout_height="40dp"
-        android:layout_toRightOf="@id/setD_tv"
+        android:layout_toEndOf="@id/setD_tv"
         android:layout_above="@+id/i_minus_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
@@ -194,7 +208,7 @@
         android:id="@+id/setI_tv"
         android:layout_width="70dp"
         android:layout_height="40dp"
-        android:layout_toRightOf="@id/d_minus_btn"
+        android:layout_toEndOf="@id/d_minus_btn"
         android:layout_above="@+id/setD_tv"
         android:layout_marginBottom="0dp"
         android:ems="100"
@@ -205,7 +219,7 @@
         android:id="@+id/i_plus_btn"
         android:layout_width="50dp"
         android:layout_height="40dp"
-        android:layout_toRightOf="@id/setD_tv"
+        android:layout_toEndOf="@id/setD_tv"
         android:layout_above="@+id/setD_tv"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
@@ -225,7 +239,7 @@
         android:id="@+id/setD_tv"
         android:layout_width="70dp"
         android:layout_height="40dp"
-        android:layout_toRightOf="@id/d_minus_btn"
+        android:layout_toEndOf="@id/d_minus_btn"
         android:layout_above="@+id/stop_btn"
         android:layout_marginBottom="0dp"
         android:ems="100"
@@ -236,7 +250,7 @@
         android:id="@+id/d_plus_btn"
         android:layout_width="50dp"
         android:layout_height="40dp"
-        android:layout_toRightOf="@id/setD_tv"
+        android:layout_toEndOf="@id/setD_tv"
         android:layout_above="@+id/stop_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
@@ -250,27 +264,46 @@
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
-        android:text="Stop" />
+        android:text="Stop(1)" />
+
+    <Button
+        android:id="@+id/accurate_landing"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@id/stop_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="Accurate Landing(2)" />
 
     <Button
         android:id="@+id/hover_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@id/stop_btn"
+        android:layout_toEndOf="@id/accurate_landing"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
-        android:text="hover" />
+        android:text="hover(3)" />
+
+    <Button
+        android:id="@+id/follow_me"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="0dp"
+        android:layout_toEndOf="@id/hover_btn"
+        android:text="follow me(4)" />
 
     <Button
         android:id="@+id/pause_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@id/hover_btn"
+        android:layout_toEndOf="@id/follow_me"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
-        android:text="pause" />
+        android:text="pause(5)" />
 
     <Button
         android:id="@+id/land_btn"
@@ -278,7 +311,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="0dp"
-        android:layout_toRightOf="@id/pause_btn"
+        android:layout_toEndOf="@id/pause_btn"
         android:text="land" />
 
     <TextView
@@ -286,11 +319,56 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@id/land_btn"
+        android:layout_toEndOf="@id/land_btn"
         android:layout_marginStart="0dp"
         android:layout_marginTop="0dp"
         android:text="Target unLocked"
-        android:textSize="18dp"
+        android:textSize="18sp"
+        android:visibility="visible" />
+    <TextView
+        android:id="@+id/audioText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/d_plus_btn"
+        android:layout_above="@+id/stop_btn"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="audio text:"
+        android:textSize="18sp"
+        android:visibility="visible" />
+    <TextView
+        android:id="@+id/audioTextData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/audioText"
+        android:layout_above="@+id/stop_btn"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="0dp"
+        android:text="____________"
+        android:textSize="18sp"
+        android:visibility="visible" />
+
+    <TextView
+        android:id="@+id/audioError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/d_plus_btn"
+        android:layout_above="@+id/audioText"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="audio error:"
+        android:textSize="18sp"
+        android:visibility="visible" />
+    <TextView
+        android:id="@+id/audioErrorData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/audioText"
+        android:layout_above="@+id/audioText"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="0dp"
+        android:text="____________"
+        android:textSize="18sp"
         android:visibility="visible" />
 
 

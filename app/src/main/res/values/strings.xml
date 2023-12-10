@@ -25,6 +25,7 @@
     <!-- Component list -->
     <string name="component_listview_kcg_group">Kcg Invention</string>
     <string name="component_listview_kcg_remote_controll">Dynamic Land</string>
+    <string name="component_listview_accurate_landing">Accurate landing</string>
     <string name="component_listview_kcg_double_floor">Double floor</string>
 
     <string name="component_listview_component">Component</string>

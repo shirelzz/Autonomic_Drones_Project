@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
 import com.dji.sdk.sample.R;
+import com.dji.sdk.sample.demo.speechToText.SpeechToText;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
@@ -95,12 +96,15 @@ public class KcgRemoteControllerView extends RelativeLayout
     private FollowMeMissionOperator followMeMissionOperator = null;
 
     protected ImageView imgView;
-    protected ImageView recIcon;
+    protected ImageView recIcon, audioIcon;
     protected TextView textView;
     protected TextView dataTv;
     protected TextView autonomous_mode_txt;
     protected TextView sawModeTextView;
     protected TextView dataTry;
+
+    protected TextView audioText, audioError;
+    private final String LOG_TAG = "VoiceRecognition";
 
     protected EditText textP, textI, textD, textT;
     protected Button btnTminus, btnTplus, btnPminus, btnPplus, btnIminus, btnIplus, btnDminus, btnDplus;
@@ -108,6 +112,8 @@ public class KcgRemoteControllerView extends RelativeLayout
     protected String pid_type = "roll";
 
     private FlightController flightController;
+    private SpeechToText speechToText;
+    private boolean isViewVisible = false;
 
     private Controller cont;
     private float p = 0.5f, i = 0.02f, d = 0.01f, max_i = 1, t = -0.6f;//t fot vertical throttle
@@ -157,6 +163,8 @@ public class KcgRemoteControllerView extends RelativeLayout
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        isViewVisible = true;
+        onResume(); // Call your onResume() logic
     }
 
 
@@ -164,6 +172,8 @@ public class KcgRemoteControllerView extends RelativeLayout
     protected void onDetachedFromWindow() {
         tearDownListeners();
         super.onDetachedFromWindow();
+        isViewVisible = false;
+        onPause(); // Call your onPause() logic
     }
 
     private void init(Context context) {
@@ -208,6 +218,7 @@ public class KcgRemoteControllerView extends RelativeLayout
             autonomous_mode_txt = findViewById(R.id.autonomous);
             autonomous_mode_txt.setTextColor(Color.rgb(255, 0, 0));
             imgView = findViewById(R.id.imgView);
+            audioIcon = findViewById(R.id.audioIcon);
             recIcon = findViewById(R.id.recIcon);
 
             spinner = findViewById(R.id.static_spinner);
@@ -249,6 +260,9 @@ public class KcgRemoteControllerView extends RelativeLayout
             btnPause = findViewById(R.id.pause_btn);
             btnLand = findViewById(R.id.land_btn);
 
+            audioText = findViewById(R.id.audioTextData);
+            audioError = findViewById(R.id.audioErrorData);
+
             btnDisableVirtualStick.setOnClickListener(this);
             btnStart.setOnClickListener(this);
             btnLand.setOnClickListener(this);
@@ -276,10 +290,119 @@ public class KcgRemoteControllerView extends RelativeLayout
 
                 }
             });
+
+            initializeSpeechToText();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    private void initializeSpeechToText() {
+        speechToText = new SpeechToText(this.getContext(), this::performActionOnResults, this::writeOnScreen, this::updateStartListening);
+        speechToText.startListening();
+    }
+
+    public void updateStartListening() {
+        audioIcon.setVisibility(View.VISIBLE);
+    }
+
+    public void onResume() {
+        Log.i(LOG_TAG, "resume");
+        if (!speechToText.resetSpeechRecognizer()) {
+//            cont.finish();
+        }
+        if (isViewVisible) {
+
+            speechToText.startListening();
+        }
+    }
+
+    protected void onPause() {
+        Log.i(LOG_TAG, "pause");
+        if (!isViewVisible) {
+            speechToText.stopListening();
+        }
+    }
+
+//    @Override
+    protected void onStop() {
+        Log.i(LOG_TAG, "stop");
+//        super.onStop();
+        speechToText.destroyListening();
+    }
+
+    public void writeOnScreen(String text) {
+        if (text.startsWith("Error:")) {
+            audioError.setText(text.substring(7)); // Remove "Error: " prefix
+        } else {
+            audioText.setText(text);
+        }
+    }
+
+    @SuppressLint("UseCompatLoadingForDrawables")
+    public void performActionOnResults(String text) {
+        String message;
+        switch (text) {
+            case "abort":
+            case "a bird":
+            case "about":
+            case "a boat":
+                message = "Abort";
+                break;
+            case "landing":
+                message = "Landing";
+                break;
+            case "take off":
+                message = "Take Off";
+                break;
+            case "go to":
+                message = "Go to";
+                break;
+            case "track me":
+            case "talk me":
+                message = "Track Me";
+                break;
+            case "panic":
+            case "funny":
+                message = "Panic";
+                break;
+            case "higher":
+            case "tier":
+                message = "Higher";
+                break;
+            case "lower":
+                message = "Lower";
+                break;
+            case "stay": //our algorithm (pause)
+                message = "Stay";
+                break;
+            case "camera up":
+            case "camera app":
+                message = "Camera up";
+                break;
+            case "camera down":
+                message = "camera down";
+                break;
+            case "turn right":
+                message = "turn right";
+                break;
+            case "turn left":
+                message = "turn left";
+                break;
+            case "backward":
+                message = "backward";
+                break;
+            case "forward":
+                message = "forward";
+                break;
+            default:
+                message = "Didn't understand, please try again.";
+                break;
+        }
+//        funcText.setText(message);
+    }
+
 
     public void setRecIconVisibility(boolean isVisible) {
         if (isVisible) {
