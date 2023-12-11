@@ -32,6 +32,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
 import com.dji.sdk.sample.R;
+import com.dji.sdk.sample.demo.speechToText.FlightCommandUI;
 import com.dji.sdk.sample.demo.speechToText.SpeechToText;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
@@ -92,6 +93,8 @@ public class KcgRemoteControllerView extends RelativeLayout
     protected DJICodecManager mCodecManager = null;
 
     private Bitmap droneIMG;
+    private FlightCommandUI UI_commands;
+
     protected TextureView mVideoSurface = null;
     private static final double ONE_METER_OFFSET = 0.00000899322;
     private double latitude = 0;
@@ -171,6 +174,8 @@ public class KcgRemoteControllerView extends RelativeLayout
         initUI();
 
         cont = new Controller(this);
+
+        UI_commands = new FlightCommandUI(cont.getLog());
 
 
         p = Float.parseFloat(textP.getText().toString());
@@ -329,6 +334,7 @@ public class KcgRemoteControllerView extends RelativeLayout
 
     @SuppressLint("UseCompatLoadingForDrawables")
     public void performActionOnResults(String text) {
+
         String message;
         switch (text) {
             case "abort":
@@ -336,52 +342,79 @@ public class KcgRemoteControllerView extends RelativeLayout
             case "about":
             case "a boat":
                 message = "Abort";
+//                UI_commands.abo();
+
                 break;
             case "landing":
                 message = "Landing";
+                UI_commands.land();
+
                 break;
             case "take off":
                 message = "Take Off";
+                UI_commands.takeoff();
+
                 break;
             case "go to":
                 message = "Go to";
+//                UI_commands.g();
+
                 break;
             case "track me":
             case "talk me":
                 message = "Track Me";
+//                UI_commands.t();
+
                 break;
             case "panic":
             case "funny":
                 message = "Panic";
+//                UI_commands.panic();
+
                 break;
             case "higher":
             case "tier":
                 message = "Higher";
+//                UI_commands.higher();
+
                 break;
             case "lower":
                 message = "Lower";
+//                UI_commands.lower();
+
                 break;
             case "stay": //our algorithm (pause)
                 message = "Stay";
+//                UI_commands.stay();
+
                 break;
             case "camera up":
             case "camera app":
                 message = "Camera up";
+//                UI_commands.();
                 break;
             case "camera down":
                 message = "camera down";
                 break;
             case "turn right":
                 message = "turn right";
+                UI_commands.turn_right();
+
                 break;
             case "turn left":
                 message = "turn left";
+                UI_commands.turn_left();
+
                 break;
             case "backward":
                 message = "backward";
+                UI_commands.backward();
+
                 break;
             case "forward":
                 message = "forward";
+                UI_commands.forward();
+
                 break;
             default:
                 message = "Didn't understand, please try again.";

@@ -26,6 +26,8 @@ public class KcgLog {
     private Controller controller;
     private BufferedWriter logFile;
 
+    private volatile String mode;
+
     private String header="TimeMS,date,time,Lat,Lon,Alt,HeadDirection,VelocityX,VelocityY,VelocityZ,yaw,pitch,roll,Throttle,UsAlt,GimbalPitch," +
                 "batRemainingTime,batCharge,Real/kalman,MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,Pp,Ip,Dp,Pr,Ir,Dr,Pt,It,Dt,MaxI,AutonomousMode";
 
@@ -55,6 +57,14 @@ public class KcgLog {
         }
     }
 
+    public void setMode(String new_mode){
+        try{
+            mode = new_mode;
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
     public void closeLog(){
         try {

@@ -69,6 +69,10 @@ public class Controller implements gimbelListener {
         gimbelController.addListener(flightControll);
     }
 
+    public KcgLog getLog(){
+        return this.log;
+    }
+
     //functions
     public void showToast(String msg) {
         mainView.doToast(msg);
