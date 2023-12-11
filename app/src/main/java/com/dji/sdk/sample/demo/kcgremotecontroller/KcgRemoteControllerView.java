@@ -1,5 +1,7 @@
 package com.dji.sdk.sample.demo.kcgremotecontroller;
 
+import static androidx.core.content.ContextCompat.getSystemService;
+
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
@@ -8,6 +10,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
+import android.location.Location;
+import android.location.LocationManager;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -149,7 +153,7 @@ public class KcgRemoteControllerView extends RelativeLayout
 //    }
 
     public KcgRemoteControllerView(Context context, @Nullable AttributeSet attributeSet) {
-        super(context, null);
+        super(context, attributeSet);
         ctx = context;
         init(context);
     }
@@ -586,17 +590,126 @@ public class KcgRemoteControllerView extends RelativeLayout
                 break;
 
             //end
+//            case R.id.pause_btn:
+//                try {
+//                    if (DJISampleApplication.getProductInstance() instanceof Aircraft) {
+//                        flightController = ((Aircraft) DJISampleApplication.getProductInstance()).getFlightController();
+//                    }
+//                    if (flightController == null) {
+//                        if (ModuleVerificationUtil.isFlightControllerAvailable()) {
+//                            flightController = DJISampleApplication.getAircraftInstance().getFlightController();
+//                        }
+//                    }
+//                    if (flightController != null) {
+//                        flightController.setStateCallback(new FlightControllerState.Callback() {
+//                            @Override
+//                            public void onUpdate(@NonNull FlightControllerState flightControllerState) {
+//                                latitude = flightControllerState.getAircraftLocation().getLatitude();
+//                                longitude = flightControllerState.getAircraftLocation().getLongitude();
+//                            }
+//                        });
+//                    }
+//
+//                    VideoFeeder.getInstance().getPrimaryVideoFeed().addVideoDataListener(new VideoFeeder.VideoDataListener() {
+//                        // Create a buffer to accumulate video data
+//                        byte[] videoBuffer;
+//                        int receivedDataSize = 0;
+//
+//                        @Override
+//                        public void onReceive(byte[] videoData, int size) {
+//
+//                            dataTry.setText("hello");
+//
+//                            mCodecManager.sendDataToDecoder(videoData, size);
+//                            dataTry.setText("hello------------");
+//
+//                            int frameWidth = mCodecManager.getVideoWidth();
+//                            int frameHeight = mCodecManager.getVideoHeight();
+//                            int EXPECTED_FRAME_SIZE = frameWidth * frameHeight;
+//                            videoBuffer = new byte[EXPECTED_FRAME_SIZE];
+//
+//                            if (size <= EXPECTED_FRAME_SIZE) {
+//                                System.arraycopy(videoData, 0, videoBuffer, receivedDataSize, size);
+//                                receivedDataSize += size;
+//                                // Check if we have received enough data to form a complete frame
+//                                if (receivedDataSize >= EXPECTED_FRAME_SIZE) {
+//                                    // Process the complete frame (e.g., convert to GrayF32)
+//                                    visualizeVideoFrame(videoBuffer, frameWidth, frameHeight);
+//
+//                                    GrayF32 frame = convertVideoDataToGrayF32(videoBuffer, frameWidth, frameHeight);
+//                                    dataTry.setText("hello111111");
+//                                    Planar<GrayF32> planarFrame = new Planar<>(GrayF32.class, frameWidth, frameHeight, 1);
+//                                    dataTry.setText("hello222222");
+//
+//                                    planarFrame.bands[0] = frame.clone(); // Clone the GrayF32 frame
+//                                    dataTry.setText("hello33333");
+//                                    double[] vec = tracker.process(planarFrame);
+//                                    dataTry.setText("hello44444");
+//
+//                                    System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
+//                                    dataTry.setText("dx: " + vec[0] + " dy: " + vec[1]);
+//
+//
+//                                    updateUIWithProcessedFrame(frame);
+//
+//                                    // Reset the buffer for the next frame
+//                                    receivedDataSize = 0;
+//                                }
+//
+//                                // Handle a size mismatch, which might indicate an issue with the data
+//                                Log.e(TAG, "Received data size does not match the expected frame size.");
+//                            }
+//
+//                            // Visualize the frame (for debugging purposes)
+////                                visualizeVideoFrame(videoBuffer, frameWidth, frameHeight);
+//
+//                            // Convert the video data to GrayF32 format
+////                                GrayF32 frame = convertVideoDataToGrayF32(videoBuffer, frameWidth, frameHeight);
+////                                dataTry.setText("hello111111");
+//
+//                            // Create a Planar<GrayF32> image from the GrayF32 frame
+////                                Planar<GrayF32> planarFrame = new Planar<>(GrayF32.class, frameWidth, frameHeight, 1);
+////                                dataTry.setText("hello222222");
+////
+////                                planarFrame.bands[0] = frame.clone(); // Clone the GrayF32 frame
+////                                dataTry.setText("hello33333");
+//
+//                            // Perform your stitching or other processing here using the GrayF32 frame
+////                                int[] vec = stitching.process(planarFrame);
+////                                dataTry.setText("hello44444");
+//
+//                            //------------
+////                            int[] vec = new int[]{0, 0};
+//
+////                            int dx = vec[0];
+////                            int dy = vec[1];
+////                            System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
+////                            dataTry.setText("dx: " + vec[0] + " dy: " + vec[1]);
+////                            latitude = latitude + dx * ONE_METER_OFFSET; //dx
+////                            longitude = longitude + dy * ONE_METER_OFFSET; //dy
+////                            LocationCoordinate2D newLocation = new LocationCoordinate2D(latitude, longitude);
+////                            followMeMissionOperator.updateFollowingTarget(newLocation, djiError1 -> {
+////                                try {
+////                                    Thread.sleep(1500);
+////                                } catch (InterruptedException e) {
+////                                    e.printStackTrace();
+////                                }
+////                            });
+////                                updateUIWithProcessedFrame(frame);
+//                        }
+//                    });
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//                break;
+
+
+            //--------- set vertical throttle
+
             case R.id.pause_btn:
                 try {
-                    if (DJISampleApplication.getProductInstance() instanceof Aircraft) {
-                        flightController = ((Aircraft) DJISampleApplication.getProductInstance()).getFlightController();
-                    }
-                    if (flightController == null) {
-                        if (ModuleVerificationUtil.isFlightControllerAvailable()) {
-                            flightController = DJISampleApplication.getAircraftInstance().getFlightController();
-                        }
-                    }
-                    if (flightController != null) {
+                    if (!tracker.isPaused()) {
+                        // Pause tracking and store the current location
                         flightController.setStateCallback(new FlightControllerState.Callback() {
                             @Override
                             public void onUpdate(@NonNull FlightControllerState flightControllerState) {
@@ -604,103 +717,20 @@ public class KcgRemoteControllerView extends RelativeLayout
                                 longitude = flightControllerState.getAircraftLocation().getLongitude();
                             }
                         });
+
+                        tracker.pause();
+                        tracker.setFlightController(flightController);
+                        tracker.setInitialLocation(latitude, longitude);
+
+                    } else {
+                        // Resume tracking
+                        tracker.resume();
                     }
-
-                    VideoFeeder.getInstance().getPrimaryVideoFeed().addVideoDataListener(new VideoFeeder.VideoDataListener() {
-                        // Create a buffer to accumulate video data
-                        byte[] videoBuffer;
-                        int receivedDataSize = 0;
-
-                        @Override
-                        public void onReceive(byte[] videoData, int size) {
-
-                            dataTry.setText("hello");
-
-                            mCodecManager.sendDataToDecoder(videoData, size);
-                            dataTry.setText("hello------------");
-
-                            int frameWidth = mCodecManager.getVideoWidth();
-                            int frameHeight = mCodecManager.getVideoHeight();
-                            int EXPECTED_FRAME_SIZE = frameWidth * frameHeight;
-                            videoBuffer = new byte[EXPECTED_FRAME_SIZE];
-
-                            if (size <= EXPECTED_FRAME_SIZE) {
-                                System.arraycopy(videoData, 0, videoBuffer, receivedDataSize, size);
-                                receivedDataSize += size;
-                                // Check if we have received enough data to form a complete frame
-                                if (receivedDataSize >= EXPECTED_FRAME_SIZE) {
-                                    // Process the complete frame (e.g., convert to GrayF32)
-                                    visualizeVideoFrame(videoBuffer, frameWidth, frameHeight);
-
-                                    GrayF32 frame = convertVideoDataToGrayF32(videoBuffer, frameWidth, frameHeight);
-                                    dataTry.setText("hello111111");
-                                    Planar<GrayF32> planarFrame = new Planar<>(GrayF32.class, frameWidth, frameHeight, 1);
-                                    dataTry.setText("hello222222");
-
-                                    planarFrame.bands[0] = frame.clone(); // Clone the GrayF32 frame
-                                    dataTry.setText("hello33333");
-                                    double[] vec = tracker.process(planarFrame);
-                                    dataTry.setText("hello44444");
-
-                                    System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
-                                    dataTry.setText("dx: " + vec[0] + " dy: " + vec[1]);
-
-
-                                    updateUIWithProcessedFrame(frame);
-
-                                    // Reset the buffer for the next frame
-                                    receivedDataSize = 0;
-                                }
-
-                                // Handle a size mismatch, which might indicate an issue with the data
-                                Log.e(TAG, "Received data size does not match the expected frame size.");
-                            }
-
-                            // Visualize the frame (for debugging purposes)
-//                                visualizeVideoFrame(videoBuffer, frameWidth, frameHeight);
-
-                            // Convert the video data to GrayF32 format
-//                                GrayF32 frame = convertVideoDataToGrayF32(videoBuffer, frameWidth, frameHeight);
-//                                dataTry.setText("hello111111");
-
-                            // Create a Planar<GrayF32> image from the GrayF32 frame
-//                                Planar<GrayF32> planarFrame = new Planar<>(GrayF32.class, frameWidth, frameHeight, 1);
-//                                dataTry.setText("hello222222");
-//
-//                                planarFrame.bands[0] = frame.clone(); // Clone the GrayF32 frame
-//                                dataTry.setText("hello33333");
-
-                            // Perform your stitching or other processing here using the GrayF32 frame
-//                                int[] vec = stitching.process(planarFrame);
-//                                dataTry.setText("hello44444");
-
-                            //------------
-//                            int[] vec = new int[]{0, 0};
-
-//                            int dx = vec[0];
-//                            int dy = vec[1];
-//                            System.out.println("dx: " + vec[0] + " dy: " + vec[1]);
-//                            dataTry.setText("dx: " + vec[0] + " dy: " + vec[1]);
-//                            latitude = latitude + dx * ONE_METER_OFFSET; //dx
-//                            longitude = longitude + dy * ONE_METER_OFFSET; //dy
-//                            LocationCoordinate2D newLocation = new LocationCoordinate2D(latitude, longitude);
-//                            followMeMissionOperator.updateFollowingTarget(newLocation, djiError1 -> {
-//                                try {
-//                                    Thread.sleep(1500);
-//                                } catch (InterruptedException e) {
-//                                    e.printStackTrace();
-//                                }
-//                            });
-//                                updateUIWithProcessedFrame(frame);
-                        }
-                    });
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                 break;
 
-
-            //--------- set vertical throttle
             case R.id.t_minus_btn:
                 try {
                     t = Float.parseFloat(textT.getText().toString());
