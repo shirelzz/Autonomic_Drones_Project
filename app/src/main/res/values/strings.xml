@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="sample_app_name">Kcg Auto Land</string>
     <string name="action_settings">Settings</string>
 
@@ -25,8 +25,9 @@
     <!-- Component list -->
     <string name="component_listview_kcg_group">Kcg Invention</string>
     <string name="component_listview_kcg_remote_controll">Dynamic Land</string>
-    <string name="component_listview_accurate_landing">Accurate landing</string>
     <string name="component_listview_kcg_double_floor">Double floor</string>
+
+    <string name="component_listview_accurate_landing">Accurate landing</string>
 
     <string name="component_listview_component">Component</string>
     <string name="component_listview_camera">Camera</string>
@@ -323,5 +324,6 @@
     <string name="cancel_transmitting">Cancel Transmitting</string>
     <string name="transmit_local_file">Transmit Local File</string>
     <string name="component_listview_health_information">Device Health Information</string>
+    <string name="component_listview_Accurate_group">Accurate Group</string>
 
 </resources>

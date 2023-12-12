@@ -60,7 +60,7 @@ import dji.sdk.sdkmanager.DJISDKManager;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 @RequiresApi(api = Build.VERSION_CODES.R)
-public class MainActivity extends AppCompatActivity {
+public class  MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private static final String[] REQUIRED_PERMISSION_LIST = new String[] {

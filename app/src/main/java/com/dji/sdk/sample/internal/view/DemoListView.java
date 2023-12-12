@@ -9,6 +9,7 @@ import android.widget.FrameLayout;
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.demo.accessory.AccessoryAggregationView;
 import com.dji.sdk.sample.demo.accessory.AudioFileListManagerView;
+import com.dji.sdk.sample.demo.accurateLandingController.ALRemoteControllerView;
 import com.dji.sdk.sample.demo.airlink.RebootWiFiAirlinkView;
 import com.dji.sdk.sample.demo.airlink.SetGetWiFiLinkSSIDView;
 import com.dji.sdk.sample.demo.battery.PushBatteryDataView;
@@ -84,9 +85,14 @@ public class DemoListView extends FrameLayout {
         // Build model for ListView
         ListBuilder builder = new ListBuilder();
 
+
         builder.addGroup(R.string.component_listview_kcg_group,
                 false,
                 new GroupItem(R.string.component_listview_kcg_remote_controll, KcgRemoteControllerView.class));
+
+        builder.addGroup(R.string.component_listview_Accurate_group,
+                false,
+                new GroupItem(R.string.component_listview_accurate_landing, ALRemoteControllerView.class));
 
         builder.addGroup(R.string.component_listview_sdk_4_12,
                 false,

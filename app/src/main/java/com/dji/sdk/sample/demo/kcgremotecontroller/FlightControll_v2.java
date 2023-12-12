@@ -658,7 +658,6 @@ public class FlightControll_v2 implements gimbelListener{
         framesConfidence = Math.min(100,framesConfidence);
     }
 
-    // מחזיר command control,
     private ControllCommand stayOnPlace(float aircraftHeight){
         //  מאפס את כל הערכים לאפס - מתייצב
         roll_pid.reset();

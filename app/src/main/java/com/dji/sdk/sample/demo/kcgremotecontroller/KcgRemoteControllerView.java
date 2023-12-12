@@ -47,6 +47,8 @@ import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 import dji.common.flightcontroller.virtualstick.YawControlMode;
+import dji.common.mission.followme.FollowMeHeading;
+import dji.common.mission.followme.FollowMeMission;
 import dji.common.model.LocationCoordinate2D;
 import dji.common.util.CommonCallbacks;
 import dji.sdk.camera.VideoFeeder;
@@ -335,94 +337,107 @@ public class KcgRemoteControllerView extends RelativeLayout
     @SuppressLint("UseCompatLoadingForDrawables")
     public void performActionOnResults(String text) {
 
-        String message;
         switch (text) {
             case "abort":
             case "a bird":
             case "about":
             case "a boat":
-                message = "Abort";
-//                UI_commands.abo();
 
                 break;
             case "landing":
-                message = "Landing";
-                UI_commands.land();
-
+                hoverLandBtnFunc(R.id.land_btn);
                 break;
             case "take off":
-                message = "Take Off";
                 UI_commands.takeoff();
-
                 break;
             case "go to":
-                message = "Go to";
-//                UI_commands.g();
 
                 break;
             case "track me":
             case "talk me":
-                message = "Track Me";
-//                UI_commands.t();
 
                 break;
             case "panic":
             case "funny":
-                message = "Panic";
-//                UI_commands.panic();
 
                 break;
             case "higher":
             case "tier":
-                message = "Higher";
-//                UI_commands.higher();
 
                 break;
             case "lower":
-                message = "Lower";
-//                UI_commands.lower();
 
                 break;
-            case "stay": //our algorithm (pause)
-                message = "Stay";
-//                UI_commands.stay();
-
+            case "stay": //our algorithm (pause) replace with pose?
+                pauseBtnFunc();
+                break;
+            case "stop":
+                stopBtnFunc();
+                break;
+            case "hover": //Asaf algorithm
+            case "over":
+                hoverLandBtnFunc(R.id.hover_btn);
                 break;
             case "camera up":
             case "camera app":
-                message = "Camera up";
-//                UI_commands.();
+
                 break;
             case "camera down":
-                message = "camera down";
                 break;
             case "turn right":
-                message = "turn right";
                 UI_commands.turn_right();
 
                 break;
             case "turn left":
-                message = "turn left";
                 UI_commands.turn_left();
 
                 break;
             case "backward":
-                message = "backward";
                 UI_commands.backward();
 
                 break;
             case "forward":
-                message = "forward";
                 UI_commands.forward();
 
                 break;
+            case "follow me":
+                followMeMissionFunc();
             default:
-                message = "Didn't understand, please try again.";
                 break;
         }
-//        funcText.setText(message);
     }
 
+    public void followMeMissionFunc() {
+        followMeMissionOperator = MissionControl.getInstance().getFollowMeMissionOperator();
+
+        followMeMissionOperator.startMission(new FollowMeMission(FollowMeHeading.TOWARD_FOLLOW_POSITION,
+                latitude + 5 * ONE_METER_OFFSET, longitude + 5 * ONE_METER_OFFSET, 30f
+        ), new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onResult(DJIError djiError) {
+                ToastUtils.setResultToToast(djiError != null ? djiError.getDescription() : "start success");
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        int cnt = 0;
+                        while (cnt < 100) {
+                            latitude = latitude + 5 * ONE_METER_OFFSET;
+                            longitude = longitude + 5 * ONE_METER_OFFSET;
+                            LocationCoordinate2D newLocation = new LocationCoordinate2D(latitude, longitude);
+                            followMeMissionOperator.updateFollowingTarget(newLocation, djiError1 -> {
+                                try {
+                                    Thread.sleep(1500);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            });
+                            cnt++;
+                        }
+                    }
+                }).start();
+            }
+        });
+    }
 
     public void setRecIconVisibility(boolean isVisible) {
         if (isVisible) {
@@ -529,105 +544,141 @@ public class KcgRemoteControllerView extends RelativeLayout
 
     }
 
-
-    @SuppressLint({"NonConstantResourceId", "SetTextI18n"})
-    public void onClick(View v) {
-        FlightController flightController = ModuleVerificationUtil.getFlightController();
+    public void pauseBtnFunc() {
+        setFlightControlSetup();
         if (flightController == null) {
             return;
         }
-        flightController.setYawControlMode(YawControlMode.ANGLE);
-        flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
-        flightController.setYawControlMode(YawControlMode.ANGLE);
-        flightController.setVerticalControlMode(VerticalControlMode.VELOCITY);
-        flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
-        switch (v.getId()) {
-            case R.id.stop_btn:
-                flightController.getFlightAssistant().setLandingProtectionEnabled(true, new CommonCallbacks.CompletionCallback() {
+        try {
+            if (!tracker.isPaused()) {
+                // Pause tracking and store the current location
+                flightController.setStateCallback(new FlightControllerState.Callback() {
                     @Override
-                    public void onResult(DJIError djiError) {
-                        if (djiError != null) showToast("" + djiError);
-                        else showToast("Landing protection DISABLED!");
-                    }
-                });
-                disable(flightController);
-
-                textP.setEnabled(true);
-                textI.setEnabled(true);
-                textD.setEnabled(true);
-                textT.setEnabled(true);
-                FlightControll_v2.flag = false;
-                break;
-            case R.id.hover_btn:
-            case R.id.land_btn:
-//sart
-                //    FlightControll_v2.flag = true;
-                textP.setEnabled(false);
-                textI.setEnabled(false);
-                textD.setEnabled(false);
-                textT.setEnabled(false);
-
-                flightController.getFlightAssistant().setLandingProtectionEnabled(false, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onResult(DJIError djiError) {
-                        if (djiError != null) showToast("" + djiError);
-                        else showToast("Landing protection DISABLED!");
-                    }
-                });
-                flightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onResult(DJIError djiError) {
-                        if (djiError == null) {
-                            showToast("Virtual sticks enabled!");
-                            cont.allowControl();
-                        } else showToast("" + djiError);
+                    public void onUpdate(@NonNull FlightControllerState flightControllerState) {
+                        latitude = flightControllerState.getAircraftLocation().getLatitude();
+                        longitude = flightControllerState.getAircraftLocation().getLongitude();
                     }
                 });
 
+                tracker.pause();
+                tracker.setFlightController(flightController);
+                tracker.setInitialLocation(latitude, longitude);
 
-                try {
-                    if (v.getId() == R.id.land_btn) {
-                        FlightControll_v2.flag = true;
+            } else {
+                // Resume tracking
+                tracker.resume();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void hoverLandBtnFunc(int id) {
+        setFlightControlSetup();
+        if (flightController == null) {
+            return;
+        }
+//start
+        //    FlightControll_v2.flag = true;
+        textP.setEnabled(false);
+        textI.setEnabled(false);
+        textD.setEnabled(false);
+        textT.setEnabled(false);
+
+        flightController.getFlightAssistant().setLandingProtectionEnabled(false, new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onResult(DJIError djiError) {
+                if (djiError != null) showToast("" + djiError);
+                else showToast("Landing protection DISABLED!");
+            }
+        });
+        flightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onResult(DJIError djiError) {
+                if (djiError == null) {
+                    showToast("Virtual sticks enabled!");
+                    cont.allowControl();
+                } else showToast("" + djiError);
+            }
+        });
+
+
+        try {
+            if (id == R.id.land_btn) {
+                FlightControll_v2.flag = true;
 //                            float descentRate = Float.parseFloat(textT.getText().toString());
 //                            if (descentRate > 0) {
 //                                descentRate = descentRate * -1;
 //                            }
 
 //                            cont.setDescentRate(descentRate);
-                    } else {
-                        cont.setDescentRate(0);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            } else {
+                cont.setDescentRate(0);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-                autonomous_mode_txt.setText("autonomous");
-                autonomous_mode_txt.setTextColor(Color.rgb(0, 255, 0));
+        autonomous_mode_txt.setText("autonomous");
+        autonomous_mode_txt.setTextColor(Color.rgb(0, 255, 0));
+    }
+
+    public void stopBtnFunc() {
+        setFlightControlSetup();
+        if (flightController == null) {
+            return;
+        }
+        ;
+        flightController.getFlightAssistant().setLandingProtectionEnabled(true, new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onResult(DJIError djiError) {
+                if (djiError != null) showToast("" + djiError);
+                else showToast("Landing protection DISABLED!");
+            }
+        });
+        disable(flightController);
+
+        textP.setEnabled(true);
+        textI.setEnabled(true);
+        textD.setEnabled(true);
+        textT.setEnabled(true);
+        FlightControll_v2.flag = false;
+
+    }
+
+    public void setFlightControlSetup() {
+        if (flightController == null) {
+            flightController = ModuleVerificationUtil.getFlightController();
+            if (flightController == null) {
+                return;
+            }
+        }
+
+        flightController.setYawControlMode(YawControlMode.ANGLE);
+        flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+        flightController.setYawControlMode(YawControlMode.ANGLE);
+        flightController.setVerticalControlMode(VerticalControlMode.VELOCITY);
+        flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
+    }
+
+    @SuppressLint({"NonConstantResourceId", "SetTextI18n"})
+    public void onClick(View v) {
+        setFlightControlSetup();
+        switch (v.getId()) {
+            case R.id.stop_btn:
+                stopBtnFunc();
+                break;
+            case R.id.hover_btn:
+            case R.id.land_btn:
+                hoverLandBtnFunc(v.getId());
                 break;
 
             case R.id.pause_btn:
-                try {
-                    if (!tracker.isPaused()) {
-                        // Pause tracking and store the current location
-                        flightController.setStateCallback(new FlightControllerState.Callback() {
-                            @Override
-                            public void onUpdate(@NonNull FlightControllerState flightControllerState) {
-                                latitude = flightControllerState.getAircraftLocation().getLatitude();
-                                longitude = flightControllerState.getAircraftLocation().getLongitude();
-                            }
-                        });
+                pauseBtnFunc();
+                break;
 
-                        tracker.pause();
-                        tracker.setFlightController(flightController);
-                        tracker.setInitialLocation(latitude, longitude);
-
-                    } else {
-                        // Resume tracking
-                        tracker.resume();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            case R.id.follow_me:
+                followMeMissionFunc();
                 break;
 
             case R.id.t_minus_btn:

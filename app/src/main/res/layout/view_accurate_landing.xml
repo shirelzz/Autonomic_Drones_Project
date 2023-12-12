@@ -1,0 +1,107 @@
+
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true">
+
+        <TextureView
+            android:id="@+id/video_previewer_surface"
+            android:layout_width="640px"
+            android:layout_height="480px"
+            android:layout_marginStart="460dp"
+            android:layout_marginEnd="0dp"
+            android:layout_marginBottom="0dp"
+            android:alpha="0.25"
+            android:text=""
+            android:textSize="18sp" />
+
+        <ImageView
+            android:id="@+id/imgView"
+            android:layout_width="391dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="right"
+            android:layout_marginTop="0dp"
+            android:layout_marginEnd="0dp"
+            tools:ignore="RtlHardcoded" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/autonomous"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="0dp"
+        android:text="not autonomous"
+        android:textSize="18dp" />
+
+    <TextView
+        android:id="@+id/dataTv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/autonomous"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:text="1234556678"
+        android:textSize="18sp" />
+
+    <TextView
+
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="1234"
+        android:textSize="18sp"
+        android:visibility="gone"
+        />
+
+    <ImageView
+        android:id="@+id/recIcon"
+        android:src="@drawable/rec"
+        android:visibility="invisible"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/video_previewer_surface"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_gravity="top"
+        android:layout_marginBottom="-2dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginTop="0dp"
+        tools:ignore="NotSibling" />
+    <ImageView
+        android:id="@+id/audioIcon"
+        android:src="@drawable/mic_24"
+        android:visibility="invisible"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/video_previewer_surface"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@id/recIcon"
+        android:layout_gravity="top"
+        android:layout_marginBottom="-2dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginTop="0dp"
+        tools:ignore="NotSibling" />
+
+    <Button
+        android:id="@+id/stop_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="Go To" />
+
+</RelativeLayout>
