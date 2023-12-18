@@ -2,55 +2,16 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.setResultToToast;
 
-import com.dji.sdk.sample.demo.flightcontroller.VirtualStickView;
-import com.dji.sdk.sample.demo.kcgremotecontroller.gimbelListener;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
-import com.dji.sdk.sample.internal.utils.CallbackHandlers;
-import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
-import com.dji.sdk.sample.internal.utils.ToastUtils;
-
-import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import dji.common.error.DJIError;
-import dji.common.flightcontroller.flightassistant.FillLightMode;
 import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 import dji.common.flightcontroller.virtualstick.YawControlMode;
-import dji.common.gimbal.CapabilityKey;
-import dji.common.gimbal.Rotation;
-import dji.common.gimbal.RotationMode;
 import dji.common.util.CommonCallbacks;
-import dji.common.util.DJIParamCapability;
-import dji.sdk.base.BaseProduct;
 import dji.sdk.flightcontroller.FlightController;
-import dji.sdk.gimbal.Gimbal;
-import dji.sdk.products.Aircraft;
-import dji.sdk.sdkmanager.DJISDKManager;
-
-import dji.common.flightcontroller.virtualstick.VerticalControlMode;
-import dji.common.flightcontroller.FlightControllerState;
-import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
-import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
-import dji.common.flightcontroller.virtualstick.VerticalControlMode;
-import dji.common.flightcontroller.virtualstick.YawControlMode;
-import dji.common.mission.followme.FollowMeHeading;
-import dji.common.mission.followme.FollowMeMission;
-import dji.common.model.LocationCoordinate2D;
-import dji.common.error.DJIError;
-import dji.common.flightcontroller.simulator.InitializationData;
-import dji.common.flightcontroller.simulator.SimulatorState;
-import dji.common.flightcontroller.virtualstick.FlightControlData;
-
-
-import dji.common.error.DJIFlightControllerError;
-import dji.common.util.CommonCallbacks;
-
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * FlightControlMethods class provides methods to control the drone's movement using virtual sticks.
@@ -63,7 +24,7 @@ public class FlightControlMethods {
     private float yaw;
     private float throttle;
     private FlightController flightController;
-    private boolean virtualSticksEnabled;
+    private boolean virtualStickEnabled;
 
     /**
      * Default constructor initializes the FlightControlMethods class
@@ -79,6 +40,11 @@ public class FlightControlMethods {
      * <a href="https://developer.dji.com/mobile-sdk/documentation/introduction/component-guide-flightController.html#virtual-sticks">...</a>
      */
     private void configureFlightController(){
+
+        if (flightController == null){
+            System.out.println("flightController is null");
+            return;
+        }
 
         /*
         Coordinate System:
@@ -103,13 +69,14 @@ public class FlightControlMethods {
         /*
         Yaw Control Mode:
         Can be set to Angular Velocity Mode or Angle Mode.
-        In Angular Velocity mode the yaw argument specifies the speed of rotation,
+        In Angular Velocity modethe yaw argument specifies the speed of rotation,
         in degrees/second, and yaw is affected by the coordinate system being used.
         When Yaw Control Mode is set to Angle Mode,
         value will be interpreted as an angle in the Ground Coordinate System.
         Please make sure that you select the right coordinate system.
          */
         flightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+//        flightController.setYawControlMode(YawControlMode.ANGLE); // Asaf
 
 
         /*
@@ -121,6 +88,7 @@ public class FlightControlMethods {
         (positive vertical velocity results in the aircraft ascending).
          */
         flightController.setVerticalControlMode(VerticalControlMode.POSITION);
+//        flightController.setVerticalControlMode(VerticalControlMode.VELOCITY); // Asaf
 
     }
 
@@ -190,12 +158,16 @@ public class FlightControlMethods {
         if (flightController != null) {
 
             // If virtual stick is enabled, send the command, otherwise turn it on
-            if (virtualSticksEnabled){
+            if (virtualStickEnabled){
 
                 FlightControlData flightControlData = new FlightControlData(0,0,0,0);
+                // Sets the aircraft's velocity (m/s) along the y-axis or angle value (in degrees) for pitch
                 flightControlData.setPitch(mPitch);
+                // Sets the aircraft's velocity (m/s) along the x-axis or angle value (in degrees) for roll
                 flightControlData.setRoll(mRoll);
+                // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
                 flightControlData.setYaw(mYaw);
+                // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
                 flightControlData.setVerticalThrottle(mThrottle);
                 flightController.sendVirtualStickFlightControlData(flightControlData, new CommonCallbacks.CompletionCallback() {
                             @Override
@@ -219,7 +191,7 @@ public class FlightControlMethods {
                         }else
                         {
                             setResultToToast("Enable Virtual Stick Success");
-                            virtualSticksEnabled = true;
+                            virtualStickEnabled = true;
                             sendVirtualStickCommands(pX, pY, pZ, pThrottle);
 
                         }
