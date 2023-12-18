@@ -14,6 +14,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Handles logging telemetry data and updating information on the screen.
+ * Writes telemetry data to a CSV log file and displays relevant information on the provided TextView.
+ */
 public class AccuracyLog {
 
     private DateFormat df = new SimpleDateFormat("dd/MM/yyyy , HH:mm:ss");
@@ -28,11 +32,19 @@ public class AccuracyLog {
 
     TextView textViewLog;
 
+    /**
+     * Constructor initializing the log file and setting up the TextView for displaying information.
+     *
+     * @param textViewLog TextView to display telemetry information.
+     */
     public AccuracyLog(TextView textViewLog) {
         this.textViewLog = textViewLog;
         initLogFile();
     }
 
+    /**
+     * Initializes the log file by creating a new CSV file for logging telemetry data.
+     */
     private void initLogFile() {
         File log = new File("sdcard/droneLog" + System.currentTimeMillis() + ".csv");
 
@@ -44,6 +56,11 @@ public class AccuracyLog {
         }
     }
 
+    /**
+     * Sets the operating mode for logging.
+     *
+     * @param new_mode Mode to be set for logging.
+     */
     public void setMode(String new_mode) {
         try {
             mode = new_mode;
@@ -127,7 +144,7 @@ public class AccuracyLog {
     }
 
     @SuppressLint("DefaultLocale")
-    private void dataOnScreen(HashMap<String, Double> droneTelemetry) {
+    private void dataOnScreen(Map<String, Double> droneTelemetry) {
         StringBuilder debug = new StringBuilder();
         for (String key : droneTelemetry.keySet()) {
             debug.append(key).append(": ").append(String.format("%.01f", droneTelemetry.get(key)));
@@ -136,7 +153,7 @@ public class AccuracyLog {
         textViewLog.setText(debug.toString());
     }
 
-    private void updateData(HashMap<String, Double> droneTelemetry) {
+    public void updateData(Map<String, Double> droneTelemetry) {
         dataOnScreen(droneTelemetry);
         appendLog(droneTelemetry);
     }

@@ -52,7 +52,7 @@
         android:layout_below="@+id/autonomous"
         android:layout_marginStart="0dp"
         android:layout_marginTop="0dp"
-        android:text="1234556678"
+        android:text="text to display"
         android:textSize="18sp" />
 
     <TextView

@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
@@ -34,13 +35,15 @@ public class ALRemoteControllerView extends RelativeLayout
     private Bitmap droneIMG;
     protected ImageView imgView;
     protected TextureView mVideoSurface = null;
-    protected DJICodecManager mCodecManager = null;
-
-
+    protected TextView dataTv;
+    private ReceivedVideo receivedVideo;
+    private AccuracyLog accuracyLog;
+    private DataFromDrone dataFromDrone;
 
     public ALRemoteControllerView(Context context) {
         super(context);
         ctx = context;
+        this.receivedVideo = new ReceivedVideo();
         init(context);
     }
 
@@ -49,11 +52,14 @@ public class ALRemoteControllerView extends RelativeLayout
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
         initUI();
+        accuracyLog = new AccuracyLog(dataTv);
+        dataFromDrone = new DataFromDrone();
     }
 
     private void initUI() {
         mVideoSurface = findViewById(R.id.video_previewer_surface);
         imgView = findViewById(R.id.imgView);
+        dataTv = findViewById(R.id.dataTv);
 
         if (mVideoSurface != null) {
             mVideoSurface.setSurfaceTextureListener(this);
@@ -63,9 +69,9 @@ public class ALRemoteControllerView extends RelativeLayout
     @Override
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
         Log.e(TAG, "onSurfaceTextureAvailable");
-        if (mCodecManager == null) {
+        if (receivedVideo.getMCodecManager() == null) {
             showToast("" + width + "," + height);
-            mCodecManager = new DJICodecManager(ctx, surfaceTexture, width, height);
+            receivedVideo.setMCodecManager(new DJICodecManager(ctx, surfaceTexture, width, height));
 
         }
     }
@@ -78,9 +84,9 @@ public class ALRemoteControllerView extends RelativeLayout
     @Override
     public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surfaceTexture) {
         Log.e(TAG, "onSurfaceTextureDestroyed");
-        if (mCodecManager != null) {
-            mCodecManager.cleanSurface();
-            mCodecManager = null;
+        if (receivedVideo.getMCodecManager() != null) {
+            receivedVideo.getMCodecManager().cleanSurface();
+            receivedVideo.setMCodecManager(null);
         }
         return false;
     }
@@ -89,12 +95,7 @@ public class ALRemoteControllerView extends RelativeLayout
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
         droneIMG = mVideoSurface.getBitmap();
         imgView.setImageBitmap(droneIMG);
-    }
-
-    public void setVideoData(byte[] videoBuffer, int size) {
-        if (mCodecManager != null) {
-            mCodecManager.sendDataToDecoder(videoBuffer, size);
-        }
+        accuracyLog.updateData(dataFromDrone.getAll());
     }
 
     @Override

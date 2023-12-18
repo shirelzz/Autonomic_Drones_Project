@@ -27,9 +27,8 @@ public class DataFromDrone {
     private double gimbalPitch = 0.0;
     private double batRemainingTime = 0.0;
     private double batCharge = 0.0;
-    private final FlightController flightController = Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController();
 
-    public DataFromDrone(AccuracyLog accuracyLog) {
+    public DataFromDrone() {
         initStateListeners();
     }
 
@@ -37,77 +36,35 @@ public class DataFromDrone {
         return GPS;
     }
 
-    public void updateGPS() {
-        LocationCoordinate3D locationCoordinate3D = flightController.getState().getAircraftLocation();
-        this.GPS[0] = locationCoordinate3D.getLatitude();
-        this.GPS[1] = locationCoordinate3D.getLongitude();
-        this.GPS[2] = locationCoordinate3D.getAltitude();
-    }
-
     public double[] getVelocity() {
         return velocity;
     }
-
-    public void updateVelocity() {
-        this.GPS[0] = flightController.getState().getVelocityX();
-        this.GPS[1] = flightController.getState().getVelocityY();
-        this.GPS[2] = flightController.getState().getVelocityZ();
-    }
-
     public double getHeadDirection() {
         return headDirection;
-    }
-
-    public void setHeadDirection() {
-        this.headDirection = flightController.getState().getAircraftHeadDirection();
     }
 
     public double getYaw() {
         return yaw;
     }
 
-    public void setYaw(double yaw) {
-        this.yaw = flightController.getState().getAttitude().yaw;
-    }
-
     public double getPitch() {
         return pitch;
-    }
-
-    public void setPitch() {
-        this.pitch = flightController.getState().getAttitude().pitch;
     }
 
     public double getRoll() {
         return roll;
     }
 
-    public void setRoll() {
-        this.roll = flightController.getState().getAttitude().roll;
-    }
-
     public double getGimbalPitch() {
         return gimbalPitch;
-    }
-
-    public void setGimbalPitch(double gimbalPitch) {
-        this.gimbalPitch = gimbalPitch;
     }
 
     public double getBatRemainingTime() {
         return batRemainingTime;
     }
 
-    public void setBatRemainingTime(double batRemainingTime) {
-        this.batRemainingTime = batRemainingTime;
-    }
-
     public double getBatCharge() {
         return batCharge;
-    }
-
-    public void setBatCharge(double batCharge) {
-        this.batCharge = batCharge;
     }
 
     private void initStateListeners() {
@@ -166,11 +123,9 @@ public class DataFromDrone {
 
             }
         });
-
-
     }
 
-    private Map<String, Double> getAll() {
+    public Map<String, Double> getAll() {
         Map<String, Double> droneTelemetry = new HashMap<>();
         droneTelemetry.put("lat", GPS[0]);
         droneTelemetry.put("lon", GPS[1]);
