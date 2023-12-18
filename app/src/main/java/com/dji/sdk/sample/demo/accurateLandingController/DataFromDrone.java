@@ -1,6 +1,7 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.controller.DJISampleApplication.getProductInstance;
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 import com.dji.sdk.sample.demo.kcgremotecontroller.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
@@ -39,6 +40,7 @@ public class DataFromDrone {
     public double[] getVelocity() {
         return velocity;
     }
+
     public double getHeadDirection() {
         return headDirection;
     }
@@ -75,9 +77,10 @@ public class DataFromDrone {
                 public void onUpdate(FlightControllerState flightControllerState) {
 
                     //get drone location
-                    GPS[0] = flightControllerState.getAircraftLocation().getLatitude();
-                    GPS[1] = flightControllerState.getAircraftLocation().getLongitude();
-                    GPS[2] = flightControllerState.getAircraftLocation().getAltitude();
+                    GPS[0] = (double) flightControllerState.getAircraftLocation().getLatitude();
+                    GPS[1] = (double) flightControllerState.getAircraftLocation().getLongitude();
+                    GPS[2] = (double) flightControllerState.getAircraftLocation().getAltitude();
+//                    showToast(flightControllerState.getAircraftLocation());
                     headDirection = flightControllerState.getAircraftHeadDirection();
 
                     //get drone velocity

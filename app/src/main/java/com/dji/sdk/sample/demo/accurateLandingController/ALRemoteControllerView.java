@@ -2,9 +2,11 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,8 +24,12 @@ import com.dji.sdk.sample.internal.view.PresentableView;
 
 import java.util.Arrays;
 
+import dji.common.flightcontroller.flightassistant.FillLightMode;
+import dji.midware.data.model.P3.Ha;
 import dji.sdk.codec.DJICodecManager;
 import dji.sdk.flightcontroller.FlightController;
+
+import android.widget.Button;
 
 
 /**
@@ -34,7 +40,9 @@ public class ALRemoteControllerView extends RelativeLayout
         PresentableView, TextureView.SurfaceTextureListener {
 
     static String TAG = "Accurate landing";
+    protected ImageView audioIcon;
     private Context ctx;
+    private Button button1, button2, button3;
     private Bitmap droneIMG;
     protected ImageView imgView;
     protected TextureView mVideoSurface = null;
@@ -47,6 +55,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private FlightCommands flightCommands;
     private FlightController flightController;
+    private GimbalController gimbalController;
 
 
     public ALRemoteControllerView(Context context) {
@@ -64,17 +73,27 @@ public class ALRemoteControllerView extends RelativeLayout
         accuracyLog = new AccuracyLog(dataLog);
         dataFromDrone = new DataFromDrone();
         flightCommands = new FlightCommands();
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, button1, button2, button3);
+        gimbalController = new GimbalController();
+        gimbalController.setDownwardLight(FillLightMode.ON);
     }
 
     private void initUI() {
         mVideoSurface = findViewById(R.id.video_previewer_surface);
         imgView = findViewById(R.id.imgView);
-        dataLog = findViewById(R.id.dataTv);
+        button1 = findViewById(R.id.btn1);
+        button2 = findViewById(R.id.btn2);
+        button3 = findViewById(R.id.btn3);
+        audioIcon = findViewById(R.id.audioIcon);
+        dataLog = findViewById(R.id.dataLog);
         dist = findViewById(R.id.dist);
 
         if (mVideoSurface != null) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
+        button1.setOnClickListener(this);
+        button2.setOnClickListener(this);
+        button3.setOnClickListener(this);
     }
 
     @Override
@@ -103,7 +122,7 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     @Override
-    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+    public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
         droneIMG = mVideoSurface.getBitmap();
         imgView.setImageBitmap(droneIMG);
         accuracyLog.updateData(dataFromDrone.getAll());
@@ -122,8 +141,29 @@ public class ALRemoteControllerView extends RelativeLayout
         dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)));
     }
 
+    @SuppressLint("NonConstantResourceId")
     @Override
     public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.btn1:
+                button1.setBackgroundColor(Color.GREEN);
+                button2.setBackgroundColor(Color.WHITE);
+                button3.setBackgroundColor(Color.WHITE);
+                break;
+            case R.id.btn2:
+                button2.setBackgroundColor(Color.GREEN);
+                button1.setBackgroundColor(Color.WHITE);
+                button3.setBackgroundColor(Color.WHITE);
+                break;
+            case R.id.btn3:
+                button3.setBackgroundColor(Color.GREEN);
+                button1.setBackgroundColor(Color.WHITE);
+                button2.setBackgroundColor(Color.WHITE);
+                break;
+            default:
+                break;
+        }
+
 
     }
 

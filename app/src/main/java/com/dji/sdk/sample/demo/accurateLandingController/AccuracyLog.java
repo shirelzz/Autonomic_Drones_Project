@@ -147,7 +147,8 @@ public class AccuracyLog {
     private void dataOnScreen(Map<String, Double> droneTelemetry) {
         StringBuilder debug = new StringBuilder();
         for (String key : droneTelemetry.keySet()) {
-            debug.append(key).append(": ").append(String.format("%.01f", droneTelemetry.get(key)));
+            debug.append(key).append(": ").append(String.format("%.01f", droneTelemetry.get(key)))
+                    .append("  ,  ");
         }
 
         textViewLog.setText(debug.toString());

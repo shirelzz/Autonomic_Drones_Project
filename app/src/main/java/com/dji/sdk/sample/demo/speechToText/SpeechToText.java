@@ -8,6 +8,7 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
 
 import java.util.ArrayList;
@@ -26,8 +27,8 @@ public class SpeechToText implements RecognitionListener {
     Runnable updateStartListening;
 
 
-    public SpeechToText(Context context, Consumer<String> onResultsCallback, Consumer<String> writeOnScreenCallback
-    ,Runnable updateStartListening) {
+    public SpeechToText(Context context, Consumer<String> onResultsCallback, @Nullable Consumer<String> writeOnScreenCallback
+            , Runnable updateStartListening) {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context);
         this.context = context;
         speechRecognizer.setRecognitionListener(this);
@@ -110,8 +111,11 @@ public class SpeechToText implements RecognitionListener {
         assert matches != null;
         for (String result : matches)
             text.append(result).append("\n");
-        writeOnScreenCallback.accept(text.toString());
+        if (writeOnScreenCallback != null) {
+
+            writeOnScreenCallback.accept(text.toString());
 //        returnedText.setText(text.toString());
+        }
 
         if (!listeningForTrigger) {
             boolean containsKeyword = false;
@@ -146,7 +150,9 @@ public class SpeechToText implements RecognitionListener {
         String errorMessage = getErrorText(errorCode);
         Log.i(LOG_TAG, "FAILED " + errorMessage);
 //        returnedError.setText(errorMessage);
-        writeOnScreenCallback.accept("Error:"+errorMessage);
+        if (writeOnScreenCallback != null) {
+            writeOnScreenCallback.accept("Error:" + errorMessage);
+        }
         // rest voice recogniser
         resetSpeechRecognizer();
         startListening();

@@ -1,5 +1,3 @@
-
-
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -45,11 +43,11 @@
         android:textSize="18dp" />
 
     <TextView
-        android:id="@+id/dist"
-        android:layout_width="wrap_content"
+        android:id="@+id/dataLog"
+        android:layout_width="460dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
         android:layout_below="@+id/autonomous"
+        android:layout_alignParentStart="true"
         android:layout_marginStart="0dp"
         android:layout_marginTop="0dp"
         android:text="text to display"
@@ -57,52 +55,85 @@
 
     <TextView
 
-        android:id="@+id/dataTv"
+        android:id="@+id/dist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/autonomous"
+        android:layout_below="@+id/dataLog"
         android:text="1234"
         android:textSize="18sp"
-        android:visibility="gone"
-        />
+         />
 
     <ImageView
         android:id="@+id/recIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/video_previewer_surface"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_gravity="top"
+        android:layout_marginTop="0dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="-2dp"
         android:src="@drawable/rec"
         android:visibility="invisible"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/video_previewer_surface"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentTop="true"
-        android:layout_gravity="top"
-        android:layout_marginBottom="-2dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginTop="0dp"
         tools:ignore="NotSibling" />
+
     <ImageView
         android:id="@+id/audioIcon"
-        android:src="@drawable/mic_24"
-        android:visibility="invisible"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_above="@+id/video_previewer_surface"
         android:layout_alignParentTop="true"
-        android:layout_toStartOf="@id/recIcon"
         android:layout_gravity="top"
-        android:layout_marginBottom="-2dp"
-        android:layout_marginEnd="0dp"
         android:layout_marginTop="0dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="-2dp"
+        android:layout_toStartOf="@id/recIcon"
+        android:src="@drawable/mic_24"
+        android:visibility="invisible"
         tools:ignore="NotSibling" />
 
     <Button
-        android:id="@+id/stop_btn"
+        android:id="@+id/goTo_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginBottom="0dp"
+        android:text="Go To" />
+
+    <Button
+        android:id="@+id/btn1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginBottom="0dp"
+        android:layout_toEndOf="@+id/goTo_btn"
+        android:text="Button 1" />
+
+    <Button
+        android:id="@+id/btn2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/btn1"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
-        android:text="Go To" />
+        android:layout_alignParentBottom="true"
+
+        android:text="Button 2" />
+
+    <Button
+        android:id="@+id/btn3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/btn2"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:layout_alignParentBottom="true"
+
+        android:text="Button 3" />
 
 </RelativeLayout>

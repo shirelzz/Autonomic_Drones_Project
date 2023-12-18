@@ -55,7 +55,7 @@ public class GimbalController implements gimbelListener {
     /*
      * Sets the downward fill light mode. It is supported by Mavic 2 series and Matrice 300 RTK.
      */
-    private void setDownwardLight(FillLightMode data) {
+    public void setDownwardLight(FillLightMode data) {
         Objects.requireNonNull(flightController.getFlightAssistant()).setDownwardFillLightMode(data, null);
     }
 
