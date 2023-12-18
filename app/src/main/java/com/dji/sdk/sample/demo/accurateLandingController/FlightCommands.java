@@ -1,20 +1,39 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import android.util.Log;
+
 import dji.sdk.flightcontroller.FlightController;
 
 public class FlightCommands {
-    FlightController flightController;
+    private FlightControlMethods flightControlMethods;
+    private FlightController flightController;
 
 //    DataFromDrone dataFromDrone;
     private float[] target; // [lat, long, alt]
     private float[] velocity;
 
-    public FlightCommands() {}
-    private void setTarget(float[] target) {
+    public FlightCommands() {
+        flightControlMethods = new FlightControlMethods();
+        flightController = flightControlMethods.getFlightController();
+    }
+
+    public FlightController getFlightController() {
+        try {
+            if (flightController != null) {
+                return flightController;
+            }
+        } catch (Exception e) {
+            Log.d("Null", "FlightCommands: flightController is null");
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+    public void setTarget(float[] target) {
         this.target = target;
     }
 
-    private void setVelocity(float[] velocity) {
+    public void setVelocity(float[] velocity) {
         this.velocity = velocity;
     }
 
@@ -22,7 +41,7 @@ public class FlightCommands {
      * Sends commands to the virtual stick to get to a certain position
      * @param pos - GPS position [lat, long, alt]
      */
-    private void goTo(float[] pos) {
+    public void goTo(float[] pos) {
 
     }
 
@@ -32,7 +51,7 @@ public class FlightCommands {
      * @param dataFromDrone DataFromDrone instance to receive the GPS data of tge drone
      * @return distance
      */
-    private double[] calcDistFrom(double[] pos, DataFromDrone dataFromDrone) {
+    public double[] calcDistFrom(double[] pos, DataFromDrone dataFromDrone) {
         double[] myPos = dataFromDrone.getGPS();
         return Cords.flatWorldDist(myPos, pos);
     }
@@ -44,7 +63,7 @@ public class FlightCommands {
      * @param dataFromDrone DataFromDrone instance to receive the GPS data of tge drone
      * @return [azm, dist, dz]
      */
-    private double[] calcAzmDistFrom(double[] pos, DataFromDrone dataFromDrone) {
+    public double[] calcAzmDistFrom(double[] pos, DataFromDrone dataFromDrone) {
         double[] myPos = dataFromDrone.getGPS();
         return Cords.azmDist(myPos, pos);
     }

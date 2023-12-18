@@ -20,7 +20,10 @@ import androidx.annotation.NonNull;
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
+import java.util.Arrays;
+
 import dji.sdk.codec.DJICodecManager;
+import dji.sdk.flightcontroller.FlightController;
 
 
 /**
@@ -35,10 +38,16 @@ public class ALRemoteControllerView extends RelativeLayout
     private Bitmap droneIMG;
     protected ImageView imgView;
     protected TextureView mVideoSurface = null;
-    protected TextView dataTv;
+    protected TextView dataLog;
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
     private DataFromDrone dataFromDrone;
+
+    protected TextView dist;
+
+    private FlightCommands flightCommands;
+    private FlightController flightController;
+
 
     public ALRemoteControllerView(Context context) {
         super(context);
@@ -52,14 +61,16 @@ public class ALRemoteControllerView extends RelativeLayout
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
         initUI();
-        accuracyLog = new AccuracyLog(dataTv);
+        accuracyLog = new AccuracyLog(dataLog);
         dataFromDrone = new DataFromDrone();
+        flightCommands = new FlightCommands();
     }
 
     private void initUI() {
         mVideoSurface = findViewById(R.id.video_previewer_surface);
         imgView = findViewById(R.id.imgView);
-        dataTv = findViewById(R.id.dataTv);
+        dataLog = findViewById(R.id.dataTv);
+        dist = findViewById(R.id.dist);
 
         if (mVideoSurface != null) {
             mVideoSurface.setSurfaceTextureListener(this);
@@ -96,6 +107,19 @@ public class ALRemoteControllerView extends RelativeLayout
         droneIMG = mVideoSurface.getBitmap();
         imgView.setImageBitmap(droneIMG);
         accuracyLog.updateData(dataFromDrone.getAll());
+
+        // need to provide relevant values
+        double lat = 32;
+        double lon = 35;
+        double alt = 0.1;
+
+        double[] closePos = dataFromDrone.getGPS();
+        lat = closePos[0] + 2;
+        lon = closePos[1] + 2;
+        alt = closePos[2] + 0.1;
+        double[] pos = {lat, lon, alt};
+
+        dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)));
     }
 
     @Override

@@ -2,6 +2,8 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.setResultToToast;
 
+import android.util.Log;
+
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 
 import dji.common.error.DJIError;
@@ -31,7 +33,7 @@ public class FlightControlMethods {
      * and sets up the FlightController.
      */
     public FlightControlMethods() {
-        flightController = getFlightController();
+        flightController = getFlightControllerFromAircraft();
         configureFlightController();
     }
 
@@ -96,8 +98,20 @@ public class FlightControlMethods {
      * Gets the FlightController instance from the DJI SDK.
      * @return FlightController instance
      */
-    private FlightController getFlightController() {
+    private FlightController getFlightControllerFromAircraft() {
         return DJISampleApplication.getAircraftInstance().getFlightController();
+    }
+
+    public FlightController getFlightController() {
+        try {
+            if (flightController != null) {
+                return flightController;
+            }
+        } catch (Exception e) {
+            Log.d("Null", "FlightControlMethods: flightController is null");
+            throw new RuntimeException(e);
+        }
+        return null;
     }
 
     /**
