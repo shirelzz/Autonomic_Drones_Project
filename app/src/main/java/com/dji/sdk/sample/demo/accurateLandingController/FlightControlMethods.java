@@ -1,14 +1,21 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.internal.utils.ToastUtils.setResultToToast;
+
+import com.dji.sdk.sample.demo.flightcontroller.VirtualStickView;
 import com.dji.sdk.sample.demo.kcgremotecontroller.gimbelListener;
+import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 import com.dji.sdk.sample.internal.utils.CallbackHandlers;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import dji.common.error.DJIError;
 import dji.common.flightcontroller.flightassistant.FillLightMode;
+import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
@@ -24,117 +31,204 @@ import dji.sdk.gimbal.Gimbal;
 import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKManager;
 
-public class FlightControlMethods implements gimbelListener {
-    FlightController flightController;
-    private float gimbalValue = 0;
-    private Gimbal gimbal;
-    private float prevDegree = -1000;
-    private final int maxGimbalDegree = 1000;
-    private final int minGimbalDegree = -1000;
+import dji.common.flightcontroller.virtualstick.VerticalControlMode;
+import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
+import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
+import dji.common.flightcontroller.virtualstick.VerticalControlMode;
+import dji.common.flightcontroller.virtualstick.YawControlMode;
+import dji.common.mission.followme.FollowMeHeading;
+import dji.common.mission.followme.FollowMeMission;
+import dji.common.model.LocationCoordinate2D;
+import dji.common.error.DJIError;
+import dji.common.flightcontroller.simulator.InitializationData;
+import dji.common.flightcontroller.simulator.SimulatorState;
+import dji.common.flightcontroller.virtualstick.FlightControlData;
 
-    private float target;
-    private float velocity;
-    private int currentGimbalId = 0;
 
+import dji.common.error.DJIFlightControllerError;
+import dji.common.util.CommonCallbacks;
 
-    public FlightControlMethods() {
-        if (flightController == null) {
-            flightController = ModuleVerificationUtil.getFlightController();
-            if (flightController == null) {
-                return;
-            }
-        }
+import java.util.Timer;
+import java.util.TimerTask;
 
-        flightController.setYawControlMode(YawControlMode.ANGLE);
-        flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
-        flightController.setYawControlMode(YawControlMode.ANGLE);
-        flightController.setVerticalControlMode(VerticalControlMode.VELOCITY);
-        flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
-    }
+/**
+ * FlightControlMethods class provides methods to control the drone's movement using virtual sticks.
+ * It interfaces with the DJI SDK's FlightController to send virtual stick commands.
+ */
+public class FlightControlMethods {
 
-    /*
-     * Sets the downward fill light mode. It is supported by Mavic 2 series and Matrice 300 RTK.
+    private float pitch;
+    private float roll;
+    private float yaw;
+    private float throttle;
+    private FlightController flightController;
+    private boolean virtualSticksEnabled;
+
+    /**
+     * Default constructor initializes the FlightControlMethods class
+     * and sets up the FlightController.
      */
-    private void setDownwardLight(FillLightMode data) {
-        Objects.requireNonNull(flightController.getFlightAssistant()).setDownwardFillLightMode(data, null);
+    public FlightControlMethods() {
+        flightController = getFlightController();
+        configureFlightController();
     }
 
-    private void setTarget(float target) {
-        this.target = target;
-    }//Change to GPS
+    /**
+     * Documentation (including tables) of parameters here:
+     * <a href="https://developer.dji.com/mobile-sdk/documentation/introduction/component-guide-flightController.html#virtual-sticks">...</a>
+     */
+    private void configureFlightController(){
 
-    private void setVelocity(float velocity) {
-        this.velocity = velocity;
+        /*
+        Coordinate System:
+        Either Ground or Body coordinate system can be chosen.
+        All horizontal movement commands (X, Y, pitch, roll) will be relative to the coordinate system.
+         */
+        flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
+
+        /*
+        Roll Pitch Control Mode:
+        Virtual stick commands to move the aircraft horizontally can either be set with X/Y velocities,
+        or roll/pitch angles.
+        Larger roll and pitch angles result in larger Y and X velocities respectively.
+        Roll and pitch angles are always relative to the horizontal.
+        Roll and pitch directions are dependent on the coordinate system, and can be confusing.
+        For convenience a table detailing how the aircraft moves depending on coordinate system
+        and roll pitch control mode is given below.
+        These can all be calculated using the definition of the coordinate systems.
+         */
+        flightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+
+        /*
+        Yaw Control Mode:
+        Can be set to Angular Velocity Mode or Angle Mode.
+        In Angular Velocity mode the yaw argument specifies the speed of rotation,
+        in degrees/second, and yaw is affected by the coordinate system being used.
+        When Yaw Control Mode is set to Angle Mode,
+        value will be interpreted as an angle in the Ground Coordinate System.
+        Please make sure that you select the right coordinate system.
+         */
+        flightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+
+
+        /*
+        Vertical Throttle Control Mode:
+        Vertical movement can be achieved either using velocity or position.
+        Position is an altitude relative to the take-off location.
+        Velocity is always relative to the aircraft,
+        and does not follow typical coordinate system convention
+        (positive vertical velocity results in the aircraft ascending).
+         */
+        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
+
     }
 
-    private Gimbal getGimbalInstance() {
-        if (gimbal == null) {
-            initGimbal();
-        }
-        return gimbal;
+    /**
+     * Gets the FlightController instance from the DJI SDK.
+     * @return FlightController instance
+     */
+    private FlightController getFlightController() {
+        return DJISampleApplication.getAircraftInstance().getFlightController();
     }
 
-    private void initGimbal() {
-        if (DJISDKManager.getInstance() != null) {
-            BaseProduct product = DJISDKManager.getInstance().getProduct();
-            if (product != null) {
-                if (product instanceof Aircraft) {
-                    gimbal = ((Aircraft) product).getGimbals().get(currentGimbalId);
-                } else {
-                    gimbal = product.getGimbal();
-                }
+    /**
+     * Commands the drone to pitch (tilt forward or backward).
+     * @param pitch value
+     */
+    public void goPitch(float pitch) {
+        sendVirtualStickCommands(pitch, 0, 0, 0);
+    }
 
-                if (isFeatureSupported(CapabilityKey.PITCH_RANGE_EXTENSION)) {
-                    gimbal.setPitchRangeExtensionEnabled(true, new CallbackHandlers.CallbackToastHandler());
-                }
+    /**
+     * Commands the drone to roll (tilt left or right).
+     * @param roll value
+     */
+    public void goRoll(float roll) {
+        sendVirtualStickCommands(0, roll, 0, 0);
+    }
+
+
+    /**
+     * Commands the drone to yaw (rotate left or right).
+     * @param yaw value
+     */
+    public void goYaw(float yaw) {
+        sendVirtualStickCommands(0, 0, yaw, 0);
+    }
+
+    /**
+     * Commands the drone to change throttle (altitude control).
+     * @param throttle value
+     */
+    public void goThrottle(float throttle) {
+        sendVirtualStickCommands(0, 0, 0, throttle);
+    }
+
+    /**
+     * Sends virtual stick commands to the FlightController to control the drone's movement.
+     *
+     * @param pX Pitch control value
+     * @param pY Roll control value
+     * @param pZ Yaw control value
+     * @param pThrottle Throttle control value
+     */
+    private void sendVirtualStickCommands(final float pX, final float pY, final float pZ, final float pThrottle){
+
+        // Maximum control speeds
+        float pitchJoyControlMaxSpeed = 10;
+        float rollJoyControlMaxSpeed = 10;
+        float yawJoyControlMaxSpeed = 30;
+        float verticalJoyControlMaxSpeed = 2;
+
+        // Set pitch, roll, yaw, throttle
+        float mPitch = (float)(pitchJoyControlMaxSpeed * pX);        // forward-backwards
+        float mRoll = (float)(rollJoyControlMaxSpeed * pY);          // left-right
+        float mYaw = (float)(yawJoyControlMaxSpeed * pZ);          // tilt right/left
+        float mThrottle = (float)(verticalJoyControlMaxSpeed * pThrottle);  // height
+
+        if (flightController != null) {
+
+            // If virtual stick is enabled, send the command, otherwise turn it on
+            if (virtualSticksEnabled){
+
+                FlightControlData flightControlData = new FlightControlData(0,0,0,0);
+                flightControlData.setPitch(mPitch);
+                flightControlData.setRoll(mRoll);
+                flightControlData.setYaw(mYaw);
+                flightControlData.setVerticalThrottle(mThrottle);
+                flightController.sendVirtualStickFlightControlData(flightControlData, new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onResult(DJIError djiError) {
+                                if (djiError!=null){
+                                    setResultToToast(djiError.getDescription());
+                                }
+                            }
+                        }
+                );
+            }
+            else {
+                setResultToToast("flight controller virtual mode off");
+
+                // If virtual stick is not enabled, enable
+                flightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        if (djiError != null){
+                            setResultToToast(djiError.getDescription());
+                        }else
+                        {
+                            setResultToToast("Enable Virtual Stick Success");
+                            virtualSticksEnabled = true;
+                            sendVirtualStickCommands(pX, pY, pZ, pThrottle);
+
+                        }
+                    }
+                });
             }
         }
-    }
-
-    private boolean isFeatureSupported(CapabilityKey key) {
-
-        Gimbal gimbal = getGimbalInstance();
-        if (gimbal == null) {
-            return false;
+        else{
+            setResultToToast("Flight Controller Null");
         }
-
-        DJIParamCapability capability = null;
-        if (gimbal.getCapabilities() != null) {
-            capability = gimbal.getCapabilities().get(key);
-        }
-
-        if (capability != null) {
-            return capability.isSupported();
-        }
-        return false;
     }
-
-
-    private void rotateGimbalToDegree(float degree) {
-
-        if (gimbal == null) { return;}
-        if (degree ==  prevDegree) {return;}
-
-        prevDegree = degree;
-
-        if (degree > maxGimbalDegree ){degree = maxGimbalDegree;}
-        if (degree < minGimbalDegree){degree = minGimbalDegree;}
-
-        Rotation.Builder builder = new Rotation.Builder().mode(RotationMode.ABSOLUTE_ANGLE).time(2);
-        builder.pitch(degree);
-
-        gimbal.rotate(builder.build(), new CommonCallbacks.CompletionCallback() {
-            @Override
-            public void onResult(DJIError djiError) {
-                if (djiError != null){
-                    ToastUtils.setResultToToast("Ark: Gimbal err: "+djiError.getDescription());
-                }
-            }
-        });
-    }
-
-    public void updateGimbel(float gimbalValue) {
-        this.gimbalValue = gimbalValue;
-    }
-
 }
