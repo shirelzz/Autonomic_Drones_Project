@@ -1,18 +1,25 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
+
 import android.app.Service;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.internal.view.PresentableView;
+
+import dji.sdk.codec.DJICodecManager;
 
 
 /**
@@ -22,7 +29,14 @@ public class ALRemoteControllerView extends RelativeLayout
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, View.OnFocusChangeListener,
         PresentableView, TextureView.SurfaceTextureListener {
 
+    static String TAG = "Accurate landing";
     private Context ctx;
+    private Bitmap droneIMG;
+    protected ImageView imgView;
+    protected TextureView mVideoSurface = null;
+    protected DJICodecManager mCodecManager = null;
+
+
 
     public ALRemoteControllerView(Context context) {
         super(context);
@@ -34,26 +48,53 @@ public class ALRemoteControllerView extends RelativeLayout
 
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
+        initUI();
+    }
+
+    private void initUI() {
+        mVideoSurface = findViewById(R.id.video_previewer_surface);
+        imgView = findViewById(R.id.imgView);
+
+        if (mVideoSurface != null) {
+            mVideoSurface.setSurfaceTextureListener(this);
+        }
     }
 
     @Override
-    public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int i, int i1) {
+    public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
+        Log.e(TAG, "onSurfaceTextureAvailable");
+        if (mCodecManager == null) {
+            showToast("" + width + "," + height);
+            mCodecManager = new DJICodecManager(ctx, surfaceTexture, width, height);
 
+        }
     }
 
     @Override
     public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surfaceTexture, int i, int i1) {
-
+        Log.e(TAG, "onSurfaceTextureSizeChanged");
     }
 
     @Override
     public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surfaceTexture) {
+        Log.e(TAG, "onSurfaceTextureDestroyed");
+        if (mCodecManager != null) {
+            mCodecManager.cleanSurface();
+            mCodecManager = null;
+        }
         return false;
     }
 
     @Override
-    public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surfaceTexture) {
+    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+        droneIMG = mVideoSurface.getBitmap();
+        imgView.setImageBitmap(droneIMG);
+    }
 
+    public void setVideoData(byte[] videoBuffer, int size) {
+        if (mCodecManager != null) {
+            mCodecManager.sendDataToDecoder(videoBuffer, size);
+        }
     }
 
     @Override
