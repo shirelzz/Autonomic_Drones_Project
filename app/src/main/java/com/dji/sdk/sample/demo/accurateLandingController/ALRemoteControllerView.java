@@ -132,10 +132,10 @@ public class ALRemoteControllerView extends RelativeLayout
         double lon = 35;
         double alt = 0.1;
 
-        double[] closePos = dataFromDrone.getGPS();
-        lat = closePos[0] + 2;
-        lon = closePos[1] + 2;
-        alt = closePos[2] + 0.1;
+//        double[] closePos = dataFromDrone.getGPS();
+        lat = dataFromDrone.getGPS().getLatitude() + 0.0001;
+        lon = dataFromDrone.getGPS().getLongitude() + 0.0001;
+        alt = dataFromDrone.getGPS().getAltitude() + 0.01;
         double[] pos = {lat, lon, alt};
 
         dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)));

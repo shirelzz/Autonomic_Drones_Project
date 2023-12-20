@@ -8,7 +8,7 @@ public class FlightCommands {
     private FlightControlMethods flightControlMethods;
     private FlightController flightController;
 
-//    DataFromDrone dataFromDrone;
+    //    DataFromDrone dataFromDrone;
     private float[] target; // [lat, long, alt]
     private float[] velocity;
 
@@ -39,6 +39,7 @@ public class FlightCommands {
 
     /**
      * Sends commands to the virtual stick to get to a certain position
+     *
      * @param pos - GPS position [lat, long, alt]
      */
     public void goTo(float[] pos) {
@@ -47,24 +48,26 @@ public class FlightCommands {
 
     /**
      * Calculates the distance between the drone and a certain position
-     * @param pos - GPS position [lat, long, alt]
+     *
+     * @param pos           - GPS position [lat, long, alt]
      * @param dataFromDrone DataFromDrone instance to receive the GPS data of tge drone
      * @return distance
      */
     public double[] calcDistFrom(double[] pos, DataFromDrone dataFromDrone) {
-        double[] myPos = dataFromDrone.getGPS();
+        double[] myPos = dataFromDrone.getGPS().getAll();
         return Cords.flatWorldDist(myPos, pos);
     }
 
     /**
      * Calculates the azimuth, distance and dz in degrees and meters
      * between the drone and a certain position
-     * @param pos - GPS position [lat, long, alt]
+     *
+     * @param pos           - GPS position [lat, long, alt]
      * @param dataFromDrone DataFromDrone instance to receive the GPS data of tge drone
      * @return [azm, dist, dz]
      */
     public double[] calcAzmDistFrom(double[] pos, DataFromDrone dataFromDrone) {
-        double[] myPos = dataFromDrone.getGPS();
+        double[] myPos = dataFromDrone.getGPS().getAll();
         return Cords.azmDist(myPos, pos);
     }
 

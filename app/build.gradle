@@ -113,4 +113,7 @@ dependencies {
     implementation 'com.quickbirdstudios:opencv-contrib:4.5.3.0'
     implementation group: 'org.boofcv', name: 'boofcv-core', version: '1.0.0'
 
+//    implementation 'com.google.maps.android:android-maps-utils:3.8.0'
+
+
 }

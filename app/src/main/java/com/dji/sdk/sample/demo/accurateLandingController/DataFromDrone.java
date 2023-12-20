@@ -3,6 +3,8 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 import static com.dji.sdk.sample.internal.controller.DJISampleApplication.getProductInstance;
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
+import androidx.annotation.NonNull;
+
 import com.dji.sdk.sample.demo.kcgremotecontroller.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 
@@ -12,6 +14,7 @@ import java.util.Objects;
 
 import dji.common.battery.BatteryState;
 import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.flightcontroller.LocationCoordinate3D;
 import dji.common.flightcontroller.adsb.AirSenseSystemInformation;
 import dji.common.gimbal.GimbalState;
@@ -19,7 +22,8 @@ import dji.sdk.flightcontroller.FlightController;
 
 public class DataFromDrone {
 
-    private final double[] GPS = new double[3]; //[latitude, longitude, altitude]
+//    private final double[] GPS = new double[3]; //[latitude, longitude, altitude]
+    private final GPSLocation GPS = new GPSLocation(); //[latitude, longitude, altitude]
     private final double[] velocity = new double[3];
     private double headDirection = 0.0;
     private double yaw = 0.0;
@@ -33,7 +37,7 @@ public class DataFromDrone {
         initStateListeners();
     }
 
-    public double[] getGPS() {
+    public GPSLocation getGPS() {
         return GPS;
     }
 
@@ -71,16 +75,34 @@ public class DataFromDrone {
 
     private void initStateListeners() {
         if (ModuleVerificationUtil.isFlightControllerAvailable()) {
-
             Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().setStateCallback(new FlightControllerState.Callback() {
                 @Override
                 public void onUpdate(FlightControllerState flightControllerState) {
 
+                    GPSSignalLevel gpsSignalLevel = flightControllerState.getGPSSignalLevel();
+
+                    if (gpsSignalLevel == GPSSignalLevel.LEVEL_4 || gpsSignalLevel == GPSSignalLevel.LEVEL_5) {
+                        showToast("good");
+                        // Drone has a good GPS signal
+                        // Proceed with operations requiring GPS signal
+                    } else {
+                        showToast(String.valueOf(gpsSignalLevel));
+                        // GPS signal might be weak or unavailable
+                        // Handle the situation accordingly
+                    }
+
+
+                    // Retrieve drone's GPS location
+                    LocationCoordinate3D aircraftLocation = flightControllerState.getAircraftLocation();
+
                     //get drone location
-                    GPS[0] = (double) flightControllerState.getAircraftLocation().getLatitude();
-                    GPS[1] = (double) flightControllerState.getAircraftLocation().getLongitude();
-                    GPS[2] = (double) flightControllerState.getAircraftLocation().getAltitude();
-//                    showToast(flightControllerState.getAircraftLocation());
+                    GPS.setAltitude(aircraftLocation.getAltitude());
+                    GPS.setLatitude(aircraftLocation.getLatitude());
+                    GPS.setLongitude(aircraftLocation.getLongitude());
+//                    GPS[0] = aircraftLocation.getLatitude();
+//                    GPS[1] = aircraftLocation.getLongitude();
+//                    GPS[2] = aircraftLocation.getAltitude();
+//                    showToast(String.valueOf(aircraftLocation));
                     headDirection = flightControllerState.getAircraftHeadDirection();
 
                     //get drone velocity
@@ -130,9 +152,9 @@ public class DataFromDrone {
 
     public Map<String, Double> getAll() {
         Map<String, Double> droneTelemetry = new HashMap<>();
-        droneTelemetry.put("lat", GPS[0]);
-        droneTelemetry.put("lon", GPS[1]);
-        droneTelemetry.put("alt", GPS[2]);
+        droneTelemetry.put("lat", GPS.getLatitude());
+        droneTelemetry.put("lon", GPS.getLongitude());
+        droneTelemetry.put("alt", GPS.getAltitude());
 
         droneTelemetry.put("HeadDirection", headDirection);
 

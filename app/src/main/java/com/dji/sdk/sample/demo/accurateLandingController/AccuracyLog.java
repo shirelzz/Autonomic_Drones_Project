@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Handles logging telemetry data and updating information on the screen.
@@ -23,8 +24,6 @@ public class AccuracyLog {
     private DateFormat df = new SimpleDateFormat("dd/MM/yyyy , HH:mm:ss");
     private DecimalFormat dcF = new DecimalFormat("##.####");
     private BufferedWriter logFile;
-
-    private volatile String mode;
 
     private String header = "TimeMS,date,time,Lat,Lon,Alt,HeadDirection,VelocityX,VelocityY,VelocityZ,yaw,pitch,roll,GimbalPitch," + "batRemainingTime,batCharge"
 //            + ",Real/kalman,MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,Pp,Ip,Dp,Pr,Ir,Dr,Pt,It,Dt,MaxI,AutonomousMode"
@@ -52,19 +51,6 @@ public class AccuracyLog {
             logFile = new BufferedWriter(new FileWriter(log));
             logFile.write(header + "\r\n");
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Sets the operating mode for logging.
-     *
-     * @param new_mode Mode to be set for logging.
-     */
-    public void setMode(String new_mode) {
-        try {
-            mode = new_mode;
-        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -147,8 +133,13 @@ public class AccuracyLog {
     private void dataOnScreen(Map<String, Double> droneTelemetry) {
         StringBuilder debug = new StringBuilder();
         for (String key : droneTelemetry.keySet()) {
-            debug.append(key).append(": ").append(String.format("%.01f", droneTelemetry.get(key)))
-                    .append("  ,  ");
+            debug.append(key).append(": ");
+            if (Objects.equals(key, "lon") || Objects.equals(key, "lat") || Objects.equals(key, "alt")) {
+                debug.append(droneTelemetry.get(key));
+            }else{
+                debug.append(String.format("%.01f", droneTelemetry.get(key)));
+            }
+            debug.append("  ,  ");
         }
 
         textViewLog.setText(debug.toString());

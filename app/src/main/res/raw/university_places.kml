@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>university_places</name>
+	<gx:CascadingStyle kml:id="__managed_style_2F9CC370E72DB795A785">
+		<Style>
+			<IconStyle>
+				<scale>1.2</scale>
+				<Icon>
+					<href>https://earth.google.com/earth/rpc/cc/icon?color=fbc02d&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>4</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+				<displayMode>hide</displayMode>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<gx:CascadingStyle kml:id="__managed_style_1C5C17A3F42DB795A785">
+		<Style>
+			<IconStyle>
+				<Icon>
+					<href>https://earth.google.com/earth/rpc/cc/icon?color=fbc02d&amp;id=2000&amp;scale=4</href>
+				</Icon>
+				<hotSpot x="64" y="128" xunits="pixels" yunits="insetPixels"/>
+			</IconStyle>
+			<LabelStyle>
+			</LabelStyle>
+			<LineStyle>
+				<color>ff2dc0fb</color>
+				<width>2.66667</width>
+			</LineStyle>
+			<PolyStyle>
+				<color>40ffffff</color>
+			</PolyStyle>
+			<BalloonStyle>
+				<displayMode>hide</displayMode>
+			</BalloonStyle>
+		</Style>
+	</gx:CascadingStyle>
+	<StyleMap id="__managed_style_0D9AE10B5D2DB795A785">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#__managed_style_1C5C17A3F42DB795A785</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#__managed_style_2F9CC370E72DB795A785</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Placemark id="0DBBCC013F2DB7922554">
+		<name>Building 5</name>
+		<gx:mid>/g/11np775mdh</gx:mid>
+		<gx:fid>0x151d27ef3993462b:0xe4445616b4745d4e</gx:fid>
+		<LookAt>
+			<longitude>35.209521</longitude>
+			<latitude>32.1027972</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>878.5869677387141</range>
+			<altitudeMode>relativeToGround</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0D9AE10B5D2DB795A785</styleUrl>
+		<Point>
+			<altitudeMode>relativeToGround</altitudeMode>
+			<coordinates>35.209521,32.1027972,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="09A8344CC72DB792DA37">
+		<name>Building 4</name>
+		<gx:mid>/g/11rgwlfjrp</gx:mid>
+		<gx:fid>0x151d278e275443e7:0xed2356dfb31da0d</gx:fid>
+		<LookAt>
+			<longitude>35.2094147</longitude>
+			<latitude>32.1033925</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>878.5806483488001</range>
+			<altitudeMode>relativeToGround</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0D9AE10B5D2DB795A785</styleUrl>
+		<Point>
+			<altitudeMode>relativeToGround</altitudeMode>
+			<coordinates>35.2094147,32.1033925,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0EA13C6AD42DB79307B5">
+		<name>Building 2</name>
+		<gx:mid>/g/11rgwl8d1k</gx:mid>
+		<gx:fid>0x151d27b09fa6810f:0x9bbc3688bdb18de4</gx:fid>
+		<LookAt>
+			<longitude>35.21012520000001</longitude>
+			<latitude>32.1041514</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>878.5725921272739</range>
+			<altitudeMode>relativeToGround</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0D9AE10B5D2DB795A785</styleUrl>
+		<Point>
+			<altitudeMode>relativeToGround</altitudeMode>
+			<coordinates>35.2101252,32.1041514,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="0FC61544A52DB79315C2">
+		<name>Building 1</name>
+		<gx:mid>/g/11q79vds2g</gx:mid>
+		<gx:fid>0x151d2749b60fd84d:0xa31d0777d3efb996</gx:fid>
+		<LookAt>
+			<longitude>35.2112185</longitude>
+			<latitude>32.10449700000001</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>878.5689233042712</range>
+			<altitudeMode>relativeToGround</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0D9AE10B5D2DB795A785</styleUrl>
+		<Point>
+			<altitudeMode>relativeToGround</altitudeMode>
+			<coordinates>35.2112185,32.104497,0</coordinates>
+		</Point>
+	</Placemark>
+	<Placemark id="02CDB81CFD2DB7932428">
+		<name>Building 3</name>
+		<gx:mid>/g/11rgwl8dzc</gx:mid>
+		<gx:fid>0x151d27b444778195:0xa945d4c2787805bf</gx:fid>
+		<LookAt>
+			<longitude>35.209747</longitude>
+			<latitude>32.1038396</latitude>
+			<altitude>0</altitude>
+			<heading>0</heading>
+			<tilt>0</tilt>
+			<gx:fovy>35</gx:fovy>
+			<range>878.5759021079569</range>
+			<altitudeMode>relativeToGround</altitudeMode>
+		</LookAt>
+		<styleUrl>#__managed_style_0D9AE10B5D2DB795A785</styleUrl>
+		<Point>
+			<altitudeMode>relativeToGround</altitudeMode>
+			<coordinates>35.209747,32.1038396,0</coordinates>
+		</Point>
+	</Placemark>
+</Document>
+</kml>
