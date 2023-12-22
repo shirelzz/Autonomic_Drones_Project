@@ -3,6 +3,8 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 import static com.dji.sdk.sample.internal.controller.DJISampleApplication.getProductInstance;
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
+import static java.lang.Double.NaN;
+
 import androidx.annotation.NonNull;
 
 import com.dji.sdk.sample.demo.kcgremotecontroller.ModuleVerificationUtil;
@@ -22,7 +24,7 @@ import dji.sdk.flightcontroller.FlightController;
 
 public class DataFromDrone {
 
-//    private final double[] GPS = new double[3]; //[latitude, longitude, altitude]
+    //    private final double[] GPS = new double[3]; //[latitude, longitude, altitude]
     private final GPSLocation GPS = new GPSLocation(); //[latitude, longitude, altitude]
     private final double[] velocity = new double[3];
     private double headDirection = 0.0;
@@ -96,9 +98,12 @@ public class DataFromDrone {
                     LocationCoordinate3D aircraftLocation = flightControllerState.getAircraftLocation();
 
                     //get drone location
-                    GPS.setAltitude(aircraftLocation.getAltitude());
-                    GPS.setLatitude(aircraftLocation.getLatitude());
-                    GPS.setLongitude(aircraftLocation.getLongitude());
+                    if (!Double.isNaN(aircraftLocation.getAltitude()))
+                        GPS.setAltitude(aircraftLocation.getAltitude());
+                    if (!Double.isNaN(aircraftLocation.getLatitude()))
+                        GPS.setLatitude(aircraftLocation.getLatitude());
+                    if (!Double.isNaN(aircraftLocation.getLongitude()))
+                        GPS.setLongitude(aircraftLocation.getLongitude());
 //                    GPS[0] = aircraftLocation.getLatitude();
 //                    GPS[1] = aircraftLocation.getLongitude();
 //                    GPS[2] = aircraftLocation.getAltitude();

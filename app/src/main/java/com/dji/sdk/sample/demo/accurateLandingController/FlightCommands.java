@@ -71,5 +71,7 @@ public class FlightCommands {
         return Cords.azmDist(myPos, pos);
     }
 
+
+
 }
 
