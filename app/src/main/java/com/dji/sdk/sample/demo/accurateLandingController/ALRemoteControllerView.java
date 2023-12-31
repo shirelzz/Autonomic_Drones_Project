@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -50,11 +51,13 @@ public class ALRemoteControllerView extends RelativeLayout
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
     private DataFromDrone dataFromDrone;
-
+    private GoToUsingVS goToUsingVS;
+    private FlightControlMethods flightControlMethods;
+    private DroneFeatures droneFeatures;
     protected TextView dist;
 
+
     private FlightCommands flightCommands;
-    private FlightController flightController;
     private GimbalController gimbalController;
 
 
@@ -73,9 +76,21 @@ public class ALRemoteControllerView extends RelativeLayout
         accuracyLog = new AccuracyLog(dataLog);
         dataFromDrone = new DataFromDrone();
         flightCommands = new FlightCommands();
+        goToUsingVS = new GoToUsingVS();
+        flightControlMethods = new FlightControlMethods();
+        droneFeatures = new DroneFeatures(flightControlMethods);
         HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, button1, button2, button3);
-        gimbalController = new GimbalController();
-        gimbalController.setDownwardLight(FillLightMode.ON);
+        gimbalController = new GimbalController(flightControlMethods);
+//        gimbalController.rotateGimbalToDegree(-30);
+//        Handler handler = new Handler();
+//        handler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                gimbalController.rotateGimbalToDegree(90);
+//            }
+//        }, 5000);
+
+//        droneFeatures.setDownwardLight(FillLightMode.ON);
     }
 
     private void initUI() {
@@ -121,6 +136,7 @@ public class ALRemoteControllerView extends RelativeLayout
         return false;
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
         droneIMG = mVideoSurface.getBitmap();
@@ -128,17 +144,22 @@ public class ALRemoteControllerView extends RelativeLayout
         accuracyLog.updateData(dataFromDrone.getAll());
 
         // need to provide relevant values
-        double lat = 32;
-        double lon = 35;
-        double alt = 0.1;
+        GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
+        double[] pos;
+        if (gpsLocation == null) {
+            double lat = dataFromDrone.getGPS().getLatitude() + 0.001;
+            double lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
+            double alt = dataFromDrone.getGPS().getAltitude();
 
-//        double[] closePos = dataFromDrone.getGPS();
-        lat = dataFromDrone.getGPS().getLatitude() + 0.0001;
-        lon = dataFromDrone.getGPS().getLongitude() + 0.0001;
-        alt = dataFromDrone.getGPS().getAltitude() + 0.01;
-        double[] pos = {lat, lon, alt};
+            pos = new double[]{lat, lon, alt};
+            goToUsingVS.setTargetGpsLocation(pos);
+        } else {
+            pos = gpsLocation.getAll();
+        }
+        goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
 
-        dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)));
+        dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
+
     }
 
     @SuppressLint("NonConstantResourceId")

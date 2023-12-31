@@ -1,10 +1,13 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import com.dji.sdk.sample.demo.kcgremotecontroller.Controller;
 import com.dji.sdk.sample.demo.kcgremotecontroller.gimbelListener;
 import com.dji.sdk.sample.internal.utils.CallbackHandlers;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 
 import dji.common.error.DJIError;
@@ -14,10 +17,12 @@ import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 import dji.common.flightcontroller.virtualstick.YawControlMode;
 import dji.common.gimbal.CapabilityKey;
+import dji.common.gimbal.GimbalMode;
 import dji.common.gimbal.Rotation;
 import dji.common.gimbal.RotationMode;
 import dji.common.util.CommonCallbacks;
 import dji.common.util.DJIParamCapability;
+import dji.common.util.DJIParamMinMaxCapability;
 import dji.sdk.base.BaseProduct;
 import dji.sdk.flightcontroller.FlightController;
 import dji.sdk.gimbal.Gimbal;
@@ -27,13 +32,12 @@ import dji.sdk.sdkmanager.DJISDKManager;
 public class GimbalController implements gimbelListener {
     FlightController flightController;
     private float gimbalValue = 0;
-    private Gimbal gimbal;
+    private Controller controller;
+    private Gimbal gimbal = null;
+    private List<gimbelListener> gimbelListenersList = new LinkedList<gimbelListener>();
     private float prevDegree = -1000;
-    private final int maxGimbalDegree = 1000;
-    private final int minGimbalDegree = -1000;
-
-    private float target;
-    private float velocity;
+    private int maxGimbalDegree = 1000;
+    private int minGimbalDegree = -1000;
     private int currentGimbalId = 0;
 
 
@@ -50,21 +54,31 @@ public class GimbalController implements gimbelListener {
         flightController.setYawControlMode(YawControlMode.ANGLE);
         flightController.setVerticalControlMode(VerticalControlMode.VELOCITY);
         flightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
+        initFullGimbal();
     }
 
-    /*
-     * Sets the downward fill light mode. It is supported by Mavic 2 series and Matrice 300 RTK.
-     */
-    public void setDownwardLight(FillLightMode data) {
-        Objects.requireNonNull(flightController.getFlightAssistant()).setDownwardFillLightMode(data, null);
+    public GimbalController(FlightControlMethods flightControlMethods) {
+        flightController = flightControlMethods.getFlightController();
+        initFullGimbal();
     }
 
-    private void setTarget(float target) {
-        this.target = target;
-    }//Change to GPS
+    private void initFullGimbal(){
+        gimbal = getGimbalInstance();
+        if (gimbal != null) {
+            getGimbalInstance().setMode(GimbalMode.YAW_FOLLOW, new CallbackHandlers.CallbackToastHandler());
+        } else {
+            ToastUtils.setResultToToast("Ark: Gimbal failed");
+        }
 
-    private void setVelocity(float velocity) {
-        this.velocity = velocity;
+        if (!isFeatureSupported(CapabilityKey.ADJUST_PITCH)) {
+            ToastUtils.setResultToToast("Ark: Gimbal pitch not supported");
+        }
+
+        Object key = CapabilityKey.ADJUST_PITCH;
+        minGimbalDegree = ((DJIParamMinMaxCapability) (gimbal.getCapabilities().get(key))).getMin().intValue();
+        maxGimbalDegree = ((DJIParamMinMaxCapability) (gimbal.getCapabilities().get(key))).getMax().intValue();
+
+        rotateGimbalToDegree(minGimbalDegree);
     }
 
     private Gimbal getGimbalInstance() {
@@ -110,15 +124,23 @@ public class GimbalController implements gimbelListener {
     }
 
 
-    private void rotateGimbalToDegree(float degree) {
+    public void rotateGimbalToDegree(float degree) {
 
-        if (gimbal == null) { return;}
-        if (degree ==  prevDegree) {return;}
+        if (gimbal == null) {
+            return;
+        }
+        if (degree == prevDegree) {
+            return;
+        }
 
         prevDegree = degree;
 
-        if (degree > maxGimbalDegree ){degree = maxGimbalDegree;}
-        if (degree < minGimbalDegree){degree = minGimbalDegree;}
+        if (degree > maxGimbalDegree) {
+            degree = maxGimbalDegree;
+        }
+        if (degree < minGimbalDegree) {
+            degree = minGimbalDegree;
+        }
 
         Rotation.Builder builder = new Rotation.Builder().mode(RotationMode.ABSOLUTE_ANGLE).time(2);
         builder.pitch(degree);
@@ -126,8 +148,8 @@ public class GimbalController implements gimbelListener {
         gimbal.rotate(builder.build(), new CommonCallbacks.CompletionCallback() {
             @Override
             public void onResult(DJIError djiError) {
-                if (djiError != null){
-                    ToastUtils.setResultToToast("Ark: Gimbal err: "+djiError.getDescription());
+                if (djiError != null) {
+                    ToastUtils.setResultToToast("Ark: Gimbal err: " + djiError.getDescription());
                 }
             }
         });

@@ -209,15 +209,6 @@ public class Tracker {
         return new Point2D_F64(sum[0] / 4, sum[1] / 4);
     }
 
-    // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-    public static void main(String[] args) {
-        System.out.println("===============================");
-        Bitmap bitmapImage = BitmapFactory.decodeFile("C:\\Users\\adipe\\AndroidStudioProjects\\Autonomic_Drones_Project\\app\\src\\main\\java\\com\\dji\\sdk\\sample\\demo\\stitching\\images\\DJI_0023.bmp");
-        Planar<GrayF32> image = new Planar<GrayF32>(GrayF32.class, 3);
-        ConvertBitmapToBoof.bitmapToBoof(bitmapImage, image, null);
-    }
-
     public void setFlightController(FlightController flightController) {
         this.flightController = flightController;
     }

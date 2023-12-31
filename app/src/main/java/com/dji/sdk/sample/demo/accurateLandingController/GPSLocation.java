@@ -22,6 +22,12 @@ public class GPSLocation {
         this.longitude = longitude;
     }
 
+    public GPSLocation(double[] position) {
+        this.latitude = position[0];
+        this.longitude = position[1];
+        this.altitude = position[2];
+    }
+
     public double getAltitude() {
         return altitude;
     }

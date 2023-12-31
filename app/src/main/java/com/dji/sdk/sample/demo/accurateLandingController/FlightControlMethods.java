@@ -155,7 +155,7 @@ public class FlightControlMethods {
      * @param pZ Yaw control value
      * @param pThrottle Throttle control value
      */
-    private void sendVirtualStickCommands(final float pX, final float pY, final float pZ, final float pThrottle){
+    public void sendVirtualStickCommands(final float pX, final float pY, final float pZ, final float pThrottle){
 
         // Maximum control speeds
         float pitchJoyControlMaxSpeed = 10;
