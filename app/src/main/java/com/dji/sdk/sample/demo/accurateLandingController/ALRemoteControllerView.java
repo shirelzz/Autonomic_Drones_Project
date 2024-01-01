@@ -225,13 +225,14 @@ public class ALRemoteControllerView extends RelativeLayout
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn1:
-                double lon_ = Double.parseDouble(lon.getText().toString());
                 double lat_ = Double.parseDouble(lat.getText().toString());
-//                double alt_ = Double.parseDouble(alt.getText().toString());
+                double lon_ = Double.parseDouble(lon.getText().toString());
+//                float alt_ = Double.parseDouble(alt.getText().toString());
+                float alt_ = (float) dataFromDrone.getGPS().getAltitude();
 
-                LocationCoordinate2D targetLoc = new LocationCoordinate2D(lon_, lat_);
+                LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_);
                 MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
-                        0.0F,
+                        alt_ + 1.0F,
                         flightControlMethods.getFlightController());
 //                fmm.startGoToMission();
                 ToastUtils.showToast("active go-to mission");

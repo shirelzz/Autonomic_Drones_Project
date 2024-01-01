@@ -115,11 +115,11 @@ public class MissionControlWrapper {
         return null;
     }
 
-    private FollowMeMission getFollowMeMission(double longitude, double latitude, double altitude) {
-        // Provide appropriate values for heading, v, v1, and v2 based on your mission requirements and SDK documentation
+    private FollowMeMission getFollowMeMission(double latitude, double longitude, double altitude) {
+        // TOWARD_FOLLOW_POSITION - Aircraft's heading remains toward the coordinate it is following.
         FollowMeMission followMeMission = new FollowMeMission(FollowMeHeading.TOWARD_FOLLOW_POSITION,
-                                                                longitude,
                                                                 latitude,
+                                                                longitude,
                                                                 (float) altitude); // check this!
 
         // Configure other mission parameters as needed, referring to the SDK documentation
@@ -140,27 +140,31 @@ public class MissionControlWrapper {
         if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.READY_TO_EXECUTE) {
             fmmo.startMission(getFollowMeMission(targetLocation.getLongitude(), targetLocation.getLatitude(), altitude),
                     new CommonCallbacks.CompletionCallback() {
-                @Override
-                public void onResult(DJIError djiError) {
-                    if (djiError == null) {
-                        setLastState("Mission Start: Successfully");
-                    } else {
-                        setLastState(djiError.getDescription());
+                    /*
+                    Invoked when the asynchronous operation completes.
+                    If the operation completes successfully, error will be null.
+                    Override to handle in your own code.
+                    */
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        if (djiError == null) {
+                            setLastState("Mission Start: Successfully");
+                        } else {
+                            setLastState(djiError.getDescription());
+                        }
                     }
-                }
-            });
-
+                    });
         }
     }
 
-    public void updateGoToMission(double longitude, double latitude) { // altitude?
+    public void updateGoToMission(double latitude , double longitude) { // altitude?
 
         if (!isGpsSignalStrongEnough()) {
             setLastState("GPS signal is not strong enough");
             return;
         }
 
-        LocationCoordinate2D updatedTarget = new LocationCoordinate2D(longitude, latitude);
+        LocationCoordinate2D updatedTarget = new LocationCoordinate2D(latitude, longitude);
 
         FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
         if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.READY_TO_EXECUTE) {
