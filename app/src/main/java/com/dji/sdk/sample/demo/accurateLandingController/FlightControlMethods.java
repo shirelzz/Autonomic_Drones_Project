@@ -6,6 +6,8 @@ import android.util.Log;
 
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 
+import java.util.Objects;
+
 import dji.common.error.DJIError;
 import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
@@ -21,12 +23,17 @@ import dji.sdk.flightcontroller.FlightController;
  */
 public class FlightControlMethods {
 
+    private static final int CONTROL_DURATION = 3000; // Duration in milliseconds (3 seconds)
+
     private float pitch;
     private float roll;
     private float yaw;
     private float throttle;
     private FlightController flightController;
     private boolean virtualStickEnabled;
+
+    private long startTime; // Record the start time
+
 
     /**
      * Default constructor initializes the FlightControlMethods class
@@ -41,9 +48,9 @@ public class FlightControlMethods {
      * Documentation (including tables) of parameters here:
      * <a href="https://developer.dji.com/mobile-sdk/documentation/introduction/component-guide-flightController.html#virtual-sticks">...</a>
      */
-    private void configureFlightController(){
+    private void configureFlightController() {
 
-        if (flightController == null){
+        if (flightController == null) {
             System.out.println("flightController is null");
             return;
         }
@@ -96,6 +103,7 @@ public class FlightControlMethods {
 
     /**
      * Gets the FlightController instance from the DJI SDK.
+     *
      * @return FlightController instance
      */
     private FlightController getFlightControllerFromAircraft() {
@@ -116,14 +124,17 @@ public class FlightControlMethods {
 
     /**
      * Commands the drone to pitch (tilt forward or backward).
+     *
      * @param pitch value
      */
     public void goPitch(float pitch) {
+
         sendVirtualStickCommands(pitch, 0, 0, 0);
     }
 
     /**
      * Commands the drone to roll (tilt left or right).
+     *
      * @param roll value
      */
     public void goRoll(float roll) {
@@ -133,6 +144,7 @@ public class FlightControlMethods {
 
     /**
      * Commands the drone to yaw (rotate left or right).
+     *
      * @param yaw value
      */
     public void goYaw(float yaw) {
@@ -141,6 +153,7 @@ public class FlightControlMethods {
 
     /**
      * Commands the drone to change throttle (altitude control).
+     *
      * @param throttle value
      */
     public void goThrottle(float throttle) {
@@ -150,31 +163,34 @@ public class FlightControlMethods {
     /**
      * Sends virtual stick commands to the FlightController to control the drone's movement.
      *
-     * @param pX Pitch control value
-     * @param pY Roll control value
-     * @param pZ Yaw control value
+     * @param pX        Pitch control value
+     * @param pY        Roll control value
+     * @param pZ        Yaw control value
      * @param pThrottle Throttle control value
      */
-    public void sendVirtualStickCommands(final float pX, final float pY, final float pZ, final float pThrottle){
+    public void sendVirtualStickCommands(final float pX, final float pY, final float pZ, final float pThrottle) {
+        if (Objects.isNull(startTime)) {
+            startTime = System.currentTimeMillis();
+        }
 
         // Maximum control speeds
-        float pitchJoyControlMaxSpeed = 10;
+        float pitchJoyControlMaxSpeed = 5;
         float rollJoyControlMaxSpeed = 10;
         float yawJoyControlMaxSpeed = 30;
         float verticalJoyControlMaxSpeed = 2;
 
         // Set pitch, roll, yaw, throttle
-        float mPitch = (float)(pitchJoyControlMaxSpeed * pX);        // forward-backwards
-        float mRoll = (float)(rollJoyControlMaxSpeed * pY);          // left-right
-        float mYaw = (float)(yawJoyControlMaxSpeed * pZ);          // tilt right/left
-        float mThrottle = (float)(verticalJoyControlMaxSpeed * pThrottle);  // height
+        float mPitch = (float) (pitchJoyControlMaxSpeed * pX);        // forward-backwards
+        float mRoll = (float) (rollJoyControlMaxSpeed * pY);          // left-right
+        float mYaw = (float) (yawJoyControlMaxSpeed * pZ);          // tilt right/left
+        float mThrottle = (float) (verticalJoyControlMaxSpeed * pThrottle);  // height
 
         if (flightController != null) {
 
             // If virtual stick is enabled, send the command, otherwise turn it on
-            if (virtualStickEnabled){
+            if (virtualStickEnabled) {
 
-                FlightControlData flightControlData = new FlightControlData(0,0,0,0);
+                FlightControlData flightControlData = new FlightControlData(0, 0, 0, 0);
                 // Sets the aircraft's velocity (m/s) along the y-axis or angle value (in degrees) for pitch
                 flightControlData.setPitch(mPitch);
                 // Sets the aircraft's velocity (m/s) along the x-axis or angle value (in degrees) for roll
@@ -186,35 +202,56 @@ public class FlightControlMethods {
                 flightController.sendVirtualStickFlightControlData(flightControlData, new CommonCallbacks.CompletionCallback() {
                             @Override
                             public void onResult(DJIError djiError) {
-                                if (djiError!=null){
-                                    setResultToToast(djiError.getDescription());
+                                if (djiError != null) {
+                                    long currentTime = System.currentTimeMillis();
+                                    long elapsedTime = currentTime - startTime;
+                                    if (elapsedTime < CONTROL_DURATION) {
+                                        sendVirtualStickCommands(pX, pY, pZ, pThrottle);
+                                    } else {
+                                        disableVirtualStickControl();
+
+                                    }
                                 }
                             }
                         }
                 );
-            }
-            else {
+            } else {
                 setResultToToast("flight controller virtual mode off");
 
                 // If virtual stick is not enabled, enable
                 flightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
                     @Override
                     public void onResult(DJIError djiError) {
-                        if (djiError != null){
+                        if (djiError != null) {
                             setResultToToast(djiError.getDescription());
-                        }else
-                        {
-                            setResultToToast("Enable Virtual Stick Success");
+                        } else {
+//                            setResultToToast("Enable Virtual Stick Success");
                             virtualStickEnabled = true;
                             sendVirtualStickCommands(pX, pY, pZ, pThrottle);
+
 
                         }
                     }
                 });
             }
-        }
-        else{
+        } else {
             setResultToToast("Flight Controller Null");
         }
     }
+
+    private void disableVirtualStickControl() {
+        // Disable virtual stick control
+        flightController.setVirtualStickModeEnabled(false, new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onResult(DJIError djiError) {
+                if (djiError != null) {
+                    setResultToToast(djiError.getDescription());
+                } else {
+//                    setResultToToast("Disable Virtual Stick Success");
+                    virtualStickEnabled = false;
+                }
+            }
+        });
+    }
+
 }

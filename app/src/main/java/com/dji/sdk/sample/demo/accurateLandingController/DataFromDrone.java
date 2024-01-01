@@ -4,6 +4,9 @@ import static com.dji.sdk.sample.internal.controller.DJISampleApplication.getPro
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 import static java.lang.Double.NaN;
+import static java.lang.Double.valueOf;
+
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -14,13 +17,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import dji.common.airlink.SignalQualityCallback;
 import dji.common.battery.BatteryState;
+import dji.common.error.DJIError;
 import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.flightcontroller.LocationCoordinate3D;
 import dji.common.flightcontroller.adsb.AirSenseSystemInformation;
 import dji.common.gimbal.GimbalState;
+import dji.common.util.CommonCallbacks;
+import dji.sdk.airlink.AirLink;
+import dji.sdk.base.BaseComponent;
 import dji.sdk.flightcontroller.FlightController;
+import dji.sdk.sdkmanager.DJISDKManager;
 
 public class DataFromDrone {
 
@@ -34,6 +43,9 @@ public class DataFromDrone {
     private double gimbalPitch = 0.0;
     private double batRemainingTime = 0.0;
     private double batCharge = 0.0;
+    private int satelliteCount = 0;
+    private GPSSignalLevel gpsSignalLevel;
+    private int signalQuality = 0;
 
     public DataFromDrone() {
         initStateListeners();
@@ -81,17 +93,7 @@ public class DataFromDrone {
                 @Override
                 public void onUpdate(FlightControllerState flightControllerState) {
 
-                    GPSSignalLevel gpsSignalLevel = flightControllerState.getGPSSignalLevel();
-
-                    if (gpsSignalLevel == GPSSignalLevel.LEVEL_4 || gpsSignalLevel == GPSSignalLevel.LEVEL_5) {
-                        showToast("good");
-                        // Drone has a good GPS signal
-                        // Proceed with operations requiring GPS signal
-                    } else {
-                        showToast(String.valueOf(gpsSignalLevel));
-                        // GPS signal might be weak or unavailable
-                        // Handle the situation accordingly
-                    }
+                    gpsSignalLevel = flightControllerState.getGPSSignalLevel();
 
 
                     // Retrieve drone's GPS location
@@ -119,6 +121,8 @@ public class DataFromDrone {
                     yaw = flightControllerState.getAttitude().yaw;
                     pitch = flightControllerState.getAttitude().pitch;
                     roll = flightControllerState.getAttitude().roll;
+
+                    satelliteCount = flightControllerState.getSatelliteCount();
 
 
 //                    controller.addTelemetryLog(droneTelemetry);
@@ -153,6 +157,28 @@ public class DataFromDrone {
 
             }
         });
+//
+        // Assuming you're checking signal quality for the aircraft (drone)
+        BaseComponent.ComponentListener componentListener = new BaseComponent.ComponentListener() {
+            @Override
+            public void onConnectivityChange(boolean isConnected) {
+                // Handle the connectivity change
+                if (isConnected) {
+                    AirLink airLink = DJISDKManager.getInstance().getProduct().getAirLink();
+
+                    // Set up a signal quality callback
+                    airLink.setUplinkSignalQualityCallback(new SignalQualityCallback() {
+                        @Override
+                        public void onUpdate(int index) {
+                            signalQuality = index;
+                        }
+                    });
+
+                    // Optional: To remove the callback when no longer needed
+                    // airLink.setSignalQualityUpdatedCallback(null);
+                }
+            }
+        };
     }
 
     public Map<String, Double> getAll() {
@@ -173,6 +199,10 @@ public class DataFromDrone {
         droneTelemetry.put("pitch", pitch);
         droneTelemetry.put("roll", roll);
 
+        //Get satellite Count
+        droneTelemetry.put("satelliteCount", (double) satelliteCount);
+        droneTelemetry.put("gpsSignalLevel", (double)gpsSignalLevel.value() );
+
         //get gimbal pitch
         droneTelemetry.put("gimbalPitch", gimbalPitch);
 
@@ -180,6 +210,10 @@ public class DataFromDrone {
         droneTelemetry.put("batRemainingTime", batRemainingTime);
         droneTelemetry.put("batCharge", batCharge);
 
+        //Signal quality remote control
+        droneTelemetry.put("signalQuality", (double) signalQuality);
+
         return droneTelemetry;
     }
+
 }

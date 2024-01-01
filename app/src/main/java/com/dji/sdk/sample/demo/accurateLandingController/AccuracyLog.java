@@ -25,7 +25,8 @@ public class AccuracyLog {
     private DecimalFormat dcF = new DecimalFormat("##.####");
     private BufferedWriter logFile;
 
-    private String header = "TimeMS,date,time,Lat,Lon,Alt,HeadDirection,VelocityX,VelocityY,VelocityZ,yaw,pitch,roll,GimbalPitch," + "batRemainingTime,batCharge"
+    private String header = "TimeMS,date,time,Lat,Lon,Alt,HeadDirection,VelocityX,VelocityY,VelocityZ,yaw,pitch,roll,GimbalPitch," +
+            "satelliteCount,gpsSignalLevel," + "batRemainingTime,batCharge"
 //            + ",Real/kalman,MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,Pp,Ip,Dp,Pr,Ir,Dr,Pt,It,Dt,MaxI,AutonomousMode"
             ;
 
@@ -99,8 +100,12 @@ public class AccuracyLog {
 
             sb.append(format(droneTelemetry.get("gimbalPitch")) + ",");
 
+            sb.append(format(droneTelemetry.get("satelliteCount")) + ",");
+            sb.append(format(droneTelemetry.get("gpsSignalLevel")) + ",");
+
             sb.append(format(droneTelemetry.get("batRemainingTime")) + ",");
             sb.append(format(droneTelemetry.get("batCharge")) + ",");
+            sb.append(format(droneTelemetry.get("signalQuality")) + ",");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -136,7 +141,7 @@ public class AccuracyLog {
             debug.append(key).append(": ");
             if (Objects.equals(key, "lon") || Objects.equals(key, "lat") || Objects.equals(key, "alt")) {
                 debug.append(droneTelemetry.get(key));
-            }else{
+            } else {
                 debug.append(String.format("%.01f", droneTelemetry.get(key)));
             }
             debug.append("  ,  ");

@@ -17,8 +17,10 @@ public class HandleSpeechToText {
     protected ImageView audioIcon;
     protected Button button1, button2, button3;
 
+    private Runnable goToFunc;
 
-    public HandleSpeechToText(Context context, ImageView audioIcon, Button button1, Button button2, Button button3
+
+    public HandleSpeechToText(Context context, ImageView audioIcon, Button button1, Button button2, Button button3, Runnable goToFunc
     ) {
         speechToText = new SpeechToText(context, this::performActionOnResults, null, this::updateStartListening);
         speechToText.startListening();
@@ -26,6 +28,7 @@ public class HandleSpeechToText {
         this.button1 = button1;
         this.button2 = button2;
         this.button3 = button3;
+        this.goToFunc = goToFunc;
     }
 
     public void updateStartListening() {
@@ -49,6 +52,7 @@ public class HandleSpeechToText {
 //               }
         else if (text.contains("go to")) {
             showToast("go to");
+            this.goToFunc.run();
         } else if (text.contains("track me") || text.contains("talk me")) {
             showToast("track me");
         } else if (text.contains("panic") || text.contains("funny")) {

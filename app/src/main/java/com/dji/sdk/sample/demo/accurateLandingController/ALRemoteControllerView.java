@@ -3,12 +3,14 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
-import android.os.Handler;
+import android.os.Bundle;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -19,16 +21,15 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentManager;
 
 import com.dji.sdk.sample.R;
+import com.dji.sdk.sample.demo.GlobalData;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
 import java.util.Arrays;
 
-import dji.common.flightcontroller.flightassistant.FillLightMode;
-import dji.midware.data.model.P3.Ha;
 import dji.sdk.codec.DJICodecManager;
-import dji.sdk.flightcontroller.FlightController;
 
 import android.widget.Button;
 
@@ -43,7 +44,7 @@ public class ALRemoteControllerView extends RelativeLayout
     static String TAG = "Accurate landing";
     protected ImageView audioIcon;
     private Context ctx;
-    private Button button1, button2, button3;
+    private Button button1, button2, button3, goTo_btn;
     private Bitmap droneIMG;
     protected ImageView imgView;
     protected TextureView mVideoSurface = null;
@@ -55,10 +56,12 @@ public class ALRemoteControllerView extends RelativeLayout
     private FlightControlMethods flightControlMethods;
     private DroneFeatures droneFeatures;
     protected TextView dist;
-
+    protected PresentMap presentMap;
+    private boolean onGoToMode = false;
 
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
+    private float pitch = 0.5f, yaw = 0.02f, roll = 0.01f, max_i = 1, throttle = -0.6f;//t fot vertical throttle
 
 
     public ALRemoteControllerView(Context context) {
@@ -68,6 +71,18 @@ public class ALRemoteControllerView extends RelativeLayout
         init(context);
     }
 
+    // Constructor to handle null context or default constructor
+//    public ALRemoteControllerView(Context context, AttributeSet attrs) {
+//        super(context, attrs);
+//        if (context != null) {
+//            ctx = context;
+//            this.receivedVideo = new ReceivedVideo();
+//            init(context);
+//        } else {
+//            // Handle the case of null context (log an error, throw an exception, or provide a default behavior)
+//        }
+//    }
+
     private void init(Context context) {
 
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
@@ -76,11 +91,24 @@ public class ALRemoteControllerView extends RelativeLayout
         accuracyLog = new AccuracyLog(dataLog);
         dataFromDrone = new DataFromDrone();
         flightCommands = new FlightCommands();
-        goToUsingVS = new GoToUsingVS();
+        goToUsingVS = new GoToUsingVS(dataFromDrone);
         flightControlMethods = new FlightControlMethods();
         droneFeatures = new DroneFeatures(flightControlMethods);
-        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, button1, button2, button3);
+        Bundle savedInstanceState = GlobalData.getSavedInstanceBundle();
+
+//        presentMap = new PresentMap(savedInstanceState, context, (Activity) getContext());
+
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, button1, button2, button3, this::goToFunc);
         gimbalController = new GimbalController(flightControlMethods);
+
+//        FragmentMap yourFragment = new FragmentMap();
+//        FragmentManager fragmentManager = GlobalData.getAppCompatActivity().getSupportFragmentManager();
+//
+//        // Get FragmentManager and start a FragmentTransaction
+//        fragmentManager.beginTransaction()
+//                .replace(R.id.mapView, yourFragment) // Replace fragment_container with your actual container ID
+//                .commit();
+
 //        gimbalController.rotateGimbalToDegree(-30);
 //        Handler handler = new Handler();
 //        handler.postDelayed(new Runnable() {
@@ -99,6 +127,7 @@ public class ALRemoteControllerView extends RelativeLayout
         button1 = findViewById(R.id.btn1);
         button2 = findViewById(R.id.btn2);
         button3 = findViewById(R.id.btn3);
+        goTo_btn = findViewById(R.id.goTo_btn);
         audioIcon = findViewById(R.id.audioIcon);
         dataLog = findViewById(R.id.dataLog);
         dist = findViewById(R.id.dist);
@@ -139,11 +168,15 @@ public class ALRemoteControllerView extends RelativeLayout
     @SuppressLint("SetTextI18n")
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
+        accuracyLog.updateData(dataFromDrone.getAll());
+//        if (!onGoToMode) {
+//            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
         imgView.setImageBitmap(droneIMG);
-        accuracyLog.updateData(dataFromDrone.getAll());
-
-        // need to provide relevant values
+//            presentMap.getMapView().setVisibility(View.INVISIBLE);
+//        } else {
+//            presentMap.getMapView().setVisibility(View.VISIBLE);
+//            imgView.setVisibility(View.INVISIBLE);
         GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
         double[] pos;
         if (gpsLocation == null) {
@@ -159,7 +192,19 @@ public class ALRemoteControllerView extends RelativeLayout
         goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
 
         dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
+//        }
+    }
 
+    private void goToFunc() {
+        onGoToMode = !onGoToMode;
+        if (onGoToMode) {
+            goTo_btn.setBackgroundColor(Color.GREEN);
+            button3.setBackgroundColor(Color.WHITE);
+            button1.setBackgroundColor(Color.WHITE);
+            button2.setBackgroundColor(Color.WHITE);
+        } else {
+            goTo_btn.setBackgroundColor(Color.WHITE);
+        }
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -180,6 +225,71 @@ public class ALRemoteControllerView extends RelativeLayout
                 button3.setBackgroundColor(Color.GREEN);
                 button1.setBackgroundColor(Color.WHITE);
                 button2.setBackgroundColor(Color.WHITE);
+                break;
+            case R.id.goTo_btn:
+                this.goToFunc();
+                break;
+            //-------- set Throttle ----------
+            case R.id.t_minus_btn:
+                try {
+                    flightControlMethods.goThrottle(-1 * throttle);
+                } catch (NumberFormatException e) {
+                    showToast("not float");
+                }
+                break;
+            case R.id.t_plus_btn:
+                try {
+                    flightControlMethods.goThrottle(throttle);
+                } catch (NumberFormatException e) {
+                    showToast("not float");
+                }
+                break;
+            //-------- set Pitch ----------
+            case R.id.p_minus_btn:
+                try {
+                    flightControlMethods.goPitch(-1 * pitch);
+                } catch (NumberFormatException e) {
+                    showToast("not float");
+                }
+                break;
+            case R.id.p_plus_btn:
+                try {
+                    flightControlMethods.goPitch(pitch);
+                } catch (NumberFormatException e) {
+                    showToast("not float");
+                }
+                break;
+
+            //-------- set Yaw ----------
+            case R.id.y_minus_btn:
+                try {
+                    flightControlMethods.goYaw(-1 * yaw);
+                } catch (NumberFormatException e) {
+                    showToast("not float");
+                }
+                break;
+            case R.id.y_plus_btn:
+                try {
+                    flightControlMethods.goYaw(yaw);
+                } catch (NumberFormatException e) {
+                    showToast("not float");
+                }
+                break;
+
+            //-------- set Roll ----------
+            case R.id.r_minus_btn:
+                try {
+                    flightControlMethods.goRoll(-1 * roll);
+                } catch (NumberFormatException e) {
+                    showToast("not float");
+                }
+                break;
+            case R.id.r_plus_btn:
+                try {
+                    flightControlMethods.goRoll(roll);
+                } catch (NumberFormatException e) {
+                    showToast("not float");
+                }
                 break;
             default:
                 break;

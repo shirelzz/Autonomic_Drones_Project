@@ -1,25 +1,32 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import android.annotation.SuppressLint;
+import android.widget.TextView;
+
 import androidx.annotation.Nullable;
 
-public class GoToUsingVS {
+import java.util.Arrays;
+
+public class  GoToUsingVS {
     private GPSLocation startGpsLocation;
     private GPSLocation targetGpsLocation;
     private FlightControlMethods flightControlMethods;
 
-    //    private static final double SOME_SCALING_FACTOR = 0.5;
-    private static final double SCALE_FACTOR_DISTANCE = 0.5; // Adjust as needed
-    private static final double SCALE_FACTOR_THROTTLE = 0.7; // Adjust as needed
+    private DataFromDrone dataFromDrone;
+    // Adjust these scaling factors based on flight testing
+    private static final double SCALE_FACTOR_DISTANCE = 0.5;
+    private static final double SCALE_FACTOR_THROTTLE = 0.7;
 
 
-    public GoToUsingVS(@Nullable GPSLocation startGpsLocation, @Nullable GPSLocation targetGpsLocation) {
+    public GoToUsingVS(@Nullable GPSLocation startGpsLocation, @Nullable GPSLocation targetGpsLocation, DataFromDrone dataFromDrone) {
         this.startGpsLocation = startGpsLocation;
         this.targetGpsLocation = targetGpsLocation;
+        this.dataFromDrone = dataFromDrone;
         this.flightControlMethods = new FlightControlMethods();
     }
 
-    public GoToUsingVS() {
-        this(null, null);
+    public GoToUsingVS(DataFromDrone dataFromDrone) {
+        this(null, null, dataFromDrone);
     }
 
     public float[] calculateMovement() {
@@ -34,16 +41,49 @@ public class GoToUsingVS {
 
         // Convert azimuth and distance to control commands for the drone
         float pitch = (float) (Math.sin(Math.toRadians(azimuth)) * distance);
-        float roll = (float) (Math.cos(Math.toRadians(azimuth)) * distance);
+        float roll = (float) calculateAdjustedRoll(azimuth, distance); // Use adjusted roll calculation
+        float yaw = (float) azimuth; // Assuming yaw is already in degrees and within expected range
+        float throttle = (float) (distance * SCALE_FACTOR_THROTTLE * SCALE_FACTOR_DISTANCE);
 
-        float normalizedYaw = (float) ((azimuth + 360) % 360);
-//        if (normalizedYaw > 180) {
-//            normalizedYaw -= 360;
-//        }
-        float yaw = normalizedYaw; // You might need to normalize or adjust this value based on your drone's requirements
-        float throttle = (float) (distance * SCALE_FACTOR_THROTTLE * SCALE_FACTOR_DISTANCE); // Adjust SOME_SCALING_FACTOR based on your requirements
-//        flightControlMethods.sendVirtualStickCommands(pitch, roll, yaw, throttle);
+        // Send virtual stick commands to the drone
+        flightControlMethods.sendVirtualStickCommands(pitch, roll, yaw, throttle);
+
         return new float[]{pitch, roll, yaw, throttle};
+    }
+
+    private double calculateAdjustedRoll(double azimuth, double distance){
+        // Obtain drone's current yaw (replace with actual mechanism to get yaw)
+        double currentYaw = dataFromDrone.getYaw(); // Assuming this method exists in your SDK version
+
+        // Calculate the difference between current yaw and desired azimuth
+        double yawDifference = azimuth - currentYaw;
+
+        // Adjust roll based on yaw difference (example implementation)
+        float rollAdjustment = (float) (Math.cos(Math.toRadians(yawDifference)) * distance);
+
+        // Return the adjusted roll value
+        return rollAdjustment;
+    }
+
+    @SuppressLint("SetTextI18n")
+    public void startGoTo(TextView dist, FlightCommands flightCommands){
+        // need to provide relevant values
+        GPSLocation gpsLocation = this.getDestGpsLocation();
+        double[] pos;
+        if (gpsLocation == null) {
+            double lat = dataFromDrone.getGPS().getLatitude() + 0.001;
+            double lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
+            double alt = dataFromDrone.getGPS().getAltitude();
+
+
+            pos = new double[]{lat, lon, alt};
+            this.setTargetGpsLocation(pos);
+        } else {
+            pos = gpsLocation.getAll();
+        }
+        this.setCurrentGpsLocation(dataFromDrone.getGPS());
+
+        dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(this.calculateMovement()));
 
     }
 

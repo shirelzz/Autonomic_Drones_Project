@@ -13,6 +13,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.dji.sdk.sample.R;
+import com.dji.sdk.sample.demo.GlobalData;
 import com.dji.sdk.sample.internal.utils.Helper;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
@@ -86,6 +87,8 @@ public class PayloadActivity extends AppCompatActivity implements View.OnClickLi
             actionBar.setHomeButtonEnabled(true);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+        GlobalData.setSavedInstanceBundle(savedInstanceState);
+        GlobalData.setAppCompatActivity(this);
         pushTextView = (TextView) findViewById(R.id.push_info_text);
         payloadNameView = (TextView) findViewById(R.id.payload_name);
         pushTextViewFromUsb = (TextView) findViewById(R.id.push_info_text_usb);

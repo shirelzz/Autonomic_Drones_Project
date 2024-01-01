@@ -32,6 +32,47 @@
             tools:ignore="RtlHardcoded" />
     </FrameLayout>
 
+<!--    <FrameLayout-->
+<!--        android:id="@+id/mapView"-->
+<!--        android:layout_width="425dp"-->
+<!--        android:layout_height="195dp"-->
+<!--        android:layout_alignParentEnd="true"-->
+<!--        android:visibility="invisible"-->
+
+<!--        android:layout_marginTop="0dp"-->
+<!--        android:layout_marginEnd="0dp"-->
+<!-- />-->
+<!--            tools:context="com.example.mapwithmarker.MapsMarkerActivity"-->
+
+    <!-- Text views for displaying location details -->
+<!--    <TextView-->
+<!--        android:id="@+id/location_name"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_alignParentEnd="true"-->
+
+<!--        android:layout_gravity="right"-->
+<!--        android:layout_marginTop="0dp"-->
+<!--        android:layout_marginEnd="0dp"        android:layout_below="@+id/map"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:textSize="18sp"-->
+<!--        android:visibility="invisible"-->
+
+<!--        android:text="Location Name" />-->
+
+<!--    <TextView-->
+<!--        android:id="@+id/location_address"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:textSize="14sp"-->
+<!--        android:layout_below="@id/location_name"-->
+<!--        android:layout_alignParentEnd="true"-->
+
+<!--        android:layout_gravity="right"-->
+<!--        android:layout_marginTop="0dp"-->
+<!--        android:layout_marginEnd="0dp"-->
+<!--        android:visibility="invisible"-->
+
+<!--        android:text="Location Address" />-->
     <TextView
         android:id="@+id/autonomous"
         android:layout_width="wrap_content"
@@ -61,7 +102,7 @@
         android:layout_below="@+id/dataLog"
         android:text="1234"
         android:textSize="18sp"
-         />
+        />
 
     <ImageView
         android:id="@+id/recIcon"
@@ -92,6 +133,133 @@
         android:src="@drawable/mic_24"
         android:visibility="invisible"
         tools:ignore="NotSibling" />
+
+
+    <Button
+        android:id="@+id/y_minus_btn"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_alignParentStart="true"
+        android:layout_above="@+id/r_minus_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="Y: -" />
+
+<!--    <EditText-->
+<!--        android:id="@+id/setY_tv"-->
+<!--        android:layout_width="70dp"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:layout_toEndOf="@id/r_minus_btn"-->
+<!--        android:layout_above="@+id/setR_tv"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:ems="100"-->
+<!--        android:inputType="text"-->
+<!--        android:text="0.1" />-->
+
+    <Button
+        android:id="@+id/y_plus_btn"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_toEndOf="@id/y_minus_btn"
+        android:layout_above="@+id/r_minus_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="+" />
+
+    <Button
+        android:id="@+id/r_minus_btn"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_alignParentStart="true"
+        android:layout_above="@+id/goTo_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="R: -" />
+
+<!--    <EditText-->
+<!--        android:id="@+id/setR_tv"-->
+<!--        android:layout_width="70dp"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:layout_toEndOf="@id/r_minus_btn"-->
+<!--        android:layout_above="@+id/goTo_btn"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:ems="100"-->
+<!--        android:inputType="text"-->
+<!--        android:text="0.1" />-->
+
+    <Button
+        android:id="@+id/r_plus_btn"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_toEndOf="@id/r_minus_btn"
+        android:layout_above="@+id/goTo_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="+" />
+
+    <Button
+        android:id="@+id/t_minus_btn"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_toEndOf="@id/y_plus_btn"
+        android:layout_above="@+id/p_minus_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="T: -" />
+
+    <!--    <EditText-->
+    <!--        android:id="@+id/setT_tv"-->
+    <!--        android:layout_width="70dp"-->
+    <!--        android:layout_height="40dp"-->
+    <!--        android:layout_toEndOf="@id/r_minus_btn"-->
+    <!--        android:layout_above="@+id/p_minus_btn"-->
+    <!--        android:layout_marginBottom="0dp"-->
+    <!--        android:ems="100"-->
+    <!--        android:inputType="text"-->
+    <!--        android:text="0.5" />-->
+
+
+    <Button
+        android:id="@+id/t_plus_btn"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_toEndOf="@id/t_minus_btn"
+        android:layout_above="@+id/p_minus_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="+" />
+
+    <Button
+        android:id="@+id/p_minus_btn"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_toEndOf="@id/r_plus_btn"
+
+        android:layout_above="@+id/goTo_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="P: -" />
+
+    <!--    <EditText-->
+    <!--        android:id="@+id/setP_tv"-->
+    <!--        android:layout_width="70dp"-->
+    <!--        android:layout_height="40dp"-->
+    <!--        android:layout_toEndOf="@id/r_minus_btn"-->
+    <!--        android:layout_above="@+id/y_minus_btn"-->
+    <!--        android:layout_marginBottom="0dp"-->
+    <!--        android:ems="100"-->
+    <!--        android:inputType="text"-->
+    <!--        android:text="0.19" />-->
+
+    <Button
+        android:id="@+id/p_plus_btn"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_toEndOf="@id/p_minus_btn"
+        android:layout_above="@+id/goTo_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="0dp"
+        android:text="+" />
 
     <Button
         android:id="@+id/goTo_btn"
@@ -135,5 +303,50 @@
         android:layout_alignParentBottom="true"
 
         android:text="Button 3" />
+
+    <TextView
+        android:id="@+id/lonText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/btn3"
+        android:layout_marginBottom="0dp"
+        android:layout_alignParentBottom="true"
+
+        android:text="longitude:"
+        android:textSize="18sp" />
+
+    <EditText
+        android:id="@+id/lonEditText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="0dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/lonText"
+        android:text="35.209521:"
+        android:textSize="18sp"
+        />
+    <TextView
+
+        android:id="@+id/latText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="0dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/lonEditText"
+        android:text="latitude:"
+        android:textSize="18sp"
+        />
+
+    <EditText
+
+        android:id="@+id/latEditText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="0dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/latText"
+        android:text="32.1027972"
+        android:textSize="18sp"
+        />
 
 </RelativeLayout>
