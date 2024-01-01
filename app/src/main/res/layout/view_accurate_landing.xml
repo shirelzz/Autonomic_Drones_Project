@@ -280,7 +280,7 @@
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
         android:layout_toEndOf="@+id/goTo_btn"
-        android:text="Button 1" />
+        android:text="GoTo with FMM" />
 
     <Button
         android:id="@+id/btn2"

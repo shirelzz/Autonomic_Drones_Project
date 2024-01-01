@@ -63,27 +63,27 @@ public class MissionControlWrapper {
 
 
 
-    public void updateSimpleFollowMe() {
-        if (fmmo == null) {
-            fmmo = getFollowMeMissionOperator();
-        }
-
-        final FollowMeMissionOperator followMeMissionOperator = fmmo;
-        if (followMeMissionOperator.getCurrentState().equals(FollowMeMissionState.EXECUTING)) {
-            followMeMissionOperator.updateFollowingTarget(
-                    new LocationCoordinate2D(targetLocation.getLatitude(), targetLocation.getLongitude()),
-                    new CommonCallbacks.CompletionCallback() {
-                        @Override
-                        public void onResult(DJIError error) {
-                            if (error != null) {
-                                setLastState(followMeMissionOperator.getCurrentState().getName().toString() + " " + error.getDescription());
-                            } else {
-                                setLastState("Mission Update Successfully");
-                            }
-                        }
-                    });
-        }
-    }
+//    public void updateSimpleFollowMe() {
+//        if (fmmo == null) {
+//            fmmo = getFollowMeMissionOperator();
+//        }
+//
+//        final FollowMeMissionOperator followMeMissionOperator = fmmo;
+//        if (followMeMissionOperator.getCurrentState().equals(FollowMeMissionState.EXECUTING)) {
+//            followMeMissionOperator.updateFollowingTarget(
+//                    new LocationCoordinate2D(targetLocation.getLatitude(), targetLocation.getLongitude()),
+//                    new CommonCallbacks.CompletionCallback() {
+//                        @Override
+//                        public void onResult(DJIError error) {
+//                            if (error != null) {
+//                                setLastState(followMeMissionOperator.getCurrentState().getName().toString() + " " + error.getDescription());
+//                            } else {
+//                                setLastState("Mission Update Successfully");
+//                            }
+//                        }
+//                    });
+//        }
+//    }
     private void setLastState(String state) {
         lastState = state;
         missionStateTextView.setText(state);
@@ -129,7 +129,7 @@ public class MissionControlWrapper {
 
     // Implement other methods for mission control and error handling, as needed
 
-    public void startGoToMission(double longitude, double latitude, double altitude) {
+    public void startGoToMission() {
 
         if (!isGpsSignalStrongEnough()) {
             setLastState("GPS signal is not strong enough");
@@ -138,7 +138,8 @@ public class MissionControlWrapper {
 
         FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
         if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.READY_TO_EXECUTE) {
-            fmmo.startMission(getFollowMeMission(longitude, latitude, altitude), new CommonCallbacks.CompletionCallback() {
+            fmmo.startMission(getFollowMeMission(targetLocation.getLongitude(), targetLocation.getLatitude(), altitude),
+                    new CommonCallbacks.CompletionCallback() {
                 @Override
                 public void onResult(DJIError djiError) {
                     if (djiError == null) {
@@ -148,6 +149,32 @@ public class MissionControlWrapper {
                     }
                 }
             });
+
+        }
+    }
+
+    public void updateGoToMission(double longitude, double latitude) { // altitude?
+
+        if (!isGpsSignalStrongEnough()) {
+            setLastState("GPS signal is not strong enough");
+            return;
+        }
+
+        LocationCoordinate2D updatedTarget = new LocationCoordinate2D(longitude, latitude);
+
+        FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
+        if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.READY_TO_EXECUTE) {
+            fmmo.updateFollowingTarget(updatedTarget ,
+                    new CommonCallbacks.CompletionCallback() {
+                        @Override
+                        public void onResult(DJIError djiError) {
+                            if (djiError == null) {
+                                setLastState("Mission Start: Successfully");
+                            } else {
+                                setLastState(djiError.getDescription());
+                            }
+                        }
+                    });
 
         }
     }

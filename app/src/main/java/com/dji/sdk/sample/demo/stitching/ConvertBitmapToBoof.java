@@ -1479,4 +1479,5 @@ public class ConvertBitmapToBoof {
             }
         }
     }
+
 }

@@ -16,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -25,6 +26,7 @@ import androidx.fragment.app.FragmentManager;
 
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.demo.GlobalData;
+import com.dji.sdk.sample.internal.utils.ToastUtils;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
 import java.util.Arrays;
@@ -32,6 +34,9 @@ import java.util.Arrays;
 import dji.sdk.codec.DJICodecManager;
 
 import android.widget.Button;
+
+import dji.common.model.LocationCoordinate2D;
+
 
 
 /**
@@ -56,6 +61,10 @@ public class ALRemoteControllerView extends RelativeLayout
     private FlightControlMethods flightControlMethods;
     private DroneFeatures droneFeatures;
     protected TextView dist;
+    protected EditText lat;
+    protected EditText lon;
+//    protected EditText alt;
+
     protected PresentMap presentMap;
     private boolean onGoToMode = false;
 
@@ -131,6 +140,10 @@ public class ALRemoteControllerView extends RelativeLayout
         audioIcon = findViewById(R.id.audioIcon);
         dataLog = findViewById(R.id.dataLog);
         dist = findViewById(R.id.dist);
+        lat = findViewById(R.id.latEditText);
+        lon = findViewById(R.id.lonEditText);
+//        alt = findViewById(R.id.altEditText);
+
 
         if (mVideoSurface != null) {
             mVideoSurface.setSurfaceTextureListener(this);
@@ -192,7 +205,7 @@ public class ALRemoteControllerView extends RelativeLayout
         goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
 
         dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
-//        }
+        //        }
     }
 
     private void goToFunc() {
@@ -212,9 +225,17 @@ public class ALRemoteControllerView extends RelativeLayout
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn1:
-                button1.setBackgroundColor(Color.GREEN);
-                button2.setBackgroundColor(Color.WHITE);
-                button3.setBackgroundColor(Color.WHITE);
+                double lon_ = Double.parseDouble(lon.getText().toString());
+                double lat_ = Double.parseDouble(lat.getText().toString());
+//                double alt_ = Double.parseDouble(alt.getText().toString());
+
+                LocationCoordinate2D targetLoc = new LocationCoordinate2D(lon_, lat_);
+                MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
+                        0.0F,
+                        flightControlMethods.getFlightController());
+//                fmm.startGoToMission();
+                ToastUtils.showToast("active go-to mission");
+
                 break;
             case R.id.btn2:
                 button2.setBackgroundColor(Color.GREEN);
