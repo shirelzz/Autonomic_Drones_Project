@@ -1,6 +1,7 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
 import android.annotation.SuppressLint;
+import android.os.Environment;
 import android.widget.TextView;
 
 import java.io.BufferedWriter;
@@ -46,8 +47,9 @@ public class AccuracyLog {
      * Initializes the log file by creating a new CSV file for logging telemetry data.
      */
     private void initLogFile() {
-        File log = new File("sdcard/droneLog" + System.currentTimeMillis() + ".csv");
-
+//        File log = new File("sdcard/droneLog" + System.currentTimeMillis() + ".csv");
+        File log = new File(Environment.getExternalStorageDirectory() + "/droneLog" + System.currentTimeMillis() + ".csv");
+//         ".xls"
         try {
             logFile = new BufferedWriter(new FileWriter(log));
             logFile.write(header + "\r\n");

@@ -50,6 +50,8 @@ public class ALRemoteControllerView extends RelativeLayout
     protected ImageView audioIcon;
     private Context ctx;
     private Button button1, button2, button3, goTo_btn;
+    private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
+    private Button g_minus_btn_up, g_plus_btn_up, g_minus_btn_side, g_plus_btn_side;
     private Bitmap droneIMG;
     protected ImageView imgView;
     protected TextureView mVideoSurface = null;
@@ -61,10 +63,9 @@ public class ALRemoteControllerView extends RelativeLayout
     private FlightControlMethods flightControlMethods;
     private DroneFeatures droneFeatures;
     protected TextView dist;
+    protected EditText gimbal;
     protected EditText lat;
     protected EditText lon;
-//    protected EditText alt;
-
     protected PresentMap presentMap;
     private boolean onGoToMode = false;
 
@@ -145,12 +146,42 @@ public class ALRemoteControllerView extends RelativeLayout
 //        alt = findViewById(R.id.altEditText);
 
 
+        y_minus_btn = findViewById(R.id.y_minus_btn);
+        y_plus_btn = findViewById(R.id.y_plus_btn);
+        r_minus_btn = findViewById(R.id.r_minus_btn);
+        r_plus_btn = findViewById(R.id.r_plus_btn);
+        p_minus_btn = findViewById(R.id.p_minus_btn);
+        p_plus_btn = findViewById(R.id.p_plus_btn);
+        t_minus_btn = findViewById(R.id.t_minus_btn);
+        t_plus_btn = findViewById(R.id.t_plus_btn);
+        g_minus_btn_up = findViewById(R.id.gimbal_pitch_update);
+//        g_plus_btn_up = findViewById(R.id.g_plus_up_update);
+//        g_minus_btn_side = findViewById(R.id.g_minus_side_update);
+//        g_plus_btn_side = findViewById(R.id.g_plus_side_update);
+
+        gimbal = findViewById(R.id.Gimbal);
+
         if (mVideoSurface != null) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
         button1.setOnClickListener(this);
         button2.setOnClickListener(this);
         button3.setOnClickListener(this);
+        goTo_btn.setOnClickListener(this);
+        y_minus_btn.setOnClickListener(this);
+        y_plus_btn.setOnClickListener(this);
+        r_minus_btn.setOnClickListener(this);
+        r_plus_btn.setOnClickListener(this);
+        p_minus_btn.setOnClickListener(this);
+        p_plus_btn.setOnClickListener(this);
+        t_minus_btn.setOnClickListener(this);
+        t_plus_btn.setOnClickListener(this);
+
+        g_minus_btn_up.setOnClickListener(this);
+//        g_plus_btn_up.setOnClickListener(this);
+//        g_minus_btn_side.setOnClickListener(this);
+//        g_plus_btn_side.setOnClickListener(this);
+
     }
 
     @Override
@@ -174,7 +205,9 @@ public class ALRemoteControllerView extends RelativeLayout
         if (receivedVideo.getMCodecManager() != null) {
             receivedVideo.getMCodecManager().cleanSurface();
             receivedVideo.setMCodecManager(null);
+
         }
+        accuracyLog.closeLog();
         return false;
     }
 
@@ -190,24 +223,25 @@ public class ALRemoteControllerView extends RelativeLayout
 //        } else {
 //            presentMap.getMapView().setVisibility(View.VISIBLE);
 //            imgView.setVisibility(View.INVISIBLE);
-        GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
-        double[] pos;
-        if (gpsLocation == null) {
-            double lat = dataFromDrone.getGPS().getLatitude() + 0.001;
-            double lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
-            double alt = dataFromDrone.getGPS().getAltitude();
-
-            pos = new double[]{lat, lon, alt};
-            goToUsingVS.setTargetGpsLocation(pos);
-        } else {
-            pos = gpsLocation.getAll();
-        }
-        goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
-
-        dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
+//        GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
+//        double[] pos;
+//        if (gpsLocation == null) {
+//            double curr_lat = dataFromDrone.getGPS().getLatitude() + 0.001;
+//            double curr_lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
+//            double curr_alt = dataFromDrone.getGPS().getAltitude();
+//
+//            pos = new double[]{curr_lat, curr_lon, curr_alt};
+//            goToUsingVS.setTargetGpsLocation(pos);
+//        } else {
+//            pos = gpsLocation.getAll();
+//        }
+//        goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
+//
+//        dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
         //        }
     }
 
+    @SuppressLint("SetTextI18n")
     private void goToFunc() {
         onGoToMode = !onGoToMode;
         if (onGoToMode) {
@@ -215,6 +249,21 @@ public class ALRemoteControllerView extends RelativeLayout
             button3.setBackgroundColor(Color.WHITE);
             button1.setBackgroundColor(Color.WHITE);
             button2.setBackgroundColor(Color.WHITE);
+            GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
+            double[] pos;
+            if (gpsLocation == null) {
+                double curr_lat = dataFromDrone.getGPS().getLatitude() + 0.001;
+                double curr_lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
+                double curr_alt = dataFromDrone.getGPS().getAltitude();
+
+                pos = new double[]{curr_lat, curr_lon, curr_alt};
+                goToUsingVS.setTargetGpsLocation(pos);
+            } else {
+                pos = gpsLocation.getAll();
+            }
+            goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
+
+            dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
         } else {
             goTo_btn.setBackgroundColor(Color.WHITE);
         }
@@ -225,17 +274,24 @@ public class ALRemoteControllerView extends RelativeLayout
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn1:
-                double lat_ = Double.parseDouble(lat.getText().toString());
+                //TODO:  need to check if the lon and lat are in the correct format
                 double lon_ = Double.parseDouble(lon.getText().toString());
+                double lat_ = Double.parseDouble(lat.getText().toString());
 //                float alt_ = Double.parseDouble(alt.getText().toString());
                 float alt_ = (float) dataFromDrone.getGPS().getAltitude();
 
-                LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_);
+                onGoToMode = false;
+
+                LocationCoordinate2D targetLoc = new LocationCoordinate2D(lon_, lat_);
                 MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
                         alt_ + 1.0F,
                         flightControlMethods.getFlightController());
-//                fmm.startGoToMission();
+                fmm.startGoToMission();
                 ToastUtils.showToast("active go-to mission");
+                button1.setBackgroundColor(Color.GREEN);
+                button2.setBackgroundColor(Color.WHITE);
+                button3.setBackgroundColor(Color.WHITE);
+                goTo_btn.setBackgroundColor(Color.WHITE);
 
                 break;
             case R.id.btn2:
@@ -313,6 +369,19 @@ public class ALRemoteControllerView extends RelativeLayout
                     showToast("not float");
                 }
                 break;
+            case R.id.gimbal_pitch_update:
+//                ToastUtils.setResultToToast(String.valueOf(Float.parseFloat(gimbal.getText().toString())));
+
+                gimbalController.rotateGimbalToDegree(Float.parseFloat(gimbal.getText().toString()));
+
+
+//            case R.id.g_plus_up_update:
+//                gimbalController.rotateGimbalToDegree((float) (-5.0));
+//            case R.id.g_minus_side_update:
+//                gimbalController.rotateGimbalToDegree((float) (dataFromDrone.getGimbalPitch() + 1));
+//            case R.id.g_plus_side_update:
+//                gimbalController.rotateGimbalToDegree((float) (dataFromDrone.getGimbalPitch() + 1));
+
             default:
                 break;
         }

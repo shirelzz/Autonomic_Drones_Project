@@ -142,18 +142,22 @@ public class GimbalController implements gimbelListener {
             degree = minGimbalDegree;
         }
 
-        Rotation.Builder builder = new Rotation.Builder().mode(RotationMode.ABSOLUTE_ANGLE).time(2);
-        builder.pitch(degree);
 
-        gimbal.rotate(builder.build(), new CommonCallbacks.CompletionCallback() {
+
+        Rotation.Builder builder = new Rotation.Builder().mode(RotationMode.ABSOLUTE_ANGLE).time(2);
+        Rotation.Builder pitchBuilder = builder.pitch(degree);
+
+        float finalDegree = degree;
+        gimbal.rotate(pitchBuilder.build(), new CommonCallbacks.CompletionCallback() {
             @Override
             public void onResult(DJIError djiError) {
                 if (djiError != null) {
-                    ToastUtils.setResultToToast("Ark: Gimbal err: " + djiError.getDescription());
+                    ToastUtils.setResultToToast("Gimbal rotation error: " + djiError.getDescription());
+                } else {
+                    ToastUtils.setResultToToast("Gimbal rotated successfully to degree: " + finalDegree);
                 }
             }
-        });
-    }
+        });    }
 
     public void updateGimbel(float gimbalValue) {
         this.gimbalValue = gimbalValue;

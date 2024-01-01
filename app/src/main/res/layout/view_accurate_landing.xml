@@ -261,6 +261,54 @@
         android:layout_marginStart="0dp"
         android:text="+" />
 
+<!--    <Button-->
+<!--        android:id="@+id/g_plus_up_update"-->
+<!--        android:layout_width="50dp"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:layout_toEndOf="@id/g_minus_side_update"-->
+<!--        android:layout_above="@+id/Gimbal"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_marginStart="0dp"-->
+<!--        android:text="+" />-->
+<!--    <Button-->
+<!--        android:id="@+id/g_minus_side_update"-->
+<!--        android:layout_width="50dp"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:layout_toEndOf="@id/t_plus_btn"-->
+<!--        android:layout_above="@+id/gimbal_pitch_update"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_marginStart="10dp"-->
+<!--        android:text="-" />-->
+
+    <EditText
+        android:id="@+id/Gimbal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@+id/t_plus_btn"
+        android:layout_above="@id/gimbal_pitch_update"
+        android:layout_marginStart="10dp"
+
+        android:text="-30"
+        android:textSize="18sp" />
+    <Button
+        android:id="@+id/gimbal_pitch_update"
+        android:layout_width="50dp"
+        android:layout_height="40dp"
+        android:layout_toEndOf="@id/t_plus_btn"
+        android:layout_above="@+id/goTo_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="10dp"
+        android:text="p" />
+<!--    <Button-->
+<!--        android:id="@+id/g_plus_side_update"-->
+<!--        android:layout_width="50dp"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:layout_toEndOf="@id/Gimbal"-->
+<!--        android:layout_above="@+id/gimbal_pitch_update"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_marginStart="0dp"-->
+<!--        android:text="+" />-->
+
     <Button
         android:id="@+id/goTo_btn"
         android:layout_width="wrap_content"
@@ -322,7 +370,7 @@
         android:layout_marginBottom="0dp"
         android:layout_alignParentBottom="true"
         android:layout_toEndOf="@+id/lonText"
-        android:text="35.209521:"
+        android:text="35.209521"
         android:textSize="18sp"
         />
     <TextView

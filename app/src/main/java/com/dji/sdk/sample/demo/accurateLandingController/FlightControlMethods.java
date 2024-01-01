@@ -216,7 +216,7 @@ public class FlightControlMethods {
                         }
                 );
             } else {
-                setResultToToast("flight controller virtual mode off");
+//                setResultToToast("flight controller virtual mode off");
 
                 // If virtual stick is not enabled, enable
                 flightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
