@@ -29,6 +29,11 @@ public class FlightControlMethods {
     private float roll;
     private float yaw;
     private float throttle;
+    // Maximum control speeds
+    protected final float pitchJoyControlMaxSpeed = 5;
+    protected final float rollJoyControlMaxSpeed = 5;
+    protected final float yawJoyControlMaxSpeed = 5;
+    protected final float throttleJoyControlMaxSpeed = 5;
     private FlightController flightController;
     private boolean virtualStickEnabled;
 
@@ -173,17 +178,11 @@ public class FlightControlMethods {
             startTime = System.currentTimeMillis();
         }
 
-        // Maximum control speeds
-        float pitchJoyControlMaxSpeed = 5;
-        float rollJoyControlMaxSpeed = 10;
-        float yawJoyControlMaxSpeed = 30;
-        float verticalJoyControlMaxSpeed = 2;
-
         // Set pitch, roll, yaw, throttle
         float mPitch = (float) (pitchJoyControlMaxSpeed * pX);        // forward-backwards
         float mRoll = (float) (rollJoyControlMaxSpeed * pY);          // left-right
         float mYaw = (float) (yawJoyControlMaxSpeed * pZ);          // tilt right/left
-        float mThrottle = (float) (verticalJoyControlMaxSpeed * pThrottle);  // height
+        float mThrottle = (float) (throttleJoyControlMaxSpeed * pThrottle);  // height
 
         if (flightController != null) {
 

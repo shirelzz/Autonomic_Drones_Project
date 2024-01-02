@@ -17,6 +17,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -36,7 +37,6 @@ import dji.sdk.codec.DJICodecManager;
 import android.widget.Button;
 
 import dji.common.model.LocationCoordinate2D;
-
 
 
 /**
@@ -71,7 +71,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
-    private float pitch = 0.5f, yaw = 0.02f, roll = 0.01f, max_i = 1, throttle = -0.6f;//t fot vertical throttle
+    private float pitch = 0.2f, yaw = 0.2f, roll = 0.2f, max_i = 1, throttle = 0.2f;
 
 
     public ALRemoteControllerView(Context context) {
@@ -80,18 +80,6 @@ public class ALRemoteControllerView extends RelativeLayout
         this.receivedVideo = new ReceivedVideo();
         init(context);
     }
-
-    // Constructor to handle null context or default constructor
-//    public ALRemoteControllerView(Context context, AttributeSet attrs) {
-//        super(context, attrs);
-//        if (context != null) {
-//            ctx = context;
-//            this.receivedVideo = new ReceivedVideo();
-//            init(context);
-//        } else {
-//            // Handle the case of null context (log an error, throw an exception, or provide a default behavior)
-//        }
-//    }
 
     private void init(Context context) {
 
@@ -105,11 +93,10 @@ public class ALRemoteControllerView extends RelativeLayout
         flightControlMethods = new FlightControlMethods();
         droneFeatures = new DroneFeatures(flightControlMethods);
         Bundle savedInstanceState = GlobalData.getSavedInstanceBundle();
-
-//        presentMap = new PresentMap(savedInstanceState, context, (Activity) getContext());
-
         HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, button1, button2, button3, this::goToFunc);
         gimbalController = new GimbalController(flightControlMethods);
+
+        presentMap = new PresentMap(dataFromDrone);
 
 //        FragmentMap yourFragment = new FragmentMap();
 //        FragmentManager fragmentManager = GlobalData.getAppCompatActivity().getSupportFragmentManager();
@@ -144,7 +131,6 @@ public class ALRemoteControllerView extends RelativeLayout
         lat = findViewById(R.id.latEditText);
         lon = findViewById(R.id.lonEditText);
 //        alt = findViewById(R.id.altEditText);
-
 
         y_minus_btn = findViewById(R.id.y_minus_btn);
         y_plus_btn = findViewById(R.id.y_plus_btn);
@@ -215,30 +201,21 @@ public class ALRemoteControllerView extends RelativeLayout
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
         accuracyLog.updateData(dataFromDrone.getAll());
-//        if (!onGoToMode) {
-//            imgView.setVisibility(View.VISIBLE);
+
         droneIMG = mVideoSurface.getBitmap();
         imgView.setImageBitmap(droneIMG);
-//            presentMap.getMapView().setVisibility(View.INVISIBLE);
-//        } else {
-//            presentMap.getMapView().setVisibility(View.VISIBLE);
-//            imgView.setVisibility(View.INVISIBLE);
-//        GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
-//        double[] pos;
-//        if (gpsLocation == null) {
-//            double curr_lat = dataFromDrone.getGPS().getLatitude() + 0.001;
-//            double curr_lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
-//            double curr_alt = dataFromDrone.getGPS().getAltitude();
-//
-//            pos = new double[]{curr_lat, curr_lon, curr_alt};
-//            goToUsingVS.setTargetGpsLocation(pos);
-//        } else {
-//            pos = gpsLocation.getAll();
-//        }
-//        goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
-//
-//        dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
-        //        }
+
+        if (!onGoToMode) {
+//            mVideoSurface.setVisibility(View.VISIBLE);
+            imgView.setVisibility(View.VISIBLE);
+            presentMap.MapVisibility(false);
+        } else {
+//            mVideoSurface.setVisibility(View.INVISIBLE);
+            imgView.setVisibility(View.INVISIBLE);
+            presentMap.MapVisibility(true);
+            goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
+            dist.setText(Arrays.toString(flightCommands.calcDistFrom(goToUsingVS.getDestGpsLocation().getAll(), dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
+        }
     }
 
     @SuppressLint("SetTextI18n")

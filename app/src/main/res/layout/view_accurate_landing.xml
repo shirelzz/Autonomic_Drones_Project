@@ -32,17 +32,17 @@
             tools:ignore="RtlHardcoded" />
     </FrameLayout>
 
-<!--    <FrameLayout-->
-<!--        android:id="@+id/mapView"-->
-<!--        android:layout_width="425dp"-->
-<!--        android:layout_height="195dp"-->
-<!--        android:layout_alignParentEnd="true"-->
-<!--        android:visibility="invisible"-->
 
-<!--        android:layout_marginTop="0dp"-->
-<!--        android:layout_marginEnd="0dp"-->
-<!-- />-->
-<!--            tools:context="com.example.mapwithmarker.MapsMarkerActivity"-->
+    <fragment
+        android:id="@+id/map_view"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="425dp"
+        android:layout_height="195dp"
+        android:layout_alignParentEnd="true"
+
+        android:layout_marginTop="0dp"
+        android:layout_marginEnd="0dp"
+    />
 
     <!-- Text views for displaying location details -->
 <!--    <TextView-->
@@ -100,7 +100,7 @@
         android:layout_width="460dp"
         android:layout_height="wrap_content"
         android:layout_below="@+id/dataLog"
-        android:text="1234"
+        android:text="Go to activation"
         android:textSize="18sp"
         />
 

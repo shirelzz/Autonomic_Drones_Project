@@ -113,14 +113,12 @@ public class HandleSpeechToText {
             button1.setBackgroundColor(Color.GREEN);
             button2.setBackgroundColor(Color.WHITE);
             button3.setBackgroundColor(Color.WHITE);
-        }
-        else if (text.contains("button two") || text.contains("button 2") || text.contains("button too")) {
+        } else if (text.contains("button two") || text.contains("button 2") || text.contains("button too") || text.contains("button to")) {
 
             button2.setBackgroundColor(Color.GREEN);
             button1.setBackgroundColor(Color.WHITE);
             button3.setBackgroundColor(Color.WHITE);
-        }
-        else if (text.contains("button three") || text.contains("button 3")) {
+        } else if (text.contains("button three") || text.contains("button 3")) {
 
             button3.setBackgroundColor(Color.GREEN);
             button1.setBackgroundColor(Color.WHITE);

@@ -37,6 +37,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.dji.sdk.sample.R;
+import com.dji.sdk.sample.demo.GlobalData;
 import com.dji.sdk.sample.internal.model.ViewWrapper;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 import com.dji.sdk.sample.internal.view.DemoListView;
@@ -112,7 +113,6 @@ public class  MainActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         checkAndRequestPermissions();
-
         DJISampleApplication.getEventBus().register(this);
         setContentView(R.layout.activity_main);
         setupActionBar();
@@ -418,6 +418,8 @@ public class  MainActivity extends AppCompatActivity {
         setupInAnimations();
 
         stack = new Stack<ViewWrapper>();
+        GlobalData.setSupportFragmentManager(getSupportFragmentManager());
+
         View view = contentFrameLayout.getChildAt(0);
         stack.push(new ViewWrapper(view, R.string.activity_component_list));
     }
