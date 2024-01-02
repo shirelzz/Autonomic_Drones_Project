@@ -2,15 +2,15 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -22,13 +22,15 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.fragment.app.FragmentManager;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.demo.GlobalData;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import dji.sdk.codec.DJICodecManager;
@@ -49,7 +51,7 @@ public class ALRemoteControllerView extends RelativeLayout
     static String TAG = "Accurate landing";
     protected ImageView audioIcon;
     private Context ctx;
-    private Button button1, button2, button3, goTo_btn;
+    private Button goToFMM_btn, button2, button3, goTo_btn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
     private Button g_minus_btn_up, g_plus_btn_up, g_minus_btn_side, g_plus_btn_side;
     private Bitmap droneIMG;
@@ -58,6 +60,8 @@ public class ALRemoteControllerView extends RelativeLayout
     protected TextView dataLog;
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
+    ExcelWriter excelWriter;
+    private static final int PERMISSION_REQUEST_CODE = 1;
     private DataFromDrone dataFromDrone;
     private GoToUsingVS goToUsingVS;
     private FlightControlMethods flightControlMethods;
@@ -68,7 +72,6 @@ public class ALRemoteControllerView extends RelativeLayout
     protected EditText lon;
     protected PresentMap presentMap;
     private boolean onGoToMode = false;
-
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
     private float pitch = 0.5f, yaw = 0.02f, roll = 0.01f, max_i = 1, throttle = -0.6f;//t fot vertical throttle
@@ -99,6 +102,16 @@ public class ALRemoteControllerView extends RelativeLayout
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
         initUI();
         accuracyLog = new AccuracyLog(dataLog);
+
+        // Check if the permission is not granted (read - write - sensors)
+        if ( ContextCompat.checkSelfPermission(this.getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(this.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
+            System.out.println("Required Permissions are not granted");
+        } else {
+            // Permission already granted, initialize
+            excelWriter = new ExcelWriter(this.getContext(), "Sensor_Values10");
+        }
+
         dataFromDrone = new DataFromDrone();
         flightCommands = new FlightCommands();
         goToUsingVS = new GoToUsingVS(dataFromDrone);
@@ -108,7 +121,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
 //        presentMap = new PresentMap(savedInstanceState, context, (Activity) getContext());
 
-        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, button1, button2, button3, this::goToFunc);
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, button2, button3, this::goToFunc);
         gimbalController = new GimbalController(flightControlMethods);
 
 //        FragmentMap yourFragment = new FragmentMap();
@@ -134,7 +147,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private void initUI() {
         mVideoSurface = findViewById(R.id.video_previewer_surface);
         imgView = findViewById(R.id.imgView);
-        button1 = findViewById(R.id.btn1);
+        goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
         button2 = findViewById(R.id.btn2);
         button3 = findViewById(R.id.btn3);
         goTo_btn = findViewById(R.id.goTo_btn);
@@ -164,7 +177,7 @@ public class ALRemoteControllerView extends RelativeLayout
         if (mVideoSurface != null) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
-        button1.setOnClickListener(this);
+        goToFMM_btn.setOnClickListener(this);
         button2.setOnClickListener(this);
         button3.setOnClickListener(this);
         goTo_btn.setOnClickListener(this);
@@ -176,6 +189,14 @@ public class ALRemoteControllerView extends RelativeLayout
         p_plus_btn.setOnClickListener(this);
         t_minus_btn.setOnClickListener(this);
         t_plus_btn.setOnClickListener(this);
+
+//        goToFMM_btn.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+////                Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+////                startActivity(intent);
+//            }
+//        });
 
         g_minus_btn_up.setOnClickListener(this);
 //        g_plus_btn_up.setOnClickListener(this);
@@ -215,6 +236,31 @@ public class ALRemoteControllerView extends RelativeLayout
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
         accuracyLog.updateData(dataFromDrone.getAll());
+        String currentRow = accuracyLog.getCurrentRow();
+
+        if (excelWriter != null){
+            ArrayList<String> rHeaders = new ArrayList<>();
+            rHeaders.add("Timestamp");
+            rHeaders.add("lat");
+            rHeaders.add("lon");
+            rHeaders.add("alt");
+            rHeaders.add("HeadDirection");
+            rHeaders.add("velX");
+            rHeaders.add("velY");
+            rHeaders.add("velZ");
+            rHeaders.add("yaw");
+            rHeaders.add("pitch");
+            rHeaders.add("roll");
+            rHeaders.add("gimbalPitch");
+            rHeaders.add("satelliteCount");
+            rHeaders.add("gpsSignalLevel");
+            rHeaders.add("batRemainingTime");
+            rHeaders.add("batCharge");
+            rHeaders.add("signalQuality");
+            excelWriter.setRowHeaders(rHeaders);
+            excelWriter.writeToExcel(currentRow);
+        }
+
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
@@ -247,7 +293,7 @@ public class ALRemoteControllerView extends RelativeLayout
         if (onGoToMode) {
             goTo_btn.setBackgroundColor(Color.GREEN);
             button3.setBackgroundColor(Color.WHITE);
-            button1.setBackgroundColor(Color.WHITE);
+            goToFMM_btn.setBackgroundColor(Color.WHITE);
             button2.setBackgroundColor(Color.WHITE);
             GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
             double[] pos;
@@ -273,7 +319,7 @@ public class ALRemoteControllerView extends RelativeLayout
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.btn1:
+            case R.id.GoTo_FMM_btn:
                 //TODO:  need to check if the lon and lat are in the correct format
                 double lon_ = Double.parseDouble(lon.getText().toString());
                 double lat_ = Double.parseDouble(lat.getText().toString());
@@ -288,7 +334,7 @@ public class ALRemoteControllerView extends RelativeLayout
                         flightControlMethods.getFlightController());
                 fmm.startGoToMission();
                 ToastUtils.showToast("active go-to mission");
-                button1.setBackgroundColor(Color.GREEN);
+                goToFMM_btn.setBackgroundColor(Color.GREEN);
                 button2.setBackgroundColor(Color.WHITE);
                 button3.setBackgroundColor(Color.WHITE);
                 goTo_btn.setBackgroundColor(Color.WHITE);
@@ -296,12 +342,12 @@ public class ALRemoteControllerView extends RelativeLayout
                 break;
             case R.id.btn2:
                 button2.setBackgroundColor(Color.GREEN);
-                button1.setBackgroundColor(Color.WHITE);
+                goToFMM_btn.setBackgroundColor(Color.WHITE);
                 button3.setBackgroundColor(Color.WHITE);
                 break;
             case R.id.btn3:
                 button3.setBackgroundColor(Color.GREEN);
-                button1.setBackgroundColor(Color.WHITE);
+                goToFMM_btn.setBackgroundColor(Color.WHITE);
                 button2.setBackgroundColor(Color.WHITE);
                 break;
             case R.id.goTo_btn:

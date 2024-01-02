@@ -320,7 +320,7 @@
         android:text="Go To" />
 
     <Button
-        android:id="@+id/btn1"
+        android:id="@+id/GoTo_FMM_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
 
@@ -334,7 +334,7 @@
         android:id="@+id/btn2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/btn1"
+        android:layout_toEndOf="@+id/GoTo_FMM_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
         android:layout_alignParentBottom="true"
