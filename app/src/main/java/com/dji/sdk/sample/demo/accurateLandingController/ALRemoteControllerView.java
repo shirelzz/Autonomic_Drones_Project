@@ -106,7 +106,7 @@ public class ALRemoteControllerView extends RelativeLayout
         flightControlMethods = new FlightControlMethods();
         droneFeatures = new DroneFeatures(flightControlMethods);
         Bundle savedInstanceState = GlobalData.getSavedInstanceBundle();
-        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, button1, button2, button3, this::goToFunc);
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, button2, button3, this::goToFunc);
         gimbalController = new GimbalController(flightControlMethods);
 
         presentMap = new PresentMap(dataFromDrone);
