@@ -46,7 +46,14 @@
         <!-- personal key -->
         <meta-data
             android:name="com.dji.sdk.API_KEY"
-            android:value="cc096cf16a307be089ea6751"/>
+            android:value="cc096cf16a307be089ea6751"
+            />
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDX6E2KbC_3ErnMwEK-eI0pzQxAaWlPwIs" />
+
+
 
 <!--        781f224295c432d8b0049ff6-->
 
