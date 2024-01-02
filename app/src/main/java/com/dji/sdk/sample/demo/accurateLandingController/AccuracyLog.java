@@ -26,6 +26,8 @@ public class AccuracyLog {
     private DecimalFormat dcF = new DecimalFormat("##.####");
     private BufferedWriter logFile;
 
+    private StringBuilder currentRow;
+
     private String header = "TimeMS,date,time,Lat,Lon,Alt,HeadDirection,VelocityX,VelocityY,VelocityZ,yaw,pitch,roll,GimbalPitch," +
             "satelliteCount,gpsSignalLevel," + "batRemainingTime,batCharge"
 //            + ",Real/kalman,MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,Pp,Ip,Dp,Pr,Ir,Dr,Pt,It,Dt,MaxI,AutonomousMode"
@@ -48,7 +50,7 @@ public class AccuracyLog {
      */
     private void initLogFile() {
 //        File log = new File("sdcard/droneLog" + System.currentTimeMillis() + ".csv");
-        File log = new File(Environment.getExternalStorageDirectory() + "/droneLog" + System.currentTimeMillis() + ".csv");
+        File log = new File(Environment.getExternalStorageDirectory() + "/droneLog" + System.currentTimeMillis() + ".xls");
 //         ".xls"
         try {
             logFile = new BufferedWriter(new FileWriter(log));
@@ -86,39 +88,44 @@ public class AccuracyLog {
 
         try {
             //telemetry
-            sb.append(droneTelemetry.get("lat") + ",");
-            sb.append(droneTelemetry.get("lon") + ",");
-            sb.append(droneTelemetry.get("alt") + ",");
-            sb.append(droneTelemetry.get("HeadDirection") + ",");
+            sb.append(droneTelemetry.get("lat") + "|");
+            sb.append(droneTelemetry.get("lon") + "|");
+            sb.append(droneTelemetry.get("alt") + "|");
+            sb.append(droneTelemetry.get("HeadDirection") + "|");
 
-            sb.append(format(droneTelemetry.get("velX")) + ",");
-            sb.append(format(droneTelemetry.get("velY")) + ",");
-            sb.append(format(droneTelemetry.get("velZ")) + ",");
+            sb.append(format(droneTelemetry.get("velX")) + "|");
+            sb.append(format(droneTelemetry.get("velY")) + "|");
+            sb.append(format(droneTelemetry.get("velZ")) + "|");
 
-            sb.append(format(droneTelemetry.get("yaw")) + ",");
-            sb.append(format(droneTelemetry.get("pitch")) + ",");
-            sb.append(format(droneTelemetry.get("roll")) + ",");
+            sb.append(format(droneTelemetry.get("yaw")) + "|");
+            sb.append(format(droneTelemetry.get("pitch")) + "|");
+            sb.append(format(droneTelemetry.get("roll")) + "|");
 //            sb.append(format(controlStatus.get("Throttle")) + ",");
 
-            sb.append(format(droneTelemetry.get("gimbalPitch")) + ",");
+            sb.append(format(droneTelemetry.get("gimbalPitch")) + "|");
 
-            sb.append(format(droneTelemetry.get("satelliteCount")) + ",");
-            sb.append(format(droneTelemetry.get("gpsSignalLevel")) + ",");
+            sb.append(format(droneTelemetry.get("satelliteCount")) + "|");
+            sb.append(format(droneTelemetry.get("gpsSignalLevel")) + "|");
 
-            sb.append(format(droneTelemetry.get("batRemainingTime")) + ",");
-            sb.append(format(droneTelemetry.get("batCharge")) + ",");
-            sb.append(format(droneTelemetry.get("signalQuality")) + ",");
+            sb.append(format(droneTelemetry.get("batRemainingTime")) + "|");
+            sb.append(format(droneTelemetry.get("batCharge")) + "|");
+            sb.append(format(droneTelemetry.get("signalQuality")) + "|");
 
         } catch (Exception e) {
             e.printStackTrace();
         }
         sb.append("\r\n");
+        currentRow = sb;
 
         try {
             logFile.write(sb.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public String getCurrentRow(){
+        return currentRow.toString();
     }
 
     private String format(Double data) {
