@@ -4,20 +4,21 @@ import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
-import android.os.Bundle;
+import android.os.Build;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -27,7 +28,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.dji.sdk.sample.R;
-import com.dji.sdk.sample.demo.GlobalData;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
@@ -51,17 +51,16 @@ public class ALRemoteControllerView extends RelativeLayout
     static String TAG = "Accurate landing";
     protected ImageView audioIcon;
     private Context ctx;
-    private Button goToFMM_btn, button2, button3, goTo_btn;
+    private Button goToFMM_btn, stopButton, button3, goTo_btn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
-    private Button g_minus_btn_up, g_plus_btn_up, g_minus_btn_side, g_plus_btn_side;
+    private Button g_minus_btn_up;
     private Bitmap droneIMG;
     protected ImageView imgView;
     protected TextureView mVideoSurface = null;
     protected TextView dataLog;
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
-    ExcelWriter excelWriter;
-    private static final int PERMISSION_REQUEST_CODE = 1;
+    //    ExcelWriter excelWriter;
     private DataFromDrone dataFromDrone;
     private GoToUsingVS goToUsingVS;
     private FlightControlMethods flightControlMethods;
@@ -71,10 +70,10 @@ public class ALRemoteControllerView extends RelativeLayout
     protected EditText lat;
     protected EditText lon;
     protected PresentMap presentMap;
-    private boolean onGoToMode = false;
+    private boolean onGoToMode = false, onGoToFMMMode = false;
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
-    private float pitch = 0.2f, yaw = 0.2f, roll = 0.2f, max_i = 1, throttle = 0.2f;
+    private float pitch = 0.2f, yaw = 0.2f, roll = 0.2f, throttle = 0.2f;
 
 
     public ALRemoteControllerView(Context context) {
@@ -89,35 +88,43 @@ public class ALRemoteControllerView extends RelativeLayout
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
         initUI();
-        accuracyLog = new AccuracyLog(dataLog);
+        // Check if the permission is not granted yet
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                // Permission is not granted
+                // Request the permission
 
-        // Check if the permission is not granted (read - write - sensors)
-        if ( ContextCompat.checkSelfPermission(this.getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                && ContextCompat.checkSelfPermission(this.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
-            System.out.println("Required Permissions are not granted");
-        } else {
-            // Permission already granted, initialize
-            excelWriter = new ExcelWriter(this.getContext(), "Sensor_Values10");
-        }
+                ActivityCompat.requestPermissions((Activity) getContext(),
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        12345);
+            } else {
+                // Permission has already been granted
+                // Proceed with your file operation
+//                ToastUtils.showToast("Permission has already been granted");
+                // Ensure the rest of your code for writing to the file comes here
+            }
+
+        accuracyLog = new AccuracyLog(dataLog, dist);
+
+//        // Check if the permission is not granted (read - write - sensors)
+//        if ( ContextCompat.checkSelfPermission(this.getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+//                && ContextCompat.checkSelfPermission(this.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
+//            System.out.println("Required Permissions are not granted");
+//        } else {
+        // Permission already granted, initialize
+//        excelWriter = new ExcelWriter(context, "Sensor_Values10");
+//        }
 
         dataFromDrone = new DataFromDrone();
         flightCommands = new FlightCommands();
         goToUsingVS = new GoToUsingVS(dataFromDrone);
         flightControlMethods = new FlightControlMethods();
         droneFeatures = new DroneFeatures(flightControlMethods);
-        Bundle savedInstanceState = GlobalData.getSavedInstanceBundle();
-        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, button2, button3, this::goToFunc);
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, stopButton, button3, this::goToFunc);
         gimbalController = new GimbalController(flightControlMethods);
 
         presentMap = new PresentMap(dataFromDrone);
-
-//        FragmentMap yourFragment = new FragmentMap();
-//        FragmentManager fragmentManager = GlobalData.getAppCompatActivity().getSupportFragmentManager();
-//
-//        // Get FragmentManager and start a FragmentTransaction
-//        fragmentManager.beginTransaction()
-//                .replace(R.id.mapView, yourFragment) // Replace fragment_container with your actual container ID
-//                .commit();
 
 //        gimbalController.rotateGimbalToDegree(-30);
 //        Handler handler = new Handler();
@@ -135,7 +142,7 @@ public class ALRemoteControllerView extends RelativeLayout
         mVideoSurface = findViewById(R.id.video_previewer_surface);
         imgView = findViewById(R.id.imgView);
         goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
-        button2 = findViewById(R.id.btn2);
+        stopButton = findViewById(R.id.stop_btn);
         button3 = findViewById(R.id.btn3);
         goTo_btn = findViewById(R.id.goTo_btn);
         audioIcon = findViewById(R.id.audioIcon);
@@ -164,7 +171,7 @@ public class ALRemoteControllerView extends RelativeLayout
             mVideoSurface.setSurfaceTextureListener(this);
         }
         goToFMM_btn.setOnClickListener(this);
-        button2.setOnClickListener(this);
+        stopButton.setOnClickListener(this);
         button3.setOnClickListener(this);
         goTo_btn.setOnClickListener(this);
         y_minus_btn.setOnClickListener(this);
@@ -214,7 +221,7 @@ public class ALRemoteControllerView extends RelativeLayout
             receivedVideo.setMCodecManager(null);
 
         }
-        accuracyLog.closeLog();
+//        accuracyLog.closeLog();
         return false;
     }
 
@@ -223,57 +230,61 @@ public class ALRemoteControllerView extends RelativeLayout
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
         accuracyLog.updateData(dataFromDrone.getAll());
 
-        String currentRow = accuracyLog.getCurrentRow();
-
-        if (excelWriter != null){
-            ArrayList<String> rHeaders = new ArrayList<>();
-            rHeaders.add("Timestamp");
-            rHeaders.add("lat");
-            rHeaders.add("lon");
-            rHeaders.add("alt");
-            rHeaders.add("HeadDirection");
-            rHeaders.add("velX");
-            rHeaders.add("velY");
-            rHeaders.add("velZ");
-            rHeaders.add("yaw");
-            rHeaders.add("pitch");
-            rHeaders.add("roll");
-            rHeaders.add("gimbalPitch");
-            rHeaders.add("satelliteCount");
-            rHeaders.add("gpsSignalLevel");
-            rHeaders.add("batRemainingTime");
-            rHeaders.add("batCharge");
-            rHeaders.add("signalQuality");
-            excelWriter.setRowHeaders(rHeaders);
-            excelWriter.writeToExcel(currentRow);
-        }
+//        String currentRow = accuracyLog.getCurrentRow();
+//
+//        if (excelWriter != null && currentRow != null) {
+//            ArrayList<String> rHeaders = new ArrayList<>();
+//            rHeaders.add("Timestamp");
+//            rHeaders.add("lat");
+//            rHeaders.add("lon");
+//            rHeaders.add("alt");
+//            rHeaders.add("HeadDirection");
+//            rHeaders.add("velX");
+//            rHeaders.add("velY");
+//            rHeaders.add("velZ");
+//            rHeaders.add("yaw");
+//            rHeaders.add("pitch");
+//            rHeaders.add("roll");
+//            rHeaders.add("gimbalPitch");
+//            rHeaders.add("satelliteCount");
+//            rHeaders.add("gpsSignalLevel");
+//            rHeaders.add("batRemainingTime");
+//            rHeaders.add("batCharge");
+//            rHeaders.add("signalQuality");
+//            excelWriter.setRowHeaders(rHeaders);
+//            excelWriter.writeToExcel(currentRow);
+//        }
 
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
         imgView.setImageBitmap(droneIMG);
 
-        if (!onGoToMode) {
-//            mVideoSurface.setVisibility(View.VISIBLE);
+        if (!onGoToMode && !onGoToFMMMode) {
+            mVideoSurface.setVisibility(View.VISIBLE);
             imgView.setVisibility(View.VISIBLE);
             presentMap.MapVisibility(false);
         } else {
-//            mVideoSurface.setVisibility(View.INVISIBLE);
+            mVideoSurface.setVisibility(View.INVISIBLE);
             imgView.setVisibility(View.INVISIBLE);
             presentMap.MapVisibility(true);
+        }
+        if (onGoToMode) {
             goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
             dist.setText(Arrays.toString(flightCommands.calcDistFrom(goToUsingVS.getDestGpsLocation().getAll(), dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
         }
+
     }
 
     @SuppressLint("SetTextI18n")
     private void goToFunc() {
         onGoToMode = !onGoToMode;
+        onGoToFMMMode = false;
         if (onGoToMode) {
             goTo_btn.setBackgroundColor(Color.GREEN);
             button3.setBackgroundColor(Color.WHITE);
             goToFMM_btn.setBackgroundColor(Color.WHITE);
-            button2.setBackgroundColor(Color.WHITE);
+            stopButton.setBackgroundColor(Color.WHITE);
             GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
             double[] pos;
             if (gpsLocation == null) {
@@ -291,6 +302,9 @@ public class ALRemoteControllerView extends RelativeLayout
             dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
         } else {
             goTo_btn.setBackgroundColor(Color.WHITE);
+            mVideoSurface.setVisibility(View.VISIBLE);
+            imgView.setVisibility(View.VISIBLE);
+            presentMap.MapVisibility(false);
         }
     }
 
@@ -299,35 +313,44 @@ public class ALRemoteControllerView extends RelativeLayout
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.GoTo_FMM_btn:
+                onGoToFMMMode = !onGoToFMMMode;
+                onGoToMode = false;
+
+                if (!onGoToFMMMode) {
+                    goToFMM_btn.setBackgroundColor(Color.WHITE);
+                    mVideoSurface.setVisibility(View.VISIBLE);
+                    imgView.setVisibility(View.VISIBLE);
+                    presentMap.MapVisibility(false);
+                    break;
+                }
                 //TODO:  need to check if the lon and lat are in the correct format
                 double lon_ = Double.parseDouble(lon.getText().toString());
                 double lat_ = Double.parseDouble(lat.getText().toString());
 //                float alt_ = Double.parseDouble(alt.getText().toString());
                 float alt_ = (float) dataFromDrone.getGPS().getAltitude();
 
-                onGoToMode = false;
 
                 LocationCoordinate2D targetLoc = new LocationCoordinate2D(lon_, lat_);
                 MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
                         alt_ + 1.0F,
-                        flightControlMethods.getFlightController());
+                        flightControlMethods.getFlightController(), dataFromDrone, dist);
                 fmm.startGoToMission();
-                ToastUtils.showToast("active go-to mission");
+//                ToastUtils.showToast("active go-to mission");
                 goToFMM_btn.setBackgroundColor(Color.GREEN);
-                button2.setBackgroundColor(Color.WHITE);
+                stopButton.setBackgroundColor(Color.WHITE);
                 button3.setBackgroundColor(Color.WHITE);
                 goTo_btn.setBackgroundColor(Color.WHITE);
 
                 break;
-            case R.id.btn2:
-                button2.setBackgroundColor(Color.GREEN);
+            case R.id.stop_btn:
+                stopButton.setBackgroundColor(Color.GREEN);
                 goToFMM_btn.setBackgroundColor(Color.WHITE);
                 button3.setBackgroundColor(Color.WHITE);
                 break;
             case R.id.btn3:
                 button3.setBackgroundColor(Color.GREEN);
                 goToFMM_btn.setBackgroundColor(Color.WHITE);
-                button2.setBackgroundColor(Color.WHITE);
+                stopButton.setBackgroundColor(Color.WHITE);
                 break;
             case R.id.goTo_btn:
                 this.goToFunc();

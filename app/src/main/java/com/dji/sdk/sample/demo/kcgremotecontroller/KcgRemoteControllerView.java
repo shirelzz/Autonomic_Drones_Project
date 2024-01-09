@@ -505,7 +505,7 @@ public class KcgRemoteControllerView extends RelativeLayout
         droneIMG = mVideoSurface.getBitmap();
 
         cont.setBitmapFrame(droneIMG);
-        cont.setBitmapFrame(droneIMG, tracker);
+//        cont.setBitmapFrame(droneIMG, tracker);
         imgView.setImageBitmap(droneIMG);
     }
 

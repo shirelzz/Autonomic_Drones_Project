@@ -87,6 +87,18 @@ public class DataFromDrone {
         return batCharge;
     }
 
+    public int getSatelliteCount() {
+        return satelliteCount;
+    }
+
+    public GPSSignalLevel getGpsSignalLevel() {
+        return gpsSignalLevel;
+    }
+
+    public int getSignalQuality() {
+        return signalQuality;
+    }
+
     private void initStateListeners() {
         if (ModuleVerificationUtil.isFlightControllerAvailable()) {
             Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().setStateCallback(new FlightControllerState.Callback() {

@@ -31,14 +31,17 @@ public class MissionControlWrapper {
     private LocationCoordinate2D targetLocation;
     private float altitude;
     TextView missionStateTextView;
+    private DataFromDrone dataFromDrone;
     private String lastState = "";
 
 
 
-    public  MissionControlWrapper(LocationCoordinate2D targetLocation, float altitude, FlightController fc) {
+    public  MissionControlWrapper(LocationCoordinate2D targetLocation, float altitude, FlightController fc, DataFromDrone dataFromDrone , TextView missionStateTextView) {
         this.flightController = flightController;
         this.targetLocation = targetLocation;
         this.altitude = altitude;
+        this.dataFromDrone = dataFromDrone;
+        this.missionStateTextView = missionStateTextView;
     }
 
 //    public void startSimpleFollowMe() {
@@ -94,10 +97,10 @@ public class MissionControlWrapper {
     }
 
     private boolean isGpsSignalStrongEnough() {
-        flightController.getGPSSignalLevel();
-
-        GPSSignalLevel gpsSignalLevel = flightController.getGPSSignalLevel();
-        return gpsSignalLevel.value() >= 2;
+//        flightController.getGPSSignalLevel();
+//
+//        GPSSignalLevel gpsSignalLevel = flightController.getGPSSignalLevel();
+        return dataFromDrone.getGpsSignalLevel().value() >= 2;
         // level 2: The GPS signal is weak. At this level, the aircraft's go home functionality will still work.
         // level 3: The GPS signal is good. At this level, the aircraft can hover in the air.
         // level 4: The GPS signal is very good. At this level, the aircraft can record the home point.

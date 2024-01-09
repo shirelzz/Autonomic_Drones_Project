@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.demo.GlobalData;
+import com.dji.sdk.sample.internal.utils.ToastUtils;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -32,13 +33,35 @@ public class PresentMap implements OnMapReadyCallback {
 
     public void MapVisibility(boolean isVisible) {
         Objects.requireNonNull(mapFragment.getView()).setVisibility(isVisible ? View.VISIBLE : View.INVISIBLE);
+        ToastUtils.showToast("In MapVisibility");
     }
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.map = googleMap;
-//        LatLng currentLocation = new LatLng(dataFromDrone.getGPS().getLatitude(), dataFromDrone.getGPS().getLongitude());
-//        map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, ZOOM));
+        try {
+//            LatLng currentLocation = new LatLng(dataFromDrone.getGPS().getLatitude(), dataFromDrone.getGPS().getLongitude());
+            LatLng currentLocation = new LatLng(32.0841854, 34.8487116);
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, ZOOM));
+            this.clickOnMap();
+        } catch (Exception e) {
+            e.printStackTrace();
+            ToastUtils.showToast(e.getMessage());
+        }
+    }
+
+    public void clickOnMap() {
+
+        map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+                double latitude = latLng.latitude;
+                double longitude = latLng.longitude;
+                ToastUtils.showToast("Lat : " + latitude + " , "
+                                + "Long : " + longitude);
+
+            }
+        });
 
     }
 }
