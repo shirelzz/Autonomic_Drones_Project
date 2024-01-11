@@ -86,32 +86,23 @@ public class ALRemoteControllerView extends RelativeLayout
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
         initUI();
         // Check if the permission is not granted yet
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                // Permission is not granted
-                // Request the permission
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+//            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+//                    != PackageManager.PERMISSION_GRANTED) {
+//                // Permission is not granted
+//                // Request the permission
+//
+//                ActivityCompat.requestPermissions((Activity) getContext(),
+//                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+//                        12345);
+//            } else {
+//                // Permission has already been granted
+//                // Proceed with your file operation
+////                ToastUtils.showToast("Permission has already been granted");
+//                // Ensure the rest of your code for writing to the file comes here
+//            }
 
-                ActivityCompat.requestPermissions((Activity) getContext(),
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        12345);
-            } else {
-                // Permission has already been granted
-                // Proceed with your file operation
-//                ToastUtils.showToast("Permission has already been granted");
-                // Ensure the rest of your code for writing to the file comes here
-            }
-
-        accuracyLog = new AccuracyLog(dataLog, dist);
-
-//        // Check if the permission is not granted (read - write - sensors)
-//        if ( ContextCompat.checkSelfPermission(this.getContext(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-//                && ContextCompat.checkSelfPermission(this.getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ){
-//            System.out.println("Required Permissions are not granted");
-//        } else {
-        // Permission already granted, initialize
-//        excelWriter = new ExcelWriter(context, "Sensor_Values10");
-//        }
+        accuracyLog = new AccuracyLog(dataLog, dist, this.getContext());
 
         dataFromDrone = new DataFromDrone();
         flightCommands = new FlightCommands();
@@ -123,18 +114,6 @@ public class ALRemoteControllerView extends RelativeLayout
 
         presentMap = new PresentMap(dataFromDrone);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
-
-
-//        gimbalController.rotateGimbalToDegree(-30);
-//        Handler handler = new Handler();
-//        handler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                gimbalController.rotateGimbalToDegree(90);
-//            }
-//        }, 5000);
-
-//        droneFeatures.setDownwardLight(FillLightMode.ON);
     }
 
     private void initUI() {
@@ -182,14 +161,6 @@ public class ALRemoteControllerView extends RelativeLayout
         t_minus_btn.setOnClickListener(this);
         t_plus_btn.setOnClickListener(this);
 
-//        goToFMM_btn.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-////                Intent intent = new Intent(MainActivity.this, MapsActivity.class);
-////                startActivity(intent);
-//            }
-//        });
-
         g_minus_btn_up.setOnClickListener(this);
 //        g_plus_btn_up.setOnClickListener(this);
 //        g_minus_btn_side.setOnClickListener(this);
@@ -203,7 +174,6 @@ public class ALRemoteControllerView extends RelativeLayout
         if (receivedVideo.getMCodecManager() == null) {
             showToast("" + width + "," + height);
             receivedVideo.setMCodecManager(new DJICodecManager(ctx, surfaceTexture, width, height));
-
         }
     }
 
@@ -220,7 +190,7 @@ public class ALRemoteControllerView extends RelativeLayout
             receivedVideo.setMCodecManager(null);
 
         }
-//        accuracyLog.closeLog();
+        accuracyLog.closeLog();
         return false;
     }
 

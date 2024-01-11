@@ -1,7 +1,7 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
 import android.annotation.SuppressLint;
-import android.os.Environment;
+import android.content.Context;
 import android.widget.TextView;
 
 import com.dji.sdk.sample.internal.utils.ToastUtils;
@@ -14,7 +14,6 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -24,26 +23,25 @@ import java.util.Objects;
  */
 public class AccuracyLog {
 
+    private final String[] header = {"TimeMS", "date", "time", "Lat", "Lon", "Alt", "HeadDirection", "VelocityX", "VelocityY", "VelocityZ", "yaw", "pitch", "roll", "GimbalPitch",
+            "satelliteCount", "gpsSignalLevel", "batRemainingTime", "batCharge"};
+    TextView textViewLog, text;
     private DateFormat df = new SimpleDateFormat("dd/MM/yyyy , HH:mm:ss");
     private DecimalFormat dcF = new DecimalFormat("##.####");
     private BufferedWriter logFile;
-
     private StringBuilder currentRow;
-
-    private final String[] header = {"TimeMS", "date", "time", "Lat", "Lon", "Alt", "HeadDirection", "VelocityX", "VelocityY", "VelocityZ", "yaw", "pitch", "roll", "GimbalPitch",
-            "satelliteCount", "gpsSignalLevel", "batRemainingTime", "batCharge"};
-//            + ",Real/kalman,MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,Pp,Ip,Dp,Pr,Ir,Dr,Pt,It,Dt,MaxI,AutonomousMode"
-
-    TextView textViewLog, text;
+    //            + ",Real/kalman,MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,Pp,Ip,Dp,Pr,Ir,Dr,Pt,It,Dt,MaxI,AutonomousMode"
+    private Context context;
 
     /**
      * Constructor initializing the log file and setting up the TextView for displaying information.
      *
      * @param textViewLog TextView to display telemetry information.
      */
-    public AccuracyLog(TextView textViewLog, TextView text) {
+    public AccuracyLog(TextView textViewLog, TextView text, Context context) {
         this.textViewLog = textViewLog;
         this.text = text;
+        this.context = context;
         initLogFile();
     }
 
@@ -51,27 +49,22 @@ public class AccuracyLog {
      * Initializes the log file by creating a new CSV file for logging telemetry data.
      */
     private void initLogFile() {
-        File externalStorage = Environment.getExternalStorageDirectory();
-        String fileName = externalStorage.getAbsolutePath() + "/droneLog" + System.currentTimeMillis() + ".xls";
+        File externalStorage = context.getExternalFilesDir(null);
+        String fileName = externalStorage.getAbsolutePath() + "/DroneLog" + System.currentTimeMillis() + ".csv";
         File log = new File(fileName);
-//        File log = new File(Environment.getExternalStorageDirectory() + "/droneLog" + System.currentTimeMillis() + ".xls");
-//         ".xls"
-//        ToastUtils.showToast(Environment.getExternalStorageState());
-        try{
-            if (!log.exists()) {
-                boolean data =  log.createNewFile();
-//                ToastUtils.showToast(String.valueOf(data) );
 
+        try {
+            if (!log.exists()) {
+                boolean data = log.createNewFile();
             }
-        }catch(IOException e){
-//            ToastUtils.showToast(e.getMessage());
+        } catch (IOException e) {
+            ToastUtils.showToast(e.getMessage());
             e.printStackTrace();
         }
         try {
 
             logFile = new BufferedWriter(new FileWriter(log.getAbsoluteFile()));
             logFile.write(String.join(",", header) + "\r\n");
-//            ToastUtils.showToast("logFile created");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -85,16 +78,16 @@ public class AccuracyLog {
             logFile.flush();
             logFile.close();
             logFile = null;
+            ToastUtils.showToast("Close Log");
         } catch (IOException e) {
             e.printStackTrace();
+            ToastUtils.showToast(e.getMessage());
         }
     }
 
     //-----------------------
 
-    public void appendLog(Map<String, Double> droneTelemetry
-//            , Map<String,Double> controlStatus
-    ) {
+    public void appendLog(Map<String, Double> droneTelemetry) {
 
         if (logFile == null) {
             return;
@@ -139,10 +132,8 @@ public class AccuracyLog {
 
         try {
             logFile.write(sb.toString());
-            ToastUtils.showToast(sb.toString());
         } catch (IOException e) {
-            ToastUtils.showToast(e.getMessage());
-
+            text.setText(e.getMessage());
             e.printStackTrace();
         }
     }
