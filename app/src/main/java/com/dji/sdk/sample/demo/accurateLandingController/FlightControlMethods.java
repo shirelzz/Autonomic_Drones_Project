@@ -24,17 +24,16 @@ import dji.sdk.flightcontroller.FlightController;
 public class FlightControlMethods {
 
     private static final int CONTROL_DURATION = 3000; // Duration in milliseconds (3 seconds)
-
-    private float pitch;
-    private float roll;
-    private float yaw;
-    private float throttle;
     // Maximum control speeds
     protected final float pitchJoyControlMaxSpeed = 5;
     protected final float rollJoyControlMaxSpeed = 5;
     protected final float yawJoyControlMaxSpeed = 5;
     protected final float throttleJoyControlMaxSpeed = 5;
-    private FlightController flightController;
+    private final FlightController flightController;
+    private float pitch;
+    private float roll;
+    private float yaw;
+    private float throttle;
     private boolean virtualStickEnabled;
 
     private long startTime; // Record the start time
@@ -238,19 +237,24 @@ public class FlightControlMethods {
         }
     }
 
-    private void disableVirtualStickControl() {
+    public void disableVirtualStickControl() {
         // Disable virtual stick control
-        flightController.setVirtualStickModeEnabled(false, new CommonCallbacks.CompletionCallback() {
-            @Override
-            public void onResult(DJIError djiError) {
-                if (djiError != null) {
-                    setResultToToast(djiError.getDescription());
-                } else {
-//                    setResultToToast("Disable Virtual Stick Success");
-                    virtualStickEnabled = false;
+        flightController.sendVirtualStickFlightControlData(new FlightControlData(0, 0, 0, 0), djiError -> {
+                    if (djiError != null) {
+
+                        flightController.setVirtualStickModeEnabled(false, djiError1 -> {
+                            if (djiError1 != null) {
+                                setResultToToast(djiError1.getDescription());
+                            } else {
+                                //                    setResultToToast("Disable Virtual Stick Success");
+                                virtualStickEnabled = false;
+
+                            }
+                        });
+                    }
                 }
-            }
-        });
+        );
     }
+
 
 }

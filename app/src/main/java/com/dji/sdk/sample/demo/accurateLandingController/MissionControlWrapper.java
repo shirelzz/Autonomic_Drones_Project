@@ -4,16 +4,14 @@ import android.widget.TextView;
 
 import dji.common.error.DJIError;
 import dji.common.flightcontroller.FlightControllerState;
-import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.mission.followme.FollowMeHeading;
-import dji.common.mission.followme.FollowMeMissionState;
-import dji.common.util.CommonCallbacks;
-import dji.sdk.mission.followme.FollowMeMissionOperator;
-//import dji.waypointv2.common.waypointv1.LocationCoordinate2D;
-import dji.common.model.LocationCoordinate2D;
 import dji.common.mission.followme.FollowMeMission;
-import dji.sdk.sdkmanager.DJISDKManager;
+import dji.common.mission.followme.FollowMeMissionState;
+import dji.common.model.LocationCoordinate2D;
+import dji.common.util.CommonCallbacks;
 import dji.sdk.flightcontroller.FlightController;
+import dji.sdk.mission.followme.FollowMeMissionOperator;
+import dji.sdk.sdkmanager.DJISDKManager;
 
 
 /*
@@ -24,27 +22,38 @@ import dji.sdk.flightcontroller.FlightController;
  */
 public class MissionControlWrapper {
     FlightControllerState flightController;
-
-    private FollowMeMissionOperator fmmo;
+    TextView missionStateTextView;
     //    private FollowMeMission fmm;
-
+    private FollowMeMissionOperator fmmo;
     private LocationCoordinate2D targetLocation;
     private float altitude;
-    TextView missionStateTextView;
     private DataFromDrone dataFromDrone;
     private String lastState = "";
 
 
-
-    public  MissionControlWrapper(LocationCoordinate2D targetLocation, float altitude, FlightController fc, DataFromDrone dataFromDrone , TextView missionStateTextView) {
-        this.flightController = flightController;
+    public MissionControlWrapper(LocationCoordinate2D targetLocation, float altitude, FlightController flightController, DataFromDrone dataFromDrone, TextView missionStateTextView) {
+        this.flightController = flightController.getState();
         this.targetLocation = targetLocation;
         this.altitude = altitude;
         this.dataFromDrone = dataFromDrone;
         this.missionStateTextView = missionStateTextView;
     }
 
-//    public void startSimpleFollowMe() {
+    public MissionControlWrapper(FlightController flightController, DataFromDrone dataFromDrone, TextView missionStateTextView) {
+        this.flightController = flightController.getState();
+        this.dataFromDrone = dataFromDrone;
+        this.missionStateTextView = missionStateTextView;
+    }
+
+    public void setTargetLocation(LocationCoordinate2D targetLocation) {
+        this.targetLocation = targetLocation;
+    }
+
+    public void setAltitude(float altitude) {
+        this.altitude = altitude;
+    }
+
+    //    public void startSimpleFollowMe() {
 //        if (fmmo == null) {
 //            fmmo = getFollowMeMissionOperator();
 //        }
@@ -64,9 +73,11 @@ public class MissionControlWrapper {
 //        }
 //    }
 
+    public String getLastState() {
+        return lastState;
+    }
 
-
-//    public void updateSimpleFollowMe() {
+    //    public void updateSimpleFollowMe() {
 //        if (fmmo == null) {
 //            fmmo = getFollowMeMissionOperator();
 //        }
@@ -90,10 +101,6 @@ public class MissionControlWrapper {
     private void setLastState(String state) {
         lastState = state;
         missionStateTextView.setText(state);
-    }
-
-    public String getLastState() {
-        return lastState;
     }
 
     private boolean isGpsSignalStrongEnough() {
@@ -121,15 +128,26 @@ public class MissionControlWrapper {
     private FollowMeMission getFollowMeMission(double latitude, double longitude, double altitude) {
         // TOWARD_FOLLOW_POSITION - Aircraft's heading remains toward the coordinate it is following.
         FollowMeMission followMeMission = new FollowMeMission(FollowMeHeading.TOWARD_FOLLOW_POSITION,
-                                                                latitude,
-                                                                longitude,
-                                                                (float) altitude); // check this!
+                latitude,
+                longitude,
+                (float) altitude); // check this!
 
         // Configure other mission parameters as needed, referring to the SDK documentation
 
         return followMeMission;
     }
 
+    public void stopGoToMission() {
+        FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
+        assert fmmo != null;
+        fmmo.stopMission(djiError -> {
+            if (djiError == null) {
+                setLastState("Mission Stop: Successfully");
+            } else {
+                setLastState(djiError.getDescription());
+            }
+        });
+    }
     // Implement other methods for mission control and error handling, as needed
 
     public void startGoToMission() {
@@ -141,26 +159,23 @@ public class MissionControlWrapper {
 
         FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
         if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.READY_TO_EXECUTE) {
+            /*
+            Invoked when the asynchronous operation completes.
+            If the operation completes successfully, error will be null.
+            Override to handle in your own code.
+            */
             fmmo.startMission(getFollowMeMission(targetLocation.getLongitude(), targetLocation.getLatitude(), altitude),
-                    new CommonCallbacks.CompletionCallback() {
-                    /*
-                    Invoked when the asynchronous operation completes.
-                    If the operation completes successfully, error will be null.
-                    Override to handle in your own code.
-                    */
-                    @Override
-                    public void onResult(DJIError djiError) {
+                    djiError -> {
                         if (djiError == null) {
                             setLastState("Mission Start: Successfully");
                         } else {
                             setLastState(djiError.getDescription());
                         }
-                    }
                     });
         }
     }
 
-    public void updateGoToMission(double latitude , double longitude) { // altitude?
+    public void updateGoToMission(double latitude, double longitude) { // altitude?
 
         if (!isGpsSignalStrongEnough()) {
             setLastState("GPS signal is not strong enough");
@@ -171,7 +186,7 @@ public class MissionControlWrapper {
 
         FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
         if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.READY_TO_EXECUTE) {
-            fmmo.updateFollowingTarget(updatedTarget ,
+            fmmo.updateFollowingTarget(updatedTarget,
                     new CommonCallbacks.CompletionCallback() {
                         @Override
                         public void onResult(DJIError djiError) {

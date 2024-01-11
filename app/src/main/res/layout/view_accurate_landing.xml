@@ -338,8 +338,8 @@
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
         android:layout_alignParentBottom="true"
-
-        android:text="Stop Button" />
+        android:background="@color/red"
+        android:text="Stop" />
 
     <Button
         android:id="@+id/btn3"

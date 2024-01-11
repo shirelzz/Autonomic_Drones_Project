@@ -33,7 +33,7 @@ public class PresentMap implements OnMapReadyCallback {
 
     public void MapVisibility(boolean isVisible) {
         Objects.requireNonNull(mapFragment.getView()).setVisibility(isVisible ? View.VISIBLE : View.INVISIBLE);
-        ToastUtils.showToast("In MapVisibility");
+//        ToastUtils.showToast("In MapVisibility");
     }
 
     @Override

@@ -12,11 +12,11 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.os.Build;
-import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -28,17 +28,13 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.dji.sdk.sample.R;
-import com.dji.sdk.sample.internal.utils.ToastUtils;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-
-import dji.sdk.codec.DJICodecManager;
-
-import android.widget.Button;
+import java.util.Objects;
 
 import dji.common.model.LocationCoordinate2D;
+import dji.sdk.codec.DJICodecManager;
 
 
 /**
@@ -50,26 +46,27 @@ public class ALRemoteControllerView extends RelativeLayout
 
     static String TAG = "Accurate landing";
     protected ImageView audioIcon;
+    protected ImageView imgView;
+    protected TextureView mVideoSurface = null;
+    protected TextView dataLog;
+    protected TextView dist;
+    protected EditText gimbal;
+    protected EditText lat;
+    protected EditText lon;
+    protected PresentMap presentMap;
     private Context ctx;
     private Button goToFMM_btn, stopButton, button3, goTo_btn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
     private Button g_minus_btn_up;
     private Bitmap droneIMG;
-    protected ImageView imgView;
-    protected TextureView mVideoSurface = null;
-    protected TextView dataLog;
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
     //    ExcelWriter excelWriter;
     private DataFromDrone dataFromDrone;
     private GoToUsingVS goToUsingVS;
     private FlightControlMethods flightControlMethods;
+    private MissionControlWrapper missionControlWrapper;
     private DroneFeatures droneFeatures;
-    protected TextView dist;
-    protected EditText gimbal;
-    protected EditText lat;
-    protected EditText lon;
-    protected PresentMap presentMap;
     private boolean onGoToMode = false, onGoToFMMMode = false;
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
@@ -125,6 +122,8 @@ public class ALRemoteControllerView extends RelativeLayout
         gimbalController = new GimbalController(flightControlMethods);
 
         presentMap = new PresentMap(dataFromDrone);
+        missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
+
 
 //        gimbalController.rotateGimbalToDegree(-30);
 //        Handler handler = new Handler();
@@ -284,7 +283,7 @@ public class ALRemoteControllerView extends RelativeLayout
             goTo_btn.setBackgroundColor(Color.GREEN);
             button3.setBackgroundColor(Color.WHITE);
             goToFMM_btn.setBackgroundColor(Color.WHITE);
-            stopButton.setBackgroundColor(Color.WHITE);
+            stopButton.setBackgroundColor(Color.RED);
             GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
             double[] pos;
             if (gpsLocation == null) {
@@ -306,6 +305,23 @@ public class ALRemoteControllerView extends RelativeLayout
             imgView.setVisibility(View.VISIBLE);
             presentMap.MapVisibility(false);
         }
+    }
+
+    public void stopBtnFunc() {
+//        stopButton.setBackgroundColor(Color.GREEN);
+//        goToFMM_btn.setBackgroundColor(Color.WHITE);
+//        button3.setBackgroundColor(Color.WHITE);
+//        goTo_btn.setBackgroundColor(Color.WHITE);
+
+
+        flightControlMethods.disableVirtualStickControl();
+        Objects.requireNonNull(flightControlMethods.getFlightController().getFlightAssistant()).setLandingProtectionEnabled(true, djiError -> {
+            if (djiError != null) showToast("" + djiError);
+            else showToast("Landing protection DISABLED!");
+        });
+        missionControlWrapper.stopGoToMission();
+
+        //rotateGimbalToDegree(command.getGimbalPitch());
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -331,26 +347,26 @@ public class ALRemoteControllerView extends RelativeLayout
 
 
                 LocationCoordinate2D targetLoc = new LocationCoordinate2D(lon_, lat_);
-                MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
-                        alt_ + 1.0F,
-                        flightControlMethods.getFlightController(), dataFromDrone, dist);
-                fmm.startGoToMission();
+//                MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
+//                        alt_ + 1.0F,
+//                        flightControlMethods.getFlightController(), dataFromDrone, dist);
+                missionControlWrapper.setTargetLocation(targetLoc);
+                missionControlWrapper.setAltitude(alt_ + 1.0F);
+                missionControlWrapper.startGoToMission();
 //                ToastUtils.showToast("active go-to mission");
                 goToFMM_btn.setBackgroundColor(Color.GREEN);
-                stopButton.setBackgroundColor(Color.WHITE);
+                stopButton.setBackgroundColor(Color.RED);
                 button3.setBackgroundColor(Color.WHITE);
                 goTo_btn.setBackgroundColor(Color.WHITE);
-
                 break;
             case R.id.stop_btn:
-                stopButton.setBackgroundColor(Color.GREEN);
-                goToFMM_btn.setBackgroundColor(Color.WHITE);
-                button3.setBackgroundColor(Color.WHITE);
+                stopBtnFunc();
                 break;
             case R.id.btn3:
                 button3.setBackgroundColor(Color.GREEN);
                 goToFMM_btn.setBackgroundColor(Color.WHITE);
-                stopButton.setBackgroundColor(Color.WHITE);
+                stopButton.setBackgroundColor(Color.RED);
+                goTo_btn.setBackgroundColor(Color.WHITE);
                 break;
             case R.id.goTo_btn:
                 this.goToFunc();
