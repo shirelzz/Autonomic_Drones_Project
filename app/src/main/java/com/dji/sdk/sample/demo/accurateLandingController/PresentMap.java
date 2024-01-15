@@ -16,12 +16,10 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.Objects;
 
 public class PresentMap implements OnMapReadyCallback {
+    private static final int ZOOM = 16;
     private DataFromDrone dataFromDrone;
     private GoogleMap map;
-
     private SupportMapFragment mapFragment;
-
-    private static final int ZOOM = 16;
 
     public PresentMap(DataFromDrone dataFromDrone) {
         this.dataFromDrone = dataFromDrone;
@@ -40,8 +38,13 @@ public class PresentMap implements OnMapReadyCallback {
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.map = googleMap;
         try {
-//            LatLng currentLocation = new LatLng(dataFromDrone.getGPS().getLatitude(), dataFromDrone.getGPS().getLongitude());
-            LatLng currentLocation = new LatLng(32.0841854, 34.8487116);
+            double latitude = 32.0841854, longitude = 34.8487116;
+            if (dataFromDrone.getGpsSignalLevel().value() >= 2) {
+                latitude = dataFromDrone.getGPS().getLatitude();
+                longitude = dataFromDrone.getGPS().getLongitude();
+            }
+            LatLng currentLocation = new LatLng(latitude, longitude);
+
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, ZOOM));
             this.clickOnMap();
         } catch (Exception e) {
@@ -58,7 +61,7 @@ public class PresentMap implements OnMapReadyCallback {
                 double latitude = latLng.latitude;
                 double longitude = latLng.longitude;
                 ToastUtils.showToast("Lat : " + latitude + " , "
-                                + "Long : " + longitude);
+                        + "Long : " + longitude);
 
             }
         });

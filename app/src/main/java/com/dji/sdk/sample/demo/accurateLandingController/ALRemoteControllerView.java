@@ -70,7 +70,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private boolean onGoToMode = false, onGoToFMMMode = false;
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
-    private float pitch = 0.2f, yaw = 0.2f, roll = 0.2f, throttle = 0.2f;
+    private float pitch = 0.2f, yaw = 0.5f, roll = 0.2f, throttle = 0.2f;
 
 
     public ALRemoteControllerView(Context context) {
@@ -230,11 +230,11 @@ public class ALRemoteControllerView extends RelativeLayout
         imgView.setImageBitmap(droneIMG);
 
         if (!onGoToMode && !onGoToFMMMode) {
-            mVideoSurface.setVisibility(View.VISIBLE);
+//            mVideoSurface.setVisibility(View.VISIBLE);
             imgView.setVisibility(View.VISIBLE);
             presentMap.MapVisibility(false);
         } else {
-            mVideoSurface.setVisibility(View.INVISIBLE);
+//            mVideoSurface.setVisibility(View.INVISIBLE);
             imgView.setVisibility(View.INVISIBLE);
             presentMap.MapVisibility(true);
         }
@@ -271,7 +271,7 @@ public class ALRemoteControllerView extends RelativeLayout
             dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
         } else {
             goTo_btn.setBackgroundColor(Color.WHITE);
-            mVideoSurface.setVisibility(View.VISIBLE);
+//            mVideoSurface.setVisibility(View.VISIBLE);
             imgView.setVisibility(View.VISIBLE);
             presentMap.MapVisibility(false);
         }
@@ -304,7 +304,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
                 if (!onGoToFMMMode) {
                     goToFMM_btn.setBackgroundColor(Color.WHITE);
-                    mVideoSurface.setVisibility(View.VISIBLE);
+//                    mVideoSurface.setVisibility(View.VISIBLE);
                     imgView.setVisibility(View.VISIBLE);
                     presentMap.MapVisibility(false);
                     break;

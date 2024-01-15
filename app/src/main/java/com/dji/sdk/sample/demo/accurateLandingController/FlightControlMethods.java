@@ -25,10 +25,10 @@ public class FlightControlMethods {
 
     private static final int CONTROL_DURATION = 3000; // Duration in milliseconds (3 seconds)
     // Maximum control speeds
-    protected final float pitchJoyControlMaxSpeed = 5;
-    protected final float rollJoyControlMaxSpeed = 5;
-    protected final float yawJoyControlMaxSpeed = 5;
-    protected final float throttleJoyControlMaxSpeed = 5;
+    protected final float pitchJoyControlMaxSpeed = 4;
+    protected final float rollJoyControlMaxSpeed = 4;
+    protected final float yawJoyControlMaxSpeed = 10;
+    protected final float throttleJoyControlMaxSpeed = 4;
     private final FlightController flightController;
     private float pitch;
     private float roll;
@@ -100,8 +100,8 @@ public class FlightControlMethods {
         and does not follow typical coordinate system convention
         (positive vertical velocity results in the aircraft ascending).
          */
-        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
-//        flightController.setVerticalControlMode(VerticalControlMode.VELOCITY); // Asaf
+//        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
+        flightController.setVerticalControlMode(VerticalControlMode.VELOCITY); // Asaf
 
     }
 
@@ -196,6 +196,9 @@ public class FlightControlMethods {
                 // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
                 flightControlData.setYaw(mYaw);
                 // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
+            if(mThrottle < 0){
+//                mThrottle = -3
+            }
                 flightControlData.setVerticalThrottle(mThrottle);
                 flightController.sendVirtualStickFlightControlData(flightControlData, new CommonCallbacks.CompletionCallback() {
                             @Override
