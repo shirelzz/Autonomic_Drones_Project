@@ -19,11 +19,12 @@ import dji.sdk.sdkmanager.DJISDKManager;
  https://stackoverflow.com/questions/43291644/custom-coordinates-on-follow-me-mission-dji-mobile-sdk-for-android
  https://stackoverflow.com/questions/54539410/how-to-implement-follow-me-function-into-android-dji-app/54612216#54612216
  https://stackoverflow.com/questions/48404526/custom-follow-me-mission-dji-android-sdk
+ https://stackoverflow.com/questions/54539410/how-to-implement-follow-me-function-into-android-dji-app
  */
 public class MissionControlWrapper {
     FlightControllerState flightController;
     TextView missionStateTextView;
-    //    private FollowMeMission fmm;
+    private FollowMeMission fmm;
     private FollowMeMissionOperator fmmo;
     private LocationCoordinate2D targetLocation;
     private float altitude;
@@ -52,52 +53,10 @@ public class MissionControlWrapper {
     public void setAltitude(float altitude) {
         this.altitude = altitude;
     }
-
-    //    public void startSimpleFollowMe() {
-//        if (fmmo == null) {
-//            fmmo = getFollowMeMissionOperator();
-//        }
-//
-//        final FollowMeMissionOperator followMeMissionOperator = fmmo;
-//        if (followMeMissionOperator.getCurrentState().equals(FollowMeMissionState.READY_TO_EXECUTE)) {
-//            followMeMissionOperator.startMission(getFollowMeMission(), new CommonCallbacks.CompletionCallback() {
-//                @Override
-//                public void onResult(DJIError djiError) {
-//                    if (djiError != null) {
-//                        setLastState(djiError.getDescription());
-//                    } else {
-//                        setLastState("Mission Start: Successfully");
-//                    }
-//                }
-//            });
-//        }
-//    }
-
     public String getLastState() {
         return lastState;
     }
 
-    //    public void updateSimpleFollowMe() {
-//        if (fmmo == null) {
-//            fmmo = getFollowMeMissionOperator();
-//        }
-//
-//        final FollowMeMissionOperator followMeMissionOperator = fmmo;
-//        if (followMeMissionOperator.getCurrentState().equals(FollowMeMissionState.EXECUTING)) {
-//            followMeMissionOperator.updateFollowingTarget(
-//                    new LocationCoordinate2D(targetLocation.getLatitude(), targetLocation.getLongitude()),
-//                    new CommonCallbacks.CompletionCallback() {
-//                        @Override
-//                        public void onResult(DJIError error) {
-//                            if (error != null) {
-//                                setLastState(followMeMissionOperator.getCurrentState().getName().toString() + " " + error.getDescription());
-//                            } else {
-//                                setLastState("Mission Update Successfully");
-//                            }
-//                        }
-//                    });
-//        }
-//    }
     private void setLastState(String state) {
         lastState = state;
         missionStateTextView.setText(state);
@@ -105,23 +64,19 @@ public class MissionControlWrapper {
 
     private boolean isGpsSignalStrongEnough() {
 //        flightController.getGPSSignalLevel();
-//
 //        GPSSignalLevel gpsSignalLevel = flightController.getGPSSignalLevel();
+
         return dataFromDrone.getGpsSignalLevel().value() >= 2;
         // level 2: The GPS signal is weak. At this level, the aircraft's go home functionality will still work.
         // level 3: The GPS signal is good. At this level, the aircraft can hover in the air.
         // level 4: The GPS signal is very good. At this level, the aircraft can record the home point.
-
-
     }
 
     private FollowMeMissionOperator getFollowMeMissionOperator() {
-        // Example using a hypothetical SDKManager:
         DJISDKManager djiSdkManager = DJISDKManager.getInstance();
         if (djiSdkManager != null) {
             return djiSdkManager.getMissionControl().getFollowMeMissionOperator();
         }
-        // Handle the case where FollowMeMissionOperator is not available
         return null;
     }
 
@@ -131,9 +86,7 @@ public class MissionControlWrapper {
                 latitude,
                 longitude,
                 (float) altitude); // check this!
-
-        // Configure other mission parameters as needed, referring to the SDK documentation
-
+        this.fmm = followMeMission;
         return followMeMission;
     }
 
@@ -148,7 +101,6 @@ public class MissionControlWrapper {
             }
         });
     }
-    // Implement other methods for mission control and error handling, as needed
 
     public void startGoToMission() {
 
@@ -158,13 +110,14 @@ public class MissionControlWrapper {
         }
 
         FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
+
         if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.READY_TO_EXECUTE) {
             /*
             Invoked when the asynchronous operation completes.
             If the operation completes successfully, error will be null.
             Override to handle in your own code.
             */
-            fmmo.startMission(getFollowMeMission(targetLocation.getLongitude(), targetLocation.getLatitude(), altitude),
+            fmmo.startMission(getFollowMeMission(targetLocation.getLatitude(), targetLocation.getLongitude(), altitude),
                     djiError -> {
                         if (djiError == null) {
                             setLastState("Mission Start: Successfully");
@@ -175,7 +128,7 @@ public class MissionControlWrapper {
         }
     }
 
-    public void updateGoToMission(double latitude, double longitude) { // altitude?
+    public void updateGoToMission(double latitude, double longitude) { // , float altitude?
 
         if (!isGpsSignalStrongEnough()) {
             setLastState("GPS signal is not strong enough");
@@ -183,9 +136,10 @@ public class MissionControlWrapper {
         }
 
         LocationCoordinate2D updatedTarget = new LocationCoordinate2D(latitude, longitude);
-
         FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
-        if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.READY_TO_EXECUTE) {
+
+        // READY_TO_EXECUTE or EXECUTING ?
+        if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.EXECUTING) {
             fmmo.updateFollowingTarget(updatedTarget,
                     new CommonCallbacks.CompletionCallback() {
                         @Override
@@ -197,27 +151,10 @@ public class MissionControlWrapper {
                             }
                         }
                     });
-
+        } else {
+            setLastState("FollowMeMissionOperator is not ready");
         }
     }
-
-
-    // Use this method to update the target location during the mission if needed
-//    public void updateTargetLocation(double longitude, double latitude) {
-//        FollowMeMissionOperator fmmo = getFollowMeMissionOperator();
-//        if (fmmo != null && fmmo.getCurrentState() == FollowMeMissionState.EXECUTING) {
-//            fmmo.updateFollowingTarget(new LocationCoordinate2D(latitude, longitude), new CommonCallbacks.CompletionCallback() {
-//                @Override
-//                public void onResult(DJIError error) {
-//                    if (error == null) {
-//                        // Target location updated successfully
-//                    } else {
-//                        // Handle target update error
-//                    }
-//                }
-//            });
-//        }
-//    }
 
 }
 
