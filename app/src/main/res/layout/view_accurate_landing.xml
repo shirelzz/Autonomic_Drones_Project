@@ -337,7 +337,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
-        android:layout_toEndOf="@+id/GoTo_FMM_btn"
+        android:layout_toEndOf="@+id/stop_btn"
         android:text="Follow phone with FMM" />
 
     <Button
@@ -351,22 +351,22 @@
         android:background="@color/red"
         android:text="Stop" />
 
-    <Button
-        android:id="@+id/btn3"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/stop_btn"
-        android:layout_marginBottom="0dp"
-        android:layout_marginStart="0dp"
-        android:layout_alignParentBottom="true"
+<!--    <Button-->
+<!--        android:id="@+id/btn3"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_toEndOf="@+id/stop_btn"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_marginStart="0dp"-->
+<!--        android:layout_alignParentBottom="true"-->
 
-        android:text="Button 3" />
+<!--        android:text="Button 3" />-->
 
     <TextView
         android:id="@+id/lonText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/btn3"
+        android:layout_toEndOf="@+id/Follow_phone_FMM_btn"
         android:layout_marginBottom="0dp"
         android:layout_alignParentBottom="true"
 

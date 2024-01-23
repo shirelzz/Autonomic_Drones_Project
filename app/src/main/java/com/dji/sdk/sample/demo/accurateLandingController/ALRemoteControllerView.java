@@ -87,7 +87,7 @@ public class ALRemoteControllerView extends RelativeLayout
         goToUsingVS = new GoToUsingVS(dataFromDrone);
         flightControlMethods = new FlightControlMethods();
         droneFeatures = new DroneFeatures(flightControlMethods);
-        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, stopButton, button3, this::goToFunc);
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, stopButton, followPhone_btn, this::goToFunc);
         gimbalController = new GimbalController(flightControlMethods);
 
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
@@ -101,7 +101,7 @@ public class ALRemoteControllerView extends RelativeLayout
         goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
         followPhone_btn = findViewById(R.id.Follow_phone_FMM_btn);
         stopButton = findViewById(R.id.stop_btn);
-        button3 = findViewById(R.id.btn3);
+//        button3 = findViewById(R.id.btn3);
         goTo_btn = findViewById(R.id.goTo_btn);
         audioIcon = findViewById(R.id.audioIcon);
         dataLog = findViewById(R.id.dataLog);
@@ -131,7 +131,7 @@ public class ALRemoteControllerView extends RelativeLayout
         goToFMM_btn.setOnClickListener(this);
         followPhone_btn.setOnClickListener(this);
         stopButton.setOnClickListener(this);
-        button3.setOnClickListener(this);
+//        button3.setOnClickListener(this);
         goTo_btn.setOnClickListener(this);
         y_minus_btn.setOnClickListener(this);
         y_plus_btn.setOnClickListener(this);
@@ -211,7 +211,7 @@ public class ALRemoteControllerView extends RelativeLayout
         onGoToFMMMode = false;
         if (onGoToMode) {
             goTo_btn.setBackgroundColor(Color.GREEN);
-            button3.setBackgroundColor(Color.WHITE);
+//            button3.setBackgroundColor(Color.WHITE);
             goToFMM_btn.setBackgroundColor(Color.WHITE);
             stopButton.setBackgroundColor(Color.RED);
             GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
@@ -325,18 +325,18 @@ public class ALRemoteControllerView extends RelativeLayout
 //                ToastUtils.showToast("active go-to mission");
                 goToFMM_btn.setBackgroundColor(Color.GREEN);
                 stopButton.setBackgroundColor(Color.RED);
-                button3.setBackgroundColor(Color.WHITE);
+//                button3.setBackgroundColor(Color.WHITE);
                 goTo_btn.setBackgroundColor(Color.WHITE);
                 break;
             case R.id.stop_btn:
                 stopBtnFunc();
                 break;
-            case R.id.btn3:
-                button3.setBackgroundColor(Color.GREEN);
-                goToFMM_btn.setBackgroundColor(Color.WHITE);
-                stopButton.setBackgroundColor(Color.RED);
-                goTo_btn.setBackgroundColor(Color.WHITE);
-                break;
+//            case R.id.btn3:
+//                button3.setBackgroundColor(Color.GREEN);
+//                goToFMM_btn.setBackgroundColor(Color.WHITE);
+//                stopButton.setBackgroundColor(Color.RED);
+//                goTo_btn.setBackgroundColor(Color.WHITE);
+//                break;
             case R.id.goTo_btn:
                 this.goToFunc();
                 break;
