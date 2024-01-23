@@ -116,8 +116,14 @@ public class DataFromDrone {
                         GPS.setAltitude(aircraftLocation.getAltitude());
                     if (!Double.isNaN(aircraftLocation.getLatitude()))
                         GPS.setLatitude(aircraftLocation.getLatitude());
+                    else{
+                        GPS.setLatitude(32.085114);
+                    }
                     if (!Double.isNaN(aircraftLocation.getLongitude()))
                         GPS.setLongitude(aircraftLocation.getLongitude());
+                    else{
+                        GPS.setLongitude(34.852653);
+                    }
 //                    GPS[0] = aircraftLocation.getLatitude();
 //                    GPS[1] = aircraftLocation.getLongitude();
 //                    GPS[2] = aircraftLocation.getAltitude();

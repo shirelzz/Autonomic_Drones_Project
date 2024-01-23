@@ -5,6 +5,7 @@ import static com.dji.sdk.sample.internal.utils.ToastUtils.setResultToToast;
 import android.util.Log;
 
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
+import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.Objects;
 
@@ -34,7 +35,7 @@ public class FlightControlMethods {
     private float roll;
     private float yaw;
     private float throttle;
-    private boolean virtualStickEnabled;
+    private boolean virtualStickEnabled = false;
 
     private long startTime; // Record the start time
 
@@ -177,6 +178,7 @@ public class FlightControlMethods {
             startTime = System.currentTimeMillis();
         }
 
+        ToastUtils.showToast("In sendVirtualStickCommands, pX:  " + pX + ", pY:  " + pY + ",pZ:   " + pZ + ",pThrottle:   " + pThrottle);
         // Set pitch, roll, yaw, throttle
         float mPitch = (float) (pitchJoyControlMaxSpeed * pX);        // forward-backwards
         float mRoll = (float) (rollJoyControlMaxSpeed * pY);          // left-right
@@ -196,9 +198,9 @@ public class FlightControlMethods {
                 // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
                 flightControlData.setYaw(mYaw);
                 // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
-            if(mThrottle < 0){
+                if (mThrottle < 0) {
 //                mThrottle = -3
-            }
+                }
                 flightControlData.setVerticalThrottle(mThrottle);
                 flightController.sendVirtualStickFlightControlData(flightControlData, new CommonCallbacks.CompletionCallback() {
                             @Override
@@ -251,7 +253,6 @@ public class FlightControlMethods {
                             } else {
                                 //                    setResultToToast("Disable Virtual Stick Success");
                                 virtualStickEnabled = false;
-
                             }
                         });
                     }

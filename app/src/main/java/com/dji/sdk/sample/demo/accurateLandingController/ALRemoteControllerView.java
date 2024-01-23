@@ -2,16 +2,12 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
-import android.os.Build;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -24,14 +20,11 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 import dji.common.model.LocationCoordinate2D;
 import dji.sdk.codec.DJICodecManager;
@@ -85,22 +78,6 @@ public class ALRemoteControllerView extends RelativeLayout
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
         initUI();
-        // Check if the permission is not granted yet
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-//            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-//                    != PackageManager.PERMISSION_GRANTED) {
-//                // Permission is not granted
-//                // Request the permission
-//
-//                ActivityCompat.requestPermissions((Activity) getContext(),
-//                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-//                        12345);
-//            } else {
-//                // Permission has already been granted
-//                // Proceed with your file operation
-////                ToastUtils.showToast("Permission has already been granted");
-//                // Ensure the rest of your code for writing to the file comes here
-//            }
 
         accuracyLog = new AccuracyLog(dataLog, dist, this.getContext());
 
@@ -112,7 +89,7 @@ public class ALRemoteControllerView extends RelativeLayout
         HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, stopButton, button3, this::goToFunc);
         gimbalController = new GimbalController(flightControlMethods);
 
-        presentMap = new PresentMap(dataFromDrone);
+        presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
     }
 
@@ -199,31 +176,6 @@ public class ALRemoteControllerView extends RelativeLayout
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
         accuracyLog.updateData(dataFromDrone.getAll());
 
-//        String currentRow = accuracyLog.getCurrentRow();
-//
-//        if (excelWriter != null && currentRow != null) {
-//            ArrayList<String> rHeaders = new ArrayList<>();
-//            rHeaders.add("Timestamp");
-//            rHeaders.add("lat");
-//            rHeaders.add("lon");
-//            rHeaders.add("alt");
-//            rHeaders.add("HeadDirection");
-//            rHeaders.add("velX");
-//            rHeaders.add("velY");
-//            rHeaders.add("velZ");
-//            rHeaders.add("yaw");
-//            rHeaders.add("pitch");
-//            rHeaders.add("roll");
-//            rHeaders.add("gimbalPitch");
-//            rHeaders.add("satelliteCount");
-//            rHeaders.add("gpsSignalLevel");
-//            rHeaders.add("batRemainingTime");
-//            rHeaders.add("batCharge");
-//            rHeaders.add("signalQuality");
-//            excelWriter.setRowHeaders(rHeaders);
-//            excelWriter.writeToExcel(currentRow);
-//        }
-
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
@@ -240,7 +192,11 @@ public class ALRemoteControllerView extends RelativeLayout
         }
         if (onGoToMode) {
             goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
-            dist.setText(Arrays.toString(flightCommands.calcDistFrom(goToUsingVS.getDestGpsLocation().getAll(), dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
+            if (goToUsingVS.getDestGpsLocation() != null) {
+                double[] pos = goToUsingVS.getDestGpsLocation().getAll();
+                dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) +
+                        " [" + Arrays.toString(goToUsingVS.calculateMovement()));
+            }
         }
 
     }
@@ -255,20 +211,22 @@ public class ALRemoteControllerView extends RelativeLayout
             goToFMM_btn.setBackgroundColor(Color.WHITE);
             stopButton.setBackgroundColor(Color.RED);
             GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
-            double[] pos;
-            if (gpsLocation == null) {
-                double curr_lat = dataFromDrone.getGPS().getLatitude() + 0.001;
-                double curr_lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
-                double curr_alt = dataFromDrone.getGPS().getAltitude();
-
-                pos = new double[]{curr_lat, curr_lon, curr_alt};
-                goToUsingVS.setTargetGpsLocation(pos);
-            } else {
-                pos = gpsLocation.getAll();
-            }
+//            double[] pos = gpsLocation.getAll();
+//            if (gpsLocation == null) {
+//                double curr_lat = dataFromDrone.getGPS().getLatitude() + 0.001;
+//                double curr_lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
+//                double curr_alt = dataFromDrone.getGPS().getAltitude();
+//
+//                pos = new double[]{curr_lat, curr_lon, curr_alt};
+//                goToUsingVS.setTargetGpsLocation(pos);
+//            } else {
+//                pos = gpsLocation.getAll();
+//            }
             goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
-
-            dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
+            if (gpsLocation != null) {
+                double[] pos = gpsLocation.getAll();
+                dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
+            }
         } else {
             goTo_btn.setBackgroundColor(Color.WHITE);
 //            mVideoSurface.setVisibility(View.VISIBLE);
@@ -278,17 +236,14 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     public void stopBtnFunc() {
-//        stopButton.setBackgroundColor(Color.GREEN);
-//        goToFMM_btn.setBackgroundColor(Color.WHITE);
-//        button3.setBackgroundColor(Color.WHITE);
-//        goTo_btn.setBackgroundColor(Color.WHITE);
-
 
         flightControlMethods.disableVirtualStickControl();
-        Objects.requireNonNull(flightControlMethods.getFlightController().getFlightAssistant()).setLandingProtectionEnabled(true, djiError -> {
-            if (djiError != null) showToast("" + djiError);
-            else showToast("Landing protection DISABLED!");
-        });
+//        Objects.requireNonNull(flightControlMethods.getFlightController().getFlightAssistant()).setLandingProtectionEnabled(true, djiError -> {
+//            if (djiError != null) showToast("" + djiError);
+//            else showToast("Landing protection DISABLED!");
+//        });
+
+        goToUsingVS.setTargetGpsLocation((GPSLocation) null);
         missionControlWrapper.stopGoToMission();
 
         //rotateGimbalToDegree(command.getGimbalPitch());

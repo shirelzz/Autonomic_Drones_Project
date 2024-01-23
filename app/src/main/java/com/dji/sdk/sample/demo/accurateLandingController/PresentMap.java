@@ -16,14 +16,16 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.Objects;
 
 public class PresentMap implements OnMapReadyCallback {
-    private static final int ZOOM = 16;
-    private DataFromDrone dataFromDrone;
+    private static final int ZOOM = 18;
+    private final DataFromDrone dataFromDrone;
     private GoogleMap map;
+
+    private final GoToUsingVS goToUsingVS;
     private SupportMapFragment mapFragment;
 
-    public PresentMap(DataFromDrone dataFromDrone) {
+    public PresentMap(DataFromDrone dataFromDrone, GoToUsingVS goToUsingVS) {
         this.dataFromDrone = dataFromDrone;
-
+        this.goToUsingVS = goToUsingVS;
         mapFragment = (SupportMapFragment) GlobalData.getSupportFragmentManager().findFragmentById(R.id.map_view);
         mapFragment.getMapAsync(this);
         MapVisibility(false);
@@ -38,7 +40,7 @@ public class PresentMap implements OnMapReadyCallback {
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.map = googleMap;
         try {
-            double latitude = 32.0841854, longitude = 34.8487116;
+            double latitude = 32.085114, longitude = 34.852653;
             if (dataFromDrone.getGpsSignalLevel().value() >= 2) {
                 latitude = dataFromDrone.getGPS().getLatitude();
                 longitude = dataFromDrone.getGPS().getLongitude();
@@ -62,7 +64,13 @@ public class PresentMap implements OnMapReadyCallback {
                 double longitude = latLng.longitude;
                 ToastUtils.showToast("Lat : " + latitude + " , "
                         + "Long : " + longitude);
+                try{
+                    goToUsingVS.setTargetGpsLocation(new double[]{latitude, longitude, dataFromDrone.getGPS().getAltitude()});
 
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    ToastUtils.showToast(e.getMessage());
+                }
             }
         });
 
