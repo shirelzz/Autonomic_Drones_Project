@@ -48,7 +48,7 @@ public class ALRemoteControllerView extends RelativeLayout
     protected EditText lon;
     protected PresentMap presentMap;
     private Context ctx;
-    private Button goToFMM_btn, stopButton, button3, goTo_btn;
+    private Button goToFMM_btn, followPhone_btn, stopButton, button3, goTo_btn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
     private Button g_minus_btn_up;
     private Bitmap droneIMG;
@@ -59,8 +59,9 @@ public class ALRemoteControllerView extends RelativeLayout
     private GoToUsingVS goToUsingVS;
     private FlightControlMethods flightControlMethods;
     private MissionControlWrapper missionControlWrapper;
+    private AndroidGPS androidGPS;
     private DroneFeatures droneFeatures;
-    private boolean onGoToMode = false, onGoToFMMMode = false;
+    private boolean onGoToMode = false, onGoToFMMMode = false, onFollowPhoneMode = false;
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
     private float pitch = 0.2f, yaw = 0.5f, roll = 0.2f, throttle = 0.2f;
@@ -91,12 +92,14 @@ public class ALRemoteControllerView extends RelativeLayout
 
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
+        androidGPS = new AndroidGPS(context);
     }
 
     private void initUI() {
         mVideoSurface = findViewById(R.id.video_previewer_surface);
         imgView = findViewById(R.id.imgView);
         goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
+        followPhone_btn = findViewById(R.id.Follow_phone_FMM_btn);
         stopButton = findViewById(R.id.stop_btn);
         button3 = findViewById(R.id.btn3);
         goTo_btn = findViewById(R.id.goTo_btn);
@@ -126,6 +129,7 @@ public class ALRemoteControllerView extends RelativeLayout
             mVideoSurface.setSurfaceTextureListener(this);
         }
         goToFMM_btn.setOnClickListener(this);
+        followPhone_btn.setOnClickListener(this);
         stopButton.setOnClickListener(this);
         button3.setOnClickListener(this);
         goTo_btn.setOnClickListener(this);
@@ -249,10 +253,52 @@ public class ALRemoteControllerView extends RelativeLayout
         //rotateGimbalToDegree(command.getGimbalPitch());
     }
 
+    private void startFollowingPhone() {
+        // Set initial target location
+        double initialLat = androidGPS.getLatitude();
+        double initialLon = androidGPS.getLongitude();
+        float initialAlt = (float) androidGPS.getAltitude();
+
+        LocationCoordinate2D initialTargetLoc = new LocationCoordinate2D(initialLon, initialLat);
+        missionControlWrapper.setTargetLocation(initialTargetLoc);
+        missionControlWrapper.setAltitude(initialAlt);
+
+        // Start the Follow Me mission
+        missionControlWrapper.startGoToMission();
+
+        double updatedLat , updatedLon;
+        float updatedAlt;
+        while (onFollowPhoneMode) {
+            updatedLat = androidGPS.getLatitude();
+            updatedLon = androidGPS.getLongitude();
+            updatedAlt = (float) androidGPS.getAltitude();
+            missionControlWrapper.updateGoToMission(updatedLat, updatedLon);
+            // don't know how to update altitude yet
+        }
+    }
+
+    private void stopFollowingPhone() {
+        missionControlWrapper.stopGoToMission();
+        androidGPS.stopLocationUpdates();
+    }
+
     @SuppressLint("NonConstantResourceId")
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
+            case R.id.Follow_phone_FMM_btn:
+                onFollowPhoneMode = !onFollowPhoneMode;
+                onGoToFMMMode = false;
+                onGoToMode = false;
+
+                if (onFollowPhoneMode) {
+                    startFollowingPhone();
+                }
+                else {
+                    stopFollowingPhone();
+                }
+                break;
+
             case R.id.GoTo_FMM_btn:
                 onGoToFMMMode = !onGoToFMMMode;
                 onGoToMode = false;
@@ -264,14 +310,12 @@ public class ALRemoteControllerView extends RelativeLayout
                     presentMap.MapVisibility(false);
                     break;
                 }
-                //TODO:  need to check if the lon and lat are in the correct format
-                double lon_ = Double.parseDouble(lon.getText().toString());
                 double lat_ = Double.parseDouble(lat.getText().toString());
+                double lon_ = Double.parseDouble(lon.getText().toString());
 //                float alt_ = Double.parseDouble(alt.getText().toString());
                 float alt_ = (float) dataFromDrone.getGPS().getAltitude();
 
-
-                LocationCoordinate2D targetLoc = new LocationCoordinate2D(lon_, lat_);
+                LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_); // need to be in degrees
 //                MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
 //                        alt_ + 1.0F,
 //                        flightControlMethods.getFlightController(), dataFromDrone, dist);
