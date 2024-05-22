@@ -64,6 +64,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private boolean onGoToMode = false, onGoToFMMMode = false, onFollowPhoneMode = false;
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
+    private ControllerImageDetection controllerImageDetection;
     private float pitch = 0.2f, yaw = 0.5f, roll = 0.2f, throttle = 0.2f;
 
 
@@ -89,7 +90,7 @@ public class ALRemoteControllerView extends RelativeLayout
         droneFeatures = new DroneFeatures(flightControlMethods);
         HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, stopButton, followPhone_btn, this::goToFunc);
         gimbalController = new GimbalController(flightControlMethods);
-
+        controllerImageDetection = new ControllerImageDetection(dataFromDrone);
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
@@ -184,6 +185,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
         imgView.setImageBitmap(droneIMG);
+        controllerImageDetection.setBitmapFrame(droneIMG);
 
         if (!onGoToMode && !onGoToFMMMode) {
 //            mVideoSurface.setVisibility(View.VISIBLE);
