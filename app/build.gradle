@@ -96,6 +96,8 @@ android {
 dependencies {
     implementation 'androidx.multidex:multidex:2.0.0'
     implementation 'com.squareup:otto:1.3.8'
+//    implementation fileTree(dir: 'path/to/opencv/sdk/native/libs', include: ['*.jar'])
+
     implementation('com.dji:dji-sdk:4.15.1', {
         /**
          * Uncomment the "library-anti-distortion" if your app does not need Anti Distortion for Mavic 2 Pro and Mavic 2 Zoom.
@@ -106,6 +108,7 @@ dependencies {
         exclude module: 'library-anti-distortion'
         exclude module: 'fly-safe-database'
     })
+//    implementation project(path: ':openCVLibrary342dev')
 //    implementation project(path: ':sdk')
     compileOnly 'com.dji:dji-sdk-provided:4.13.1'
 
@@ -122,6 +125,11 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
     implementation 'com.quickbirdstudios:opencv-contrib:4.5.3.0'
+//    implementation project(':openCVLibrary342dev')
+//    implementation 'org.opencv:opencv-contrib:3.4.5'
+
+//    implementation 'org.opencv:opencv-android:4.5.3'
+
     implementation group: 'org.boofcv', name: 'boofcv-core', version: '1.0.0'
 
     // Maps

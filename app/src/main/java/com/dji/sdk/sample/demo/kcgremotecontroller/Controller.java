@@ -10,7 +10,7 @@ or at least the main managment
 import android.graphics.Bitmap;
 import android.util.Log;
 
-import com.dji.sdk.sample.demo.stitching.Tracker;
+//import com.dji.sdk.sample.demo.stitching.Tracker;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 
 import java.text.DateFormat;
@@ -122,39 +122,39 @@ public class Controller implements gimbelListener {
         }
     }
 
-    public void setBitmapFrame(Bitmap bitmap, Tracker tracker) {
-
-        if (t + 1000 < System.currentTimeMillis()) {
-            t = System.currentTimeMillis();
-            Log.i("arrk", "fps " + frameCounter);
-            displayFps = frameCounter;
-            frameCounter = 0;
-        } else {
-            frameCounter++;
-        }
-
-        float droneHeight = drone.getAlt();
-
-        ControllCommand command = flightControll.proccessImage(bitmap, droneHeight, tracker);
-        // החזירה פקודה
-        if (command != null) {
-            //display on screen data
-            final String debug = "" + String.format("%.01f", command.confidence) + "," + displayFps + "," + droneHeight + "\n"
-                    + "Err: " + String.format("%.01f", command.yError) + "," + String.format("%.01f", command.xError) + "," + String.format("%.01f", command.zError) + " || "
-                    + "PRT: " + String.format("%.01f", command.getPitch()) + "," + String.format("%.01f", command.getRoll()) + "," + String.format("%.01f", command.getVerticalThrottle()) + "\n"
-                    //+"PIDm: "+String.format("%.02f", command.p)+","+String.format("%.02f", command.i)+","+String.format("%.02f", command.d)+","+String.format("%.02f", command.maxI)+"\n"
-                    //+"Auto: "+ DJISampleApplication.getAircraftInstance().getFlightController().isVirtualStickControlModeAvailable()+"\n"
-                    + "Gimbal!: " + String.format("%.01f", gimbelValue) + " ImgD: " + String.format("%.01f", command.imageDistance);
-//            command.getGimbalPitch()
-
-
-            drone.setControlCommand(command); //This is the command that start the drone
-
-            mainView.setDebugData(debug);
-            //ugly way to overcome RunOnUiThread
-            mainView.setRecIconVisibility(isRecording);
-        }
-    }
+//    public void setBitmapFrame(Bitmap bitmap, Tracker tracker) {
+//
+//        if (t + 1000 < System.currentTimeMillis()) {
+//            t = System.currentTimeMillis();
+//            Log.i("arrk", "fps " + frameCounter);
+//            displayFps = frameCounter;
+//            frameCounter = 0;
+//        } else {
+//            frameCounter++;
+//        }
+//
+//        float droneHeight = drone.getAlt();
+//
+//        ControllCommand command = flightControll.proccessImage(bitmap, droneHeight, tracker);
+//        // החזירה פקודה
+//        if (command != null) {
+//            //display on screen data
+//            final String debug = "" + String.format("%.01f", command.confidence) + "," + displayFps + "," + droneHeight + "\n"
+//                    + "Err: " + String.format("%.01f", command.yError) + "," + String.format("%.01f", command.xError) + "," + String.format("%.01f", command.zError) + " || "
+//                    + "PRT: " + String.format("%.01f", command.getPitch()) + "," + String.format("%.01f", command.getRoll()) + "," + String.format("%.01f", command.getVerticalThrottle()) + "\n"
+//                    //+"PIDm: "+String.format("%.02f", command.p)+","+String.format("%.02f", command.i)+","+String.format("%.02f", command.d)+","+String.format("%.02f", command.maxI)+"\n"
+//                    //+"Auto: "+ DJISampleApplication.getAircraftInstance().getFlightController().isVirtualStickControlModeAvailable()+"\n"
+//                    + "Gimbal!: " + String.format("%.01f", gimbelValue) + " ImgD: " + String.format("%.01f", command.imageDistance);
+////            command.getGimbalPitch()
+//
+//
+//            drone.setControlCommand(command); //This is the command that start the drone
+//
+//            mainView.setDebugData(debug);
+//            //ugly way to overcome RunOnUiThread
+//            mainView.setRecIconVisibility(isRecording);
+//        }
+//    }
 
     public void initPIDs(double p, double i, double d, double max_i, String type) {
         flightControll.initPIDs(p, i, d, max_i, type);

@@ -29,8 +29,7 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
-import com.dji.sdk.sample.demo.stitching.Stitching;
-import com.dji.sdk.sample.demo.stitching.Tracker;
+//import com.dji.sdk.sample.demo.stitching.Tracker;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 
 import org.opencv.android.OpenCVLoader;
@@ -275,34 +274,34 @@ public class FlightControll_v2 implements gimbelListener{
         //#################################
     }
 
-    public ControllCommand proccessImage(Bitmap frame, float aircraftHeight, Tracker tracker){
-        Mat imgToProcess=new Mat();
-        Utils.bitmapToMat(frame,imgToProcess);
-
-        //#### put proc###################
-
-        double[] vec = tracker.process(frame);
-
-
-
-//        Mat a = imageCoordinates.MarkerFinder(imgToProcess,aircraftHeight);
-        ArrayList arucos = MarkerFinder(imgToProcess);
-
-//        ControllCommand result = doKalman(arucos,aircraftHeight);
-        ControllCommand result = flightLogic(arucos,aircraftHeight);
-
-
-
-        //update the log with results
-        updateLog(result,arucos);
-
-        //TODO why this ??
-        // בצד הציורי
-        Utils.matToBitmap(imgToProcess,frame);
-
-        return result;
-        //#################################
-    }
+//    public ControllCommand proccessImage(Bitmap frame, float aircraftHeight, Tracker tracker){
+//        Mat imgToProcess=new Mat();
+//        Utils.bitmapToMat(frame,imgToProcess);
+//
+//        //#### put proc###################
+//
+//        double[] vec = tracker.process(frame);
+//
+//
+//
+////        Mat a = imageCoordinates.MarkerFinder(imgToProcess,aircraftHeight);
+//        ArrayList arucos = MarkerFinder(imgToProcess);
+//
+////        ControllCommand result = doKalman(arucos,aircraftHeight);
+//        ControllCommand result = flightLogic(arucos,aircraftHeight);
+//
+//
+//
+//        //update the log with results
+//        updateLog(result,arucos);
+//
+//        //TODO why this ??
+//        // בצד הציורי
+//        Utils.matToBitmap(imgToProcess,frame);
+//
+//        return result;
+//        //#################################
+//    }
 
 
     //      pitch +  == forward

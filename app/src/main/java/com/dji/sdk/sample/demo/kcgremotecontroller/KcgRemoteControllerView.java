@@ -55,7 +55,7 @@ import dji.sdk.camera.VideoFeeder;
 import dji.sdk.codec.DJICodecManager;
 import dji.sdk.flightcontroller.FlightController;
 
-import com.dji.sdk.sample.demo.stitching.Tracker;
+//import com.dji.sdk.sample.demo.stitching.Tracker;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
@@ -84,7 +84,7 @@ public class KcgRemoteControllerView extends RelativeLayout
 
     private Context ctx;
 
-    private Tracker tracker = new Tracker();
+//    private Tracker tracker = new Tracker();
 
     private Button btnDisableVirtualStick;
     private Button btnStart;
@@ -549,28 +549,28 @@ public class KcgRemoteControllerView extends RelativeLayout
         if (flightController == null) {
             return;
         }
-        try {
-            if (!tracker.isPaused()) {
-                // Pause tracking and store the current location
-                flightController.setStateCallback(new FlightControllerState.Callback() {
-                    @Override
-                    public void onUpdate(@NonNull FlightControllerState flightControllerState) {
-                        latitude = flightControllerState.getAircraftLocation().getLatitude();
-                        longitude = flightControllerState.getAircraftLocation().getLongitude();
-                    }
-                });
-
-                tracker.pause();
-                tracker.setFlightController(flightController);
-                tracker.setInitialLocation(latitude, longitude);
-
-            } else {
-                // Resume tracking
-                tracker.resume();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            if (!tracker.isPaused()) {
+//                // Pause tracking and store the current location
+//                flightController.setStateCallback(new FlightControllerState.Callback() {
+//                    @Override
+//                    public void onUpdate(@NonNull FlightControllerState flightControllerState) {
+//                        latitude = flightControllerState.getAircraftLocation().getLatitude();
+//                        longitude = flightControllerState.getAircraftLocation().getLongitude();
+//                    }
+//                });
+//
+//                tracker.pause();
+//                tracker.setFlightController(flightController);
+//                tracker.setInitialLocation(latitude, longitude);
+//
+//            } else {
+//                // Resume tracking
+//                tracker.resume();
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     public void hoverLandBtnFunc(int id) {

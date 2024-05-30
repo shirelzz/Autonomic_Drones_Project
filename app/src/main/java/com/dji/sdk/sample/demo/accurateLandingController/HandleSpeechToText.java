@@ -9,18 +9,19 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
-import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.demo.speechToText.SpeechToText;
 
 public class HandleSpeechToText {
     private SpeechToText speechToText;
     protected ImageView audioIcon;
     protected Button button1, button2, button3;
+//    , edgeDetect;
 
     private Runnable goToFunc;
 
 
     public HandleSpeechToText(Context context, ImageView audioIcon, Button button1, Button button2, Button button3, Runnable goToFunc
+//            ,                   Button edgeDetect
     ) {
         speechToText = new SpeechToText(context, this::performActionOnResults, null, this::updateStartListening);
         speechToText.startListening();
@@ -29,6 +30,7 @@ public class HandleSpeechToText {
         this.button2 = button2;
         this.button3 = button3;
         this.goToFunc = goToFunc;
+//        this.edgeDetect = edgeDetect;
     }
 
     public void updateStartListening() {
@@ -114,16 +116,16 @@ public class HandleSpeechToText {
             button2.setBackgroundColor(Color.WHITE);
             button3.setBackgroundColor(Color.WHITE);
         } else if (text.contains("button two") || text.contains("button 2") || text.contains("button too") || text.contains("button to")) {
-
             button2.setBackgroundColor(Color.GREEN);
             button1.setBackgroundColor(Color.WHITE);
             button3.setBackgroundColor(Color.WHITE);
         } else if (text.contains("button three") || text.contains("button 3")) {
-
             button3.setBackgroundColor(Color.GREEN);
             button1.setBackgroundColor(Color.WHITE);
             button2.setBackgroundColor(Color.WHITE);
-
+        }
+        else if (text.contains("edge detection") || text.contains("talk me")) {
+            showToast("track me");
         }
     }
 }

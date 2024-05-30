@@ -16,10 +16,10 @@ public class EdgeDetection {
 //    public EdgeDetection() {
 //
 //    }
-
-    public static Mat detectLines(Mat input) {
+    // Check if it works = return an array with edges
+    public static Point[][] detectLines(Mat input) {
         // Declare the output variables
-        Mat dst = new Mat(), cdst = new Mat(), clean_res = input.clone();
+        Mat dst = new Mat(), cdst = new Mat();
 
         // Edge detection
         Imgproc.Canny(input, dst, 50, 200, 3, false);
@@ -34,6 +34,8 @@ public class EdgeDetection {
         Log.i("EdgeDetection", "Number of lines detected: " + lines.rows());
 
         int num = lines.rows();
+        Point[][] point_array = new Point[num][2];
+        int i = 0;
         // Draw the lines
         for (int x = 0; x < num; x++) {
             double[] line = lines.get(x, 0);
@@ -44,14 +46,10 @@ public class EdgeDetection {
             Point pt1 = new Point(Math.round(x0 + 1000 * (-b)), Math.round(y0 + 1000 * (a)));
             Point pt2 = new Point(Math.round(x0 - 1000 * (-b)), Math.round(y0 - 1000 * (a)));
 
-            Imgproc.line(cdst, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
-            Imgproc.line(clean_res, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+//            Imgproc.line(cdst, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+            Imgproc.line(input, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+            point_array[i] = new Point[]{pt1, pt2};
         }
-//        Mat res = new Mat();
-//
-//        Imgproc.cvtColor(cdst, res, Imgproc.COLOR_BGR2RGB);
-
-
-        return clean_res;
+        return point_array;
     }
 }
