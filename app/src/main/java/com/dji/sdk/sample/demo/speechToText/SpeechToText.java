@@ -175,7 +175,7 @@ public class SpeechToText implements RecognitionListener {
 
     @Override
     public void onRmsChanged(float rmsdB) {
-        Log.i(LOG_TAG, "onRmsChanged: " + rmsdB);
+//        Log.i(LOG_TAG, "onRmsChanged: " + rmsdB);
 //        progressBar.setProgress((int) rmsdB);
     }
 

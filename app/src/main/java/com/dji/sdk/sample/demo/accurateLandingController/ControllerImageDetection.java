@@ -82,7 +82,7 @@ public class ControllerImageDetection {
         Point[] point;
         // Find the longest line
         double maxLength = 0;
-        Point[] longestLine = null;
+        Point[] detectLandLine = null;
 
         for (Point[] points : point_arr) {
             if (points != null && points[0] != null && points[1] != null) {
@@ -90,30 +90,53 @@ public class ControllerImageDetection {
 //                double length = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 //                if (length > maxLength) {
 //                    maxLength = length;
-//                    longestLine = points;
+//                    detectLandLine = points;
 //                }
+
+                //TODO: need to be changed, how do i choose the line that i want to land according to?
                 boolean isHorizontal = Math.abs(y1 - y2) < Math.abs(x1 - x2);
-
-
                 slop = (points[0].y - points[1].y) / (points[0].x - points[1].x);
-                Log.d("slop:  ", String.valueOf(slop));
+                if (slop < 2 && slop > -2) {
+                    isHorizontal = true;
+                }
+                if (isHorizontal) {
+                    detectLandLine = points;
+                }
+                Point centerPoint = new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0);
+                double Calc_dis = distancePointToLine(centerPoint, points);
+                // Do we need the drone to know every time what the altitude according to the gps?
+                Imgproc.putText(imgToProcess, "dy: " + Calc_dis, centerPoint, 5, 0.3, new Scalar(0, 255, 0));
+                // TODO: We send a command to the drone how he need to go so it will be exactly
+                //  above the line and horizontal to the line.
+                // TODO: Move the Drone to be 90 degrees from the line, so it will still be in the
+                //  middle of the line, but the line is vertical
+                // TODO: We will move the drone to the left and to the right of the line, and each
+                //  time we will move or until the alt is different or until the line is not in the frame.
+                // TODO: we will turn the drone until he will on top the smaller altitude position.
+                // TODO: check radius 20CM from the line to the back and left and right if the
+                //  radius exist and all the altitude is the same.
+                // TODO: start lowering down and always check that the line is in sight if not, search for it.
+                Log.i("Is?", "Is the line horizontal? " + droneHeight + " Calc_dis:  " + Calc_dis);
             }
 
-//            if (slop < 5 && slop > -5) {
-//                boolean is_slop = true;
-//            }
         }
-        if (longestLine != null) {
-            double x1 = longestLine[0].x, y1 = longestLine[0].y, x2 = longestLine[1].x, y2 = longestLine[1].y;
-            System.out.println("Longest line: (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
-            Imgproc.line(imgToProcess, longestLine[0], longestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
+        if (detectLandLine != null) {
+            double x1 = detectLandLine[0].x, y1 = detectLandLine[0].y, x2 = detectLandLine[1].x, y2 = detectLandLine[1].y;
+            Log.i("Detect", "Longest line: (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
+            Imgproc.line(imgToProcess, detectLandLine[0], detectLandLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
-            // Determine if the longest line is horizontal
-            boolean isHorizontal = Math.abs(y1 - y2) < Math.abs(x1 - x2);
-            System.out.println("Is the longest line horizontal? " + isHorizontal);
-        } else {
-            System.out.println("No lines detected.");
+
         }
+//        else {
+////            Log.i("No lines detected.");
+//        }
+    }
+
+    private double distancePointToLine(final Point point, final Point[] line) {
+        final Point l1 = line[0];
+        final Point l2 = line[1];
+        return Math.abs((l2.x - l1.x) * (l1.y - point.y) - (l1.x - point.x) * (l2.y - l1.y))
+                / Math.sqrt(Math.pow(l2.x - l1.x, 2) + Math.pow(l2.y - l1.y, 2));
     }
 
 }
