@@ -1,14 +1,6 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.controller.DJISampleApplication.getProductInstance;
-import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
-
-import static java.lang.Double.NaN;
-import static java.lang.Double.valueOf;
-
-import android.util.Log;
-
-import androidx.annotation.NonNull;
 
 import com.dji.sdk.sample.demo.kcgremotecontroller.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
@@ -19,16 +11,13 @@ import java.util.Objects;
 
 import dji.common.airlink.SignalQualityCallback;
 import dji.common.battery.BatteryState;
-import dji.common.error.DJIError;
 import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.flightcontroller.LocationCoordinate3D;
 import dji.common.flightcontroller.adsb.AirSenseSystemInformation;
 import dji.common.gimbal.GimbalState;
-import dji.common.util.CommonCallbacks;
 import dji.sdk.airlink.AirLink;
 import dji.sdk.base.BaseComponent;
-import dji.sdk.flightcontroller.FlightController;
 import dji.sdk.sdkmanager.DJISDKManager;
 
 public class DataFromDrone {
@@ -37,11 +26,13 @@ public class DataFromDrone {
     private final GPSLocation GPS = new GPSLocation(); //[latitude, longitude, altitude]
     private final double[] velocity = new double[3];
     private double headDirection = 0.0;
+    private double altitudeBelow = 0.0;
     private double yaw = 0.0;
     private double pitch = 0.0;
     private double roll = 0.0;
     private double gimbalPitch = 0.0;
     private double batRemainingTime = 0.0;
+    private boolean isUltrasonicBeingUsed = false;
     private double batCharge = 0.0;
     private int satelliteCount = 0;
     private GPSSignalLevel gpsSignalLevel;
@@ -99,6 +90,15 @@ public class DataFromDrone {
         return signalQuality;
     }
 
+    public double getAltitudeBelow() {
+        return altitudeBelow;
+    }
+
+    public boolean isUltrasonicBeingUsed() {
+        return isUltrasonicBeingUsed;
+    }
+
+
     private void initStateListeners() {
         if (ModuleVerificationUtil.isFlightControllerAvailable()) {
             Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().setStateCallback(new FlightControllerState.Callback() {
@@ -106,7 +106,9 @@ public class DataFromDrone {
                 public void onUpdate(FlightControllerState flightControllerState) {
 
                     gpsSignalLevel = flightControllerState.getGPSSignalLevel();
-
+                    isUltrasonicBeingUsed = flightControllerState.isUltrasonicBeingUsed();
+                    if (isUltrasonicBeingUsed)
+                        altitudeBelow = flightControllerState.getUltrasonicHeightInMeters();
 
                     // Retrieve drone's GPS location
                     LocationCoordinate3D aircraftLocation = flightControllerState.getAircraftLocation();
@@ -116,12 +118,12 @@ public class DataFromDrone {
                         GPS.setAltitude(aircraftLocation.getAltitude());
                     if (!Double.isNaN(aircraftLocation.getLatitude()))
                         GPS.setLatitude(aircraftLocation.getLatitude());
-                    else{
+                    else {
                         GPS.setLatitude(32.085114);
                     }
                     if (!Double.isNaN(aircraftLocation.getLongitude()))
                         GPS.setLongitude(aircraftLocation.getLongitude());
-                    else{
+                    else {
                         GPS.setLongitude(34.852653);
                     }
 //                    GPS[0] = aircraftLocation.getLatitude();
@@ -204,6 +206,8 @@ public class DataFromDrone {
         droneTelemetry.put("lat", GPS.getLatitude());
         droneTelemetry.put("lon", GPS.getLongitude());
         droneTelemetry.put("alt", GPS.getAltitude());
+        droneTelemetry.put("altitudeBelow", altitudeBelow);
+        droneTelemetry.put("isUltrasonicBeingUsed", isUltrasonicBeingUsed ? 1.0 : 0.0);
 
         droneTelemetry.put("HeadDirection", headDirection);
 
@@ -219,7 +223,7 @@ public class DataFromDrone {
 
         //Get satellite Count
         droneTelemetry.put("satelliteCount", (double) satelliteCount);
-        droneTelemetry.put("gpsSignalLevel", (double)gpsSignalLevel.value() );
+        droneTelemetry.put("gpsSignalLevel", (double) gpsSignalLevel.value());
 
         //get gimbal pitch
         droneTelemetry.put("gimbalPitch", gimbalPitch);

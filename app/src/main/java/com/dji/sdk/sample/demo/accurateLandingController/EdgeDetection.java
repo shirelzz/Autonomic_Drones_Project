@@ -22,7 +22,7 @@ public class EdgeDetection {
         Mat dst = new Mat(), cdst = new Mat();
 
         // Edge detection
-        Imgproc.Canny(input, dst, 50, 200, 3, false);
+        Imgproc.Canny(input, dst, 100, 400, 3, false);
 
         // Copy edges to the images that will display the results in BGR
         Imgproc.cvtColor(dst, cdst, Imgproc.COLOR_GRAY2BGR);

@@ -1,5 +1,6 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 import android.graphics.Bitmap;
 import android.util.Log;
@@ -10,17 +11,20 @@ import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import java.util.Objects;
+
 public class ControllerImageDetection {
 
     //    private final ALRemoteControllerView mainView;
-    private long t = System.currentTimeMillis();//used for fps count
-    private int frameCounter = 0;
-    private int displayFps = 0;
+    private final long t = System.currentTimeMillis();//used for fps count
+    private final int frameCounter = 0;
+    private final int displayFps = 0;
+    private final DataFromDrone dataFromDrone;
+    private boolean first_detect = true;
+    private int not_found = 0;
     private boolean edgeDetectionMode = false;
     private CenterTracker centerTracker;
     private ObjectTracking objectTracking;
-
-    private DataFromDrone dataFromDrone;
 
     //constructor
     public ControllerImageDetection(
@@ -49,7 +53,11 @@ public class ControllerImageDetection {
 
 //        ControllCommand command =
         proccessImage(bitmap, droneHeight);
+    }
 
+    public void stopEdgeDetection() {
+        setEdgeDetectionMode(false);
+        first_detect = true;
     }
 
     //    public ControllCommand proccessImage(Bitmap frame) {
@@ -58,7 +66,15 @@ public class ControllerImageDetection {
         Mat imgToProcess = new Mat();
         Utils.bitmapToMat(frame, imgToProcess);
 //        if (edgeDetectionMode) {
-        detectLending(imgToProcess, droneHeight);
+        try {
+            detectLending(imgToProcess, droneHeight);
+        } catch (Exception e) {
+            Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
+            showToast(Objects.requireNonNull(e.getMessage()));
+            stopEdgeDetection();
+//            throw new RuntimeException(e);
+        }
+
 //        }
 //        double [] delta = centerTracker.process(imgToProcess);
 //        Point delta = objectTracking.track(imgToProcess, 100);
@@ -76,22 +92,32 @@ public class ControllerImageDetection {
         this.edgeDetectionMode = edgeDetectionMode;
     }
 
-    public void detectLending(Mat imgToProcess, double droneHeight) {
+    public void detectLending(Mat imgToProcess, double droneHeight) throws Exception {
         Point[][] point_arr = EdgeDetection.detectLines(imgToProcess);
         double slop;
-        Point[] point;
         // Find the longest line
-        double maxLength = 0;
         Point[] detectLandLine = null;
+        if (point_arr.length > 0) {
+            first_detect = false;
+            not_found = 0;
+        } else if (!first_detect) {
+            not_found++;
+        }
+        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
+        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
 
+        if (not_found > 3) {
+            if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
+                showToast(":  Land!!!!");
+                //TODO: check if it is possible to land here, and if so land.
+            } else {
+                throw new Exception("Error in detection mode, edge disappear");
+            }
+
+        }
         for (Point[] points : point_arr) {
             if (points != null && points[0] != null && points[1] != null) {
                 double x1 = points[0].x, y1 = points[0].y, x2 = points[1].x, y2 = points[1].y;
-//                double length = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-//                if (length > maxLength) {
-//                    maxLength = length;
-//                    detectLandLine = points;
-//                }
 
                 //TODO: need to be changed, how do i choose the line that i want to land according to?
                 boolean isHorizontal = Math.abs(y1 - y2) < Math.abs(x1 - x2);
@@ -127,9 +153,6 @@ public class ControllerImageDetection {
 
 
         }
-//        else {
-////            Log.i("No lines detected.");
-//        }
     }
 
     private double distancePointToLine(final Point point, final Point[] line) {

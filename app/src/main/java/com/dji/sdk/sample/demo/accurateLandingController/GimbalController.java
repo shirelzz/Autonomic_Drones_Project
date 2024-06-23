@@ -8,10 +8,8 @@ import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 import dji.common.error.DJIError;
-import dji.common.flightcontroller.flightassistant.FillLightMode;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
@@ -62,7 +60,7 @@ public class GimbalController implements gimbelListener {
         initFullGimbal();
     }
 
-    private void initFullGimbal(){
+    private void initFullGimbal() {
         gimbal = getGimbalInstance();
         if (gimbal != null) {
             getGimbalInstance().setMode(GimbalMode.YAW_FOLLOW, new CallbackHandlers.CallbackToastHandler());
@@ -142,8 +140,6 @@ public class GimbalController implements gimbelListener {
             degree = minGimbalDegree;
         }
 
-
-
         Rotation.Builder builder = new Rotation.Builder().mode(RotationMode.ABSOLUTE_ANGLE).time(2);
         Rotation.Builder pitchBuilder = builder.pitch(degree);
 
@@ -155,9 +151,11 @@ public class GimbalController implements gimbelListener {
                     ToastUtils.setResultToToast("Gimbal rotation error: " + djiError.getDescription());
                 } else {
                     ToastUtils.setResultToToast("Gimbal rotated successfully to degree: " + finalDegree);
+                    return;
                 }
             }
-        });    }
+        });
+    }
 
     public void updateGimbel(float gimbalValue) {
         this.gimbalValue = gimbalValue;

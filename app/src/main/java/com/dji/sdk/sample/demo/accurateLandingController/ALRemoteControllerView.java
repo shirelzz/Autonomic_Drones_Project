@@ -71,7 +71,8 @@ public class ALRemoteControllerView extends RelativeLayout
     private MissionControlWrapper missionControlWrapper;
     private AndroidGPS androidGPS;
     private DroneFeatures droneFeatures;
-    private boolean onGoToMode = false, onGoToFMMMode = false, onFollowPhoneMode = false;
+    private boolean onGoToMode = false, onGoToFMMMode = false, onFollowPhoneMode = false,
+            edgeDetectionMode = false;
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
     private ControllerImageDetection controllerImageDetection;
@@ -113,7 +114,7 @@ public class ALRemoteControllerView extends RelativeLayout
         goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
         followPhone_btn = findViewById(R.id.Follow_phone_FMM_btn);
         stopButton = findViewById(R.id.stop_btn);
-//        edgeDetect = findViewById(R.id.EdgeDetect);
+        edgeDetect = findViewById(R.id.EdgeDetect);
         goTo_btn = findViewById(R.id.goTo_btn);
         audioIcon = findViewById(R.id.audioIcon);
         dataLog = findViewById(R.id.dataLog);
@@ -143,6 +144,7 @@ public class ALRemoteControllerView extends RelativeLayout
         goToFMM_btn.setOnClickListener(this);
         followPhone_btn.setOnClickListener(this);
         stopButton.setOnClickListener(this);
+        edgeDetect.setOnClickListener(this);
         goTo_btn.setOnClickListener(this);
         y_minus_btn.setOnClickListener(this);
         y_plus_btn.setOnClickListener(this);
@@ -195,7 +197,9 @@ public class ALRemoteControllerView extends RelativeLayout
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
         imgView.setImageBitmap(droneIMG);
-        controllerImageDetection.setBitmapFrame(droneIMG);
+        if (controllerImageDetection.isEdgeDetectionMode()) {
+            controllerImageDetection.setBitmapFrame(droneIMG);
+        }
 
         if (!onGoToMode && !onGoToFMMMode) {
 //            mVideoSurface.setVisibility(View.VISIBLE);
@@ -252,7 +256,8 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     public void stopBtnFunc() {
-
+        controllerImageDetection.stopEdgeDetection();
+//        gimbalController.rotateGimbalToDegree(-90);
         flightControlMethods.disableVirtualStickControl();
 //        Objects.requireNonNull(flightControlMethods.getFlightController().getFlightAssistant()).setLandingProtectionEnabled(true, djiError -> {
 //            if (djiError != null) showToast("" + djiError);
@@ -296,12 +301,20 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private void accurateLanding(boolean isEdgeDetect) {
         controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
+        if (isEdgeDetect) {
+            gimbalController.rotateGimbalToDegree(-45);
+        } else {
+            gimbalController.rotateGimbalToDegree(-90);
+        }
     }
 
     @SuppressLint("NonConstantResourceId")
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
+            case R.id.EdgeDetect:
+                accurateLanding(!controllerImageDetection.isEdgeDetectionMode());
+                break;
             case R.id.Follow_phone_FMM_btn:
                 onFollowPhoneMode = !onFollowPhoneMode;
                 onGoToFMMMode = false;
@@ -345,9 +358,6 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.stop_btn:
                 stopBtnFunc();
                 break;
-//            case R.id.EdgeDetect:
-//                accurateLanding(!controllerImageDetection.isEdgeDetectionMode());
-//                break;
             case R.id.goTo_btn:
                 this.goToFunc();
                 break;
