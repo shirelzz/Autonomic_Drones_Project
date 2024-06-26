@@ -9,13 +9,11 @@ import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.Objects;
 
-import dji.common.error.DJIError;
 import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 import dji.common.flightcontroller.virtualstick.YawControlMode;
-import dji.common.util.CommonCallbacks;
 import dji.sdk.flightcontroller.FlightController;
 
 /**
@@ -31,10 +29,16 @@ public class FlightControlMethods {
     protected final float yawJoyControlMaxSpeed = 10;
     protected final float throttleJoyControlMaxSpeed = 4;
     private final FlightController flightController;
+    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
     private float pitch;
     private float roll;
     private float yaw;
     private float throttle;
+    private float descentRate = 0;
+    private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); //
+    private VLD_PID pitch_pid = new VLD_PID(PP, II, DD, MAX_I);
+    private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I); // בקר על הגז - למעלה למטה
+    private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I);
     private boolean virtualStickEnabled = false;
 
     private long startTime; // Record the start time
@@ -89,8 +93,8 @@ public class FlightControlMethods {
         value will be interpreted as an angle in the Ground Coordinate System.
         Please make sure that you select the right coordinate system.
          */
-        flightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
-//        flightController.setYawControlMode(YawControlMode.ANGLE); // Asaf
+//        flightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+        flightController.setYawControlMode(YawControlMode.ANGLE); // Asaf
 
 
         /*
@@ -104,6 +108,70 @@ public class FlightControlMethods {
 //        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
         flightController.setVerticalControlMode(VerticalControlMode.VELOCITY); // Asaf
 
+    }
+
+    public void initPIDs(double p, double i, double d, double max_i, String type) {
+
+        if (type.equals("roll")) {
+            if (roll_pid == null) {
+                roll_pid = new VLD_PID(p, i, d, max_i);
+            } else {
+                roll_pid.setPID(p, i, d, max_i);
+            }
+        }
+
+        if (type.equals("pitch")) {
+            if (pitch_pid == null) {
+                pitch_pid = new VLD_PID(p, i, d, max_i);
+            } else {
+                pitch_pid.setPID(p, i, d, max_i);
+            }
+        }
+
+        if (type.equals("throttle")) {
+            if (throttle_pid == null) {
+                throttle_pid = new VLD_PID(p, i, d, max_i);
+            } else {
+                throttle_pid.setPID(p, i, d, max_i);
+            }
+        }
+
+
+//        if (roll_pid == null) {
+//            roll_pid = new VLD_PID(p, i, d, max_i);
+//            pitch_pid = new VLD_PID(p, i, d, max_i);
+//            throttle_pid = new VLD_PID(p, i, d, max_i);
+//        }
+//        else{
+//            roll_pid.setPID(p, i, d, max_i);
+//            pitch_pid.setPID(p, i, d, max_i);
+//            throttle_pid.setPID(p, i, d, max_i);
+//        }
+    }
+
+    public void setDescentRate(float descentRate) {
+        if (descentRate > 0) {
+            descentRate = -descentRate;
+        }
+
+        this.descentRate = descentRate;
+    }
+
+    public ControlCommand stayOnPlace() {
+        //  מאפס את כל הערכים לאפס - מתייצב
+//        roll_pid.reset();
+//        pitch_pid.reset();
+        float t = 0;
+        float r = 0;
+        float p = 0;
+//        y = 0;
+//        need to set another gp
+        ControlCommand ans = new ControlCommand(p, r, t);
+//        ans.setErr(1000, 0, 0, 0);
+//        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+//        ans.setImageDistance(-1);
+
+        return ans;
     }
 
     /**
@@ -133,8 +201,11 @@ public class FlightControlMethods {
      * @param pitch value
      */
     public void goPitch(float pitch) {
+        ControlCommand command = new ControlCommand(pitch, 0, 0);
+        // Send virtual stick commands to the drone
+        sendVirtualStickCommands(command, 0);
 
-        sendVirtualStickCommands(pitch, 0, 0, 0);
+//        sendVirtualStickCommands(pitch, 0, 0, 0);
     }
 
     /**
@@ -143,7 +214,11 @@ public class FlightControlMethods {
      * @param roll value
      */
     public void goRoll(float roll) {
-        sendVirtualStickCommands(0, roll, 0, 0);
+        ControlCommand command = new ControlCommand(0, roll, 0);
+        // Send virtual stick commands to the drone
+        sendVirtualStickCommands(command, 0);
+
+//        sendVirtualStickCommands(0, roll, 0, 0);
     }
 
 
@@ -153,7 +228,11 @@ public class FlightControlMethods {
      * @param yaw value
      */
     public void goYaw(float yaw) {
-        sendVirtualStickCommands(0, 0, yaw, 0);
+        ControlCommand command = new ControlCommand(0, 0, 0);
+        // Send virtual stick commands to the drone
+        sendVirtualStickCommands(command, yaw);
+
+//        sendVirtualStickCommands(0, 0, yaw, 0);
     }
 
     /**
@@ -162,28 +241,36 @@ public class FlightControlMethods {
      * @param throttle value
      */
     public void goThrottle(float throttle) {
-        sendVirtualStickCommands(0, 0, 0, throttle);
+        ControlCommand command = new ControlCommand(0, 0, throttle);
+        // Send virtual stick commands to the drone
+        sendVirtualStickCommands(command, 0);
+
+//        sendVirtualStickCommands(0, 0, 0, throttle);
     }
 
     /**
      * Sends virtual stick commands to the FlightController to control the drone's movement.
+     * <p>
+     * //     * @param pX        Pitch control value
+     * //     * @param pY        Roll control value
      *
-     * @param pX        Pitch control value
-     * @param pY        Roll control value
-     * @param pZ        Yaw control value
-     * @param pThrottle Throttle control value
+     * @param pZ Yaw control value
+     *           //     * @param pThrottle Throttle control value
      */
-    public void sendVirtualStickCommands(final float pX, final float pY, final float pZ, final float pThrottle) {
+    public void sendVirtualStickCommands(ControlCommand command,
+//                                         float pX, float pY,
+                                         float pZ) {
+        //, float pThrottle
+        // ) {
         if (Objects.isNull(startTime)) {
             startTime = System.currentTimeMillis();
         }
 
-        ToastUtils.showToast("In sendVirtualStickCommands, pX:  " + pX + ", pY:  " + pY + ",pZ:   " + pZ + ",pThrottle:   " + pThrottle);
-        // Set pitch, roll, yaw, throttle
-        float mPitch = (float) (pitchJoyControlMaxSpeed * pX);        // forward-backwards
-        float mRoll = (float) (rollJoyControlMaxSpeed * pY);          // left-right
-        float mYaw = (float) (yawJoyControlMaxSpeed * pZ);          // tilt right/left
-        float mThrottle = (float) (throttleJoyControlMaxSpeed * pThrottle);  // height
+//        // Set pitch, roll, yaw, throttle
+//        float mPitch = (float) (pitchJoyControlMaxSpeed * pX);        // forward-backwards
+//        float mRoll = (float) (rollJoyControlMaxSpeed * pY);          // left-right
+//        float mYaw = (float) (yawJoyControlMaxSpeed * pZ);          // tilt right/left
+//        float mThrottle = (float) (throttleJoyControlMaxSpeed * pThrottle);  // height
 
         if (flightController != null) {
 
@@ -192,48 +279,44 @@ public class FlightControlMethods {
 
                 FlightControlData flightControlData = new FlightControlData(0, 0, 0, 0);
                 // Sets the aircraft's velocity (m/s) along the y-axis or angle value (in degrees) for pitch
-                flightControlData.setPitch(mPitch);
+                flightControlData.setPitch(command.getPitch());
                 // Sets the aircraft's velocity (m/s) along the x-axis or angle value (in degrees) for roll
-                flightControlData.setRoll(mRoll);
+                flightControlData.setRoll(command.getRoll());
                 // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
-                flightControlData.setYaw(mYaw);
+                flightControlData.setYaw(pZ);
                 // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
-                if (mThrottle < 0) {
-//                mThrottle = -3
-                }
-                flightControlData.setVerticalThrottle(mThrottle);
-                flightController.sendVirtualStickFlightControlData(flightControlData, new CommonCallbacks.CompletionCallback() {
-                            @Override
-                            public void onResult(DJIError djiError) {
-                                if (djiError != null) {
-                                    long currentTime = System.currentTimeMillis();
-                                    long elapsedTime = currentTime - startTime;
-                                    if (elapsedTime < CONTROL_DURATION) {
-                                        sendVirtualStickCommands(pX, pY, pZ, pThrottle);
-                                    } else {
-                                        disableVirtualStickControl();
 
-                                    }
+//                if (command.getVerticalThrottle() <= 0.3) { //make sure to land
+//                    pThrottle = -3;
+//                }
+                flightControlData.setVerticalThrottle(command.getVerticalThrottle());
+                Log.i("command:  ",  flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle() );
+                ToastUtils.showToast("VS:" + flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
+
+                float finalPThrottle = command.getVerticalThrottle();
+                flightController.sendVirtualStickFlightControlData(flightControlData, djiError -> {
+                            if (djiError != null) {
+                                long currentTime = System.currentTimeMillis();
+                                long elapsedTime = currentTime - startTime;
+                                if (elapsedTime < CONTROL_DURATION) {
+                                    sendVirtualStickCommands(command, pZ);
+                                } else {
+                                    disableVirtualStickControl();
+
                                 }
                             }
                         }
                 );
             } else {
-//                setResultToToast("flight controller virtual mode off");
+//                float finalPThrottle = pThrottle;
 
                 // If virtual stick is not enabled, enable
-                flightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onResult(DJIError djiError) {
-                        if (djiError != null) {
-                            setResultToToast(djiError.getDescription());
-                        } else {
-//                            setResultToToast("Enable Virtual Stick Success");
-                            virtualStickEnabled = true;
-                            sendVirtualStickCommands(pX, pY, pZ, pThrottle);
-
-
-                        }
+                flightController.setVirtualStickModeEnabled(true, djiError -> {
+                    if (djiError != null) {
+                        setResultToToast(djiError.getDescription());
+                    } else {
+                        virtualStickEnabled = true;
+                        sendVirtualStickCommands(command, pZ);
                     }
                 });
             }

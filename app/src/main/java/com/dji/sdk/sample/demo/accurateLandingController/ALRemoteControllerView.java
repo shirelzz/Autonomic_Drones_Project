@@ -102,7 +102,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //                , edgeDetect
         );
         gimbalController = new GimbalController(flightControlMethods);
-        controllerImageDetection = new ControllerImageDetection(dataFromDrone);
+        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods);
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
@@ -313,6 +313,8 @@ public class ALRemoteControllerView extends RelativeLayout
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.EdgeDetect:
+//                flightControlMethods.goThrottle(0.5f);
+//                flightControlMethods.goPitch(0.5f) ;
                 accurateLanding(!controllerImageDetection.isEdgeDetectionMode());
                 break;
             case R.id.Follow_phone_FMM_btn:

@@ -7,15 +7,14 @@ import androidx.annotation.Nullable;
 
 import java.util.Arrays;
 
-public class  GoToUsingVS {
-    private GPSLocation startGpsLocation;
-    private GPSLocation targetGpsLocation;
-    private FlightControlMethods flightControlMethods;
-
-    private DataFromDrone dataFromDrone;
+public class GoToUsingVS {
     // Adjust these scaling factors based on flight testing
     private static final double SCALE_FACTOR_DISTANCE = 0.5;
     private static final double SCALE_FACTOR_THROTTLE = 0.7;
+    private GPSLocation startGpsLocation;
+    private GPSLocation targetGpsLocation;
+    private FlightControlMethods flightControlMethods;
+    private DataFromDrone dataFromDrone;
 
 
     public GoToUsingVS(@Nullable GPSLocation startGpsLocation, @Nullable GPSLocation targetGpsLocation, DataFromDrone dataFromDrone) {
@@ -44,14 +43,14 @@ public class  GoToUsingVS {
         float roll = (float) calculateAdjustedRoll(azimuth, distance); // Use adjusted roll calculation
         float yaw = (float) azimuth; // Assuming yaw is already in degrees and within expected range
         float throttle = (float) (distance * SCALE_FACTOR_THROTTLE * SCALE_FACTOR_DISTANCE);
-
+        ControlCommand command = new ControlCommand(pitch, roll, throttle);
         // Send virtual stick commands to the drone
-        flightControlMethods.sendVirtualStickCommands(pitch, roll, yaw, throttle);
+        flightControlMethods.sendVirtualStickCommands(command, yaw);
 
         return new float[]{pitch, roll, yaw, throttle};
     }
 
-    private double calculateAdjustedRoll(double azimuth, double distance){
+    private double calculateAdjustedRoll(double azimuth, double distance) {
         // Obtain drone's current yaw (replace with actual mechanism to get yaw)
         double currentYaw = dataFromDrone.getYaw(); // Assuming this method exists in your SDK version
 
@@ -66,7 +65,7 @@ public class  GoToUsingVS {
     }
 
     @SuppressLint("SetTextI18n")
-    public void startGoTo(TextView dist, FlightCommands flightCommands){
+    public void startGoTo(TextView dist, FlightCommands flightCommands) {
         // need to provide relevant values
         GPSLocation gpsLocation = this.getDestGpsLocation();
         double[] pos;
