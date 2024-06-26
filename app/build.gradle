@@ -1,6 +1,18 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+//apply plugin: 'com.android.application'
+//apply plugin: 'kotlin-android'
 //apply plugin: 'kotlin-android-extensions'
+
+plugins{
+    id 'com.android.application'
+    id 'com.chaquo.python'
+//    id 'kotlin-android'
+//    id 'kotlin-android-extensions'
+//    id 'kotlin-parcelize' // Add this line if you use Parcelable
+
+}
+
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-parcelize'
 
 repositories {
     mavenLocal()
@@ -16,7 +28,7 @@ android {
     defaultConfig {
 //        applicationId "com.dji.sdk.sample"
         applicationId "com.kcg.kcgland"
-        minSdkVersion 21
+        minSdkVersion 26
         //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 30
         multiDexEnabled true
@@ -24,8 +36,42 @@ android {
         ndk {
             // On x86 devices that run Android API 23 or above, if the application is targeted with API 23 or
             // above, FFmpeg lib might lead to runtime crashes or warnings.
-            abiFilters 'armeabi-v7a', 'arm64-v8a'
+//            abiFilters 'armeabi-v7a', 'arm64-v8a'
+
+            // On Apple silicon, you can omit x86_64.
+//            abiFilters += listOf("arm64-v8a", "x86_64")
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+
         }
+
+        python {
+            version "3.11" //11
+        }
+
+        python {
+           buildPython "/opt/homebrew/bin/python3.exe"
+        }
+
+//        python {
+//            pip {
+//                // A requirement specifier, with or without a version number:
+//                install("scipy")
+//                install("requests==2.24.0")
+//
+//                // An sdist or wheel filename, relative to the project directory:
+//                install("MyPackage-1.2.3-py2.py3-none-any.whl")
+//
+//                // A directory containing a setup.py, relative to the project
+//                // directory (must contain at least one slash):
+//                install("./MyPackage")
+//
+//                // "-r"` followed by a requirements filename, relative to the
+//                // project directory:
+//                install("-r", "requirements.txt")
+//            }
+//        }
+
+
     }
 
     configurations {
@@ -37,12 +83,12 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro', 'proguard-chauqopy.pro'
         }
         debug {
             shrinkResources true
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro', 'proguard-chauqopy.pro'
         }
     }
 
@@ -89,6 +135,42 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
+    }
+
+    flavorDimensions "pyVersion"
+    productFlavors {
+        create("py38") { dimension = "pyVersion" }
+        create("py310") { dimension = "pyVersion" }
+        create("py311") { dimension = "pyVersion" }
+    }
+
+//    sourceSets.getByName("main") {
+//        setRoot("src/main") ///python
+//    }
+
+    sourceSets {
+        main {
+            python.srcDir "src/main/python"
+        }
+    }
+
+}
+
+chaquopy {
+    defaultConfig {
+        buildPython("/opt/homebrew/bin/python3.exe")
+    }
+
+    productFlavors {
+        getByName("py38") { version = "3.8" }
+        getByName("py310") { version = "3.10" }
+        getByName("py311") { version = "3.11" }
+    }
+
+    sourceSets {
+        sourceSets.getByName("main") {
+            srcDirs = ["src/main/python"]
+        }
     }
 }
 
@@ -140,6 +222,7 @@ dependencies {
 //    implementation 'org.pytorch:pytorch_android_lite:1.9.0'
 //    implementation 'org.pytorch:pytorch_android_torchvision_lite:1.9.0'
 
-    implementation 'black.ninia:jep:4.0.3'
+//    implementation 'black.ninia:jep:4.0.3'
+//    implementation 'org.python:jython-standalone:2.7.3'
 
 }
