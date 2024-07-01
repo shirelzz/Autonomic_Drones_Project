@@ -30,19 +30,18 @@ public class ControllerImageDetection {
     private FlightControlMethods flightControlMethods;
     private ObjectTracking objectTracking;
     private float descentRate = 0;
-    private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); //
-    private VLD_PID pitch_pid = new VLD_PID(PP, II, DD, MAX_I);
-    private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I); // בקר על הגז - למעלה למטה
-    private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I);
+
+    private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); // side-to-side tilt of the drone
+    private VLD_PID pitch_pid = new VLD_PID(PP, II, DD, MAX_I); // forward and backward tilt of the drone
+    private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I); // left and right rotation
+    private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I); //vertical up and down motion
 
     private float p, r, t, gp = 0;
 
     private double error_x, error_y, error_z, error_yaw, D;
 
     //constructor
-    public ControllerImageDetection(
-//            ALRemoteControllerView mainView,
-            DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods) {
+    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods) {
 //        OpenCVLoader.initDebug();
 
 //        this.mainView = mainView;
@@ -83,7 +82,6 @@ public class ControllerImageDetection {
         first_detect = true;
     }
 
-    //    public ControlCommand proccessImage(Bitmap frame) {
     public void proccessImage(Bitmap frame, double droneHeight) {
         //bug exist here somehow Mat dosent exist here???
         Mat imgToProcess = new Mat();
@@ -92,7 +90,7 @@ public class ControllerImageDetection {
         try {
             ControlCommand command = detectLending(imgToProcess, droneHeight);
 
-            flightControlMethods.sendVirtualStickCommands(command, 0);
+            flightControlMethods.sendVirtualStickCommands(command, 0.0f);
         } catch (Exception e) {
             Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
             showToast(Objects.requireNonNull(e.getMessage()));
@@ -122,7 +120,7 @@ public class ControllerImageDetection {
         double dt = (currTime - prevTime) / 1000.0; // Give as the frame
         prevTime = currTime;
         double maxSpeed = 2;
-        setDescentRate((float) dataFromDrone.getAltitudeBelow());
+//        setDescentRate((float) dataFromDrone.getAltitudeBelow());
         Point[][] point_arr = EdgeDetection.detectLines(imgToProcess);
         double slop;
         // Find the longest line
@@ -139,7 +137,7 @@ public class ControllerImageDetection {
         if (not_found > 3) {
             if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
                 showToast(":  Land!!!!");
-                flightControlMethods.stayOnPlace();
+//                ControlCommand command = flightControlMethods.stayOnPlace();
                 return null;
                 //TODO: check if it is possible to land here, and if so land.
             } else {
@@ -164,7 +162,7 @@ public class ControllerImageDetection {
                 Point centerPoint = new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0);
                 double calc_dis = distancePointToLine(centerPoint, points);
                 // Do we need the drone to know every time what the altitude according to the gps?
-                Imgproc.putText(imgToProcess, "dy: " + calc_dis, centerPoint, 5, 0.3, new Scalar(0, 255, 0));
+                Imgproc.putText(imgToProcess, "dy: " + calc_dis, centerPoint, 5, 1, new Scalar(0, 255, 0));
                 dy = calc_dis;
 
                 // TODO: We send a command to the drone how he need to go so it will be exactly
@@ -187,12 +185,14 @@ public class ControllerImageDetection {
             Imgproc.line(imgToProcess, detectLandLine[0], detectLandLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
         }
 //        error_y = (imgToProcess.cols() / 2.0 - aruco.center.y) / 100;
-        error_x = (dy) / 100;
+        error_y = ((dy) / 100.0f) + 0.5f; // Check
 
 
-//        p = (float) pitch_pid.update(error_y, dt, maxSpeed); // מעזכן את השגיאה בi
-        r = (float) roll_pid.update(error_x, dt, maxSpeed);
-        t = descentRate;
+        p = (float) pitch_pid.update(error_y, dt, maxSpeed); // מעזכן את השגיאה בi
+        //TODO maybe move the drone with yaw so the line will be horizontal completely to the drone
+        // Not at the moment because it is left and right and we want it to go front and back
+//        r = (float) roll_pid.update(error_x, dt, maxSpeed);
+        t = -0.5f;
         ControlCommand ans = new ControlCommand(p, r, t);
         ans.setErr(1000, error_x, error_y, droneRelativeHeight);
         ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());

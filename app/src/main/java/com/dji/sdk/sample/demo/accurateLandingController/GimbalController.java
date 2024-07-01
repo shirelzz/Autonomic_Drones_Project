@@ -151,7 +151,6 @@ public class GimbalController implements gimbelListener {
                 ToastUtils.setResultToToast("Gimbal rotation error: " + djiError.getDescription());
             } else {
                 ToastUtils.setResultToToast("Gimbal rotated successfully to degree: " + finalDegree);
-                return;
             }
         });
     }

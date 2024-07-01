@@ -301,7 +301,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private void accurateLanding(boolean isEdgeDetect) {
         controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
-        if (isEdgeDetect) {
+         if (isEdgeDetect) {
             gimbalController.rotateGimbalToDegree(-45);
         } else {
             gimbalController.rotateGimbalToDegree(-90);
