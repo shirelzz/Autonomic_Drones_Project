@@ -60,7 +60,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private Context ctx;
     private Button goToFMM_btn, followPhone_btn, stopButton, edgeDetect, goTo_btn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
-    private Button g_minus_btn_up;
+    private Button g_minus_btn_up, check_depth;
     private Bitmap droneIMG;
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
@@ -132,6 +132,7 @@ public class ALRemoteControllerView extends RelativeLayout
         t_minus_btn = findViewById(R.id.t_minus_btn);
         t_plus_btn = findViewById(R.id.t_plus_btn);
         g_minus_btn_up = findViewById(R.id.gimbal_pitch_update);
+        check_depth = findViewById(R.id.check_depth);
 //        g_plus_btn_up = findViewById(R.id.g_plus_up_update);
 //        g_minus_btn_side = findViewById(R.id.g_minus_side_update);
 //        g_plus_btn_side = findViewById(R.id.g_plus_side_update);
@@ -156,6 +157,7 @@ public class ALRemoteControllerView extends RelativeLayout
         t_plus_btn.setOnClickListener(this);
 
         g_minus_btn_up.setOnClickListener(this);
+        check_depth.setOnClickListener(this);
 //        g_plus_btn_up.setOnClickListener(this);
 //        g_minus_btn_side.setOnClickListener(this);
 //        g_plus_btn_side.setOnClickListener(this);
@@ -301,7 +303,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private void accurateLanding(boolean isEdgeDetect) {
         controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
-         if (isEdgeDetect) {
+        if (isEdgeDetect) {
             gimbalController.rotateGimbalToDegree(-45);
         } else {
             gimbalController.rotateGimbalToDegree(-90);
@@ -424,6 +426,10 @@ public class ALRemoteControllerView extends RelativeLayout
                 } catch (NumberFormatException e) {
                     showToast("not float");
                 }
+                break;
+            case R.id.check_depth:
+                gimbalController.rotateGimbalToDegree(-90);
+                controllerImageDetection.DepthBool();
                 break;
             case R.id.gimbal_pitch_update:
 //                ToastUtils.setResultToToast(String.valueOf(Float.parseFloat(gimbal.getText().toString())));

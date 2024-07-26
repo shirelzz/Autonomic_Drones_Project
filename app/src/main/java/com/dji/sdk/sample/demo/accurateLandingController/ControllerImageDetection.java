@@ -21,12 +21,14 @@ public class ControllerImageDetection {
     private final int displayFps = 0;
     private final DataFromDrone dataFromDrone;
     Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
+    private DepthMap depthMap;
     //    private final ALRemoteControllerView mainView;
     private long prevTime = System.currentTimeMillis();
     private boolean first_detect = true;
     private int not_found = 0;
     private boolean edgeDetectionMode = false;
     private CenterTracker centerTracker;
+    private boolean check_depth;
     private FlightControlMethods flightControlMethods;
     private ObjectTracking objectTracking;
     private float descentRate = 0;
@@ -47,8 +49,14 @@ public class ControllerImageDetection {
 //        this.mainView = mainView;
         this.dataFromDrone = dataFromDrone;
         this.flightControlMethods = flightControlMethods;
+        this.depthMap = new DepthMap();
+
 //        this.objectTracking = new ObjectTracking(true, "GREEN");
 //        centerTracker = new CenterTracker();
+    }
+
+    public void DepthBool() {
+        this.check_depth = true;
     }
 
     public void setDescentRate(float descentRate) {
@@ -86,6 +94,18 @@ public class ControllerImageDetection {
         //bug exist here somehow Mat dosent exist here???
         Mat imgToProcess = new Mat();
         Utils.bitmapToMat(frame, imgToProcess);
+
+        if (check_depth) {
+            // Create an empty matrix to store the grayscale image
+            Mat grayImage = new Mat();
+
+            // Convert the image to grayscale
+            Imgproc.cvtColor(imgToProcess, grayImage, Imgproc.COLOR_BGR2GRAY);
+
+            Boolean bool = depthMap.AddImage(grayImage);
+            showToast("depthMap:  " + bool);
+            this.check_depth = false;
+        }
 //        if (edgeDetectionMode) {
         try {
             ControlCommand command = detectLending(imgToProcess, droneHeight);
@@ -94,7 +114,7 @@ public class ControllerImageDetection {
         } catch (Exception e) {
             Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
             showToast(Objects.requireNonNull(e.getMessage()));
-            stopEdgeDetection();
+//            stopEdgeDetection();
 //            throw new RuntimeException(e);
         }
 
@@ -134,7 +154,7 @@ public class ControllerImageDetection {
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
 
-        if (not_found > 3) {
+        if (not_found > 5) {
             if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
                 showToast(":  Land!!!!");
 //                ControlCommand command = flightControlMethods.stayOnPlace();
