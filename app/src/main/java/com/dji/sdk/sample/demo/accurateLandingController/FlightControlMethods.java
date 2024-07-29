@@ -173,6 +173,22 @@ public class FlightControlMethods {
         return new ControlCommand(p, r, t);
     }
 
+    public ControlCommand land() {
+        //  מאפס את כל הערכים לאפס - מתייצב
+//        roll_pid.reset();
+//        pitch_pid.reset();
+        float t = -3;
+        float r = 0;
+        float p = 0;
+//        y = 0;
+//        need to set another gp
+        //        ans.setErr(1000, 0, 0, 0);
+//        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+//        ans.setImageDistance(-1);
+
+        return new ControlCommand(p, r, t);
+    }
+
     /**
      * Gets the FlightController instance from the DJI SDK.
      *

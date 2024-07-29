@@ -137,7 +137,7 @@ public class SpeechToText implements RecognitionListener {
             // If listening for trigger, continue listening for speech
 //            returnedText.setText(text.toString());
             if (onResultsCallback != null) {
-                onResultsCallback.accept(text.toString()); // Invoke the runnable
+                onResultsCallback.accept(text.toString().toLowerCase()); // Invoke the runnable
             }
             startListening();
 

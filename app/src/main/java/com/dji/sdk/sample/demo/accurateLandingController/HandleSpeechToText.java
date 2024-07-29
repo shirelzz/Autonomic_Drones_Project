@@ -4,33 +4,29 @@ import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Color;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 
 import com.dji.sdk.sample.demo.speechToText.SpeechToText;
 
 public class HandleSpeechToText {
-    private SpeechToText speechToText;
+    private final SpeechToText speechToText;
+    ;
+    private final Runnable goToFunc, goToFMM_btn, stopButton, followPhone_btn, edgeDetect;
     protected ImageView audioIcon;
-    protected Button button1, button2, button3;
-//    , edgeDetect;
 
-    private Runnable goToFunc;
-
-
-    public HandleSpeechToText(Context context, ImageView audioIcon, Button button1, Button button2, Button button3, Runnable goToFunc
-//            ,                   Button edgeDetect
+    //context, audioIcon, goToFMM_btn, stopButton, followPhone_btn, this::goToFunc
+    public HandleSpeechToText(Context context, ImageView audioIcon, Runnable goToFMM_btn, Runnable stopButton,
+                              Runnable followPhone_btn, Runnable goToFunc, Runnable edgeDetect
     ) {
         speechToText = new SpeechToText(context, this::performActionOnResults, null, this::updateStartListening);
         speechToText.startListening();
         this.audioIcon = audioIcon;
-        this.button1 = button1;
-        this.button2 = button2;
-        this.button3 = button3;
+        this.goToFMM_btn = goToFMM_btn;
+        this.stopButton = stopButton;
+        this.followPhone_btn = followPhone_btn;
         this.goToFunc = goToFunc;
-//        this.edgeDetect = edgeDetect;
+        this.edgeDetect = edgeDetect;
     }
 
     public void updateStartListening() {
@@ -41,28 +37,33 @@ public class HandleSpeechToText {
     @SuppressLint("UseCompatLoadingForDrawables")
     public void performActionOnResults(String text) {
         showToast(text);
-        if (text.contains("abort") || text.contains("a bird") || text.contains("about") || text.contains("a boat")) {
-            showToast("abort");
-        }
-//            if(text.contains(landing"){
-
-//                hoverLandBtnFunc(R.id.land_btn);
-//    }
-        //            if(text.contains(take off"){
-
-//                UI_commands.takeoff();
-//               }
-        else if (text.contains("go to")) {
+        boolean b = text.contains("edge detection") || text.contains("ag detection") || text.contains("angie deduction");
+        showToast("" + b);
+        if (text.contains("go to")) {
             showToast("go to");
             this.goToFunc.run();
         } else if (text.contains("track me") || text.contains("talk me")) {
             showToast("track me");
-        } else if (text.contains("panic") || text.contains("funny")) {
-            showToast("panic");
         } else if (text.contains("higher") || text.contains("tier")) {
             showToast("higher");
         } else if (text.contains("lower")) {
             showToast("lower");
+        } else if (text.contains("stop") || text.contains("scope") || text.contains("dope") ||
+                text.contains("panic") || text.contains("funny") ||
+                text.contains("abort") || text.contains("a bird") || text.contains("about") || text.contains("a boat")) {//stop button
+            showToast("Stop");
+            this.stopButton.run();
+        } else if (text.contains("follow me") || text.contains("photo me")) {//follow me button
+            this.goToFMM_btn.run();
+        } else if (text.contains("follow phone") || text.contains("auto phone me") || text.contains("photo phone")) {//follow phone button
+            this.followPhone_btn.run();
+        } else if (text.contains("edge detection") || text.contains("exit jackson") || text.contains("ag detection") || text.contains("edge action") || text.contains("detection") || text.contains("angie deduction")) {//edge detection button
+            showToast("Edge algo");
+
+            this.edgeDetect.run();
+
+        } else if (text.contains("land") || text.contains("lend")) {//land button
+
         }
 
 //            else if(text.contains(stay)){ //our algorithm (pause) replace with pose){
@@ -111,21 +112,5 @@ public class HandleSpeechToText {
 //                followMeMissionFunc();
 //    }
 
-        else if (text.contains("button one") || text.contains("button 1")) {
-            button1.setBackgroundColor(Color.GREEN);
-            button2.setBackgroundColor(Color.WHITE);
-            button3.setBackgroundColor(Color.WHITE);
-        } else if (text.contains("button two") || text.contains("button 2") || text.contains("button too") || text.contains("button to")) {
-            button2.setBackgroundColor(Color.GREEN);
-            button1.setBackgroundColor(Color.WHITE);
-            button3.setBackgroundColor(Color.WHITE);
-        } else if (text.contains("button three") || text.contains("button 3")) {
-            button3.setBackgroundColor(Color.GREEN);
-            button1.setBackgroundColor(Color.WHITE);
-            button2.setBackgroundColor(Color.WHITE);
-        }
-        else if (text.contains("edge detection") || text.contains("talk me")) {
-            showToast("track me");
-        }
     }
 }

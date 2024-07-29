@@ -2,25 +2,37 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+import com.chaquo.python.android.AndroidPlatform;
 import com.dji.sdk.sample.demo.kcgremotecontroller.VLD_PID;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class ControllerImageDetection {
 
-    private final int frameCounter = 0;
     private final int displayFps = 0;
     private final DataFromDrone dataFromDrone;
-    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
+//    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
+    Double PP = 0.0, II = 0.02, DD = 0.01, MAX_I = 0.0;
+    private int frameCounter = 0;
     private DepthMap depthMap;
     //    private final ALRemoteControllerView mainView;
     private long prevTime = System.currentTimeMillis();
@@ -28,6 +40,8 @@ public class ControllerImageDetection {
     private int not_found = 0;
     private boolean edgeDetectionMode = false;
     private CenterTracker centerTracker;
+    private Mat previous_image;
+    private ExecutorService executorService = Executors.newFixedThreadPool(2);
     private boolean check_depth;
     private FlightControlMethods flightControlMethods;
     private ObjectTracking objectTracking;
@@ -37,15 +51,15 @@ public class ControllerImageDetection {
     private VLD_PID pitch_pid = new VLD_PID(PP, II, DD, MAX_I); // forward and backward tilt of the drone
     private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I); // left and right rotation
     private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I); //vertical up and down motion
-
+    private Context context;
     private float p, r, t, gp = 0;
 
     private double error_x, error_y, error_z, error_yaw, D;
 
     //constructor
-    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods) {
+    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context) {
 //        OpenCVLoader.initDebug();
-
+        this.context = context;
 //        this.mainView = mainView;
         this.dataFromDrone = dataFromDrone;
         this.flightControlMethods = flightControlMethods;
@@ -68,7 +82,37 @@ public class ControllerImageDetection {
     }
 
 
+    // Method to run the Python script asynchronously
+
+    public boolean checkPlain(Mat mat1) {
+
+        if (!Python.isStarted()) {
+            Python.start(new AndroidPlatform(context));
+        }
+
+        byte[] mat1Bytes = matToBytes(mat1);
+        byte[] mat2Bytes = matToBytes(previous_image);
+        Python py = Python.getInstance();
+        PyObject pyObj = py.getModule("DepthMap").callAttr("process_images", mat1Bytes, mat2Bytes);
+
+        // Handle the result from Python (true/false)
+        boolean isPlane = pyObj.toBoolean();
+        Toast.makeText(context, "The ground is a plane: " + isPlane, Toast.LENGTH_LONG).show();
+
+        return isPlane;
+    }
+
+    public Future<Boolean> checkPlainAsync(Mat mat1) {
+        return executorService.submit(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                return checkPlain(mat1);
+            }
+        });
+    }
+
     public void setBitmapFrame(Bitmap bitmap) {
+        try {
 
 //        if (t + 1000 < System.currentTimeMillis()) {
 //            t = System.currentTimeMillis();
@@ -79,10 +123,14 @@ public class ControllerImageDetection {
 //            frameCounter++;
 //        }
 
-        double droneHeight = dataFromDrone.getGPS().getAltitude();
+            double droneHeight = dataFromDrone.getGPS().getAltitude();
 
 //        ControlCommand command =
-        proccessImage(bitmap, droneHeight);
+            proccessImage(bitmap, droneHeight);
+        } catch (Exception exception) {
+            Log.e("Error: ", Objects.requireNonNull(exception.getMessage()));
+            showToast(Objects.requireNonNull(exception.getMessage()));
+        }
     }
 
     public void stopEdgeDetection() {
@@ -90,22 +138,68 @@ public class ControllerImageDetection {
         first_detect = true;
     }
 
+    private byte[] matToBytes(Mat mat) {
+        MatOfByte matOfByte = new MatOfByte();
+        Imgcodecs.imencode(".png", mat, matOfByte);
+        return matOfByte.toArray();
+    }
+
     public void proccessImage(Bitmap frame, double droneHeight) {
-        //bug exist here somehow Mat dosent exist here???
+        // Added python function but it causes an error in loading
         Mat imgToProcess = new Mat();
+//        Mat prevImg = new Mat();
         Utils.bitmapToMat(frame, imgToProcess);
 
-        if (check_depth) {
-            // Create an empty matrix to store the grayscale image
-            Mat grayImage = new Mat();
-
-            // Convert the image to grayscale
-            Imgproc.cvtColor(imgToProcess, grayImage, Imgproc.COLOR_BGR2GRAY);
-
-            Boolean bool = depthMap.AddImage(grayImage);
-            showToast("depthMap:  " + bool);
-            this.check_depth = false;
-        }
+//        if (check_depth) {
+//            // Create an empty matrix to store the grayscale image
+////            Mat grayImage = new Mat();
+//            Bitmap bitmap = null;
+////            Mat colorImage = new Mat();
+//            // Assuming the image is placed in res/drawable and is named image.jpg
+//
+//            if (frameCounter == 0) {
+//                try {
+//
+//                    bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.img1);
+//                    Utils.bitmapToMat(bitmap, prevImg);
+//                    previous_image = prevImg;
+//                    frameCounter++;
+//
+//                } catch (Exception e) {
+//                    Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
+//                }
+//            } else {
+////                bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.img2);
+//                bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.img2);
+//                Utils.bitmapToMat(bitmap, prevImg);
+//                try {
+//                    Future<Boolean> futureResult = checkPlainAsync(prevImg);
+//                    boolean bool = futureResult.get(); // Wait for the result
+//                    Toast.makeText(context, "The ground is a plane: " + bool, Toast.LENGTH_LONG).show();
+//                    Log.i("depthMap res:", "" + bool);
+//
+//                } catch (Exception e) {
+//                    Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
+//                }
+//            }
+//////          Convert Bitmap to Mat
+////            assert bitmap != null;
+////            Mat mat = new Mat(bitmap.getHeight(), bitmap.getWidth(), CvType.CV_8UC3);
+////            Utils.bitmapToMat(bitmap, mat);
+////
+////            // Example: Convert to grayscale
+////            Mat grayMat = new Mat();
+////            Imgproc.cvtColor(mat, grayMat, Imgproc.COLOR_BGR2GRAY);
+////            frameCounter++;
+//
+//            // Convert the image to grayscale
+////            Imgproc.cvtColor(imgToProcess, grayImage, Imgproc.COLOR_BGR2GRAY);
+////            Imgproc.cvtColor(colorImage, grayImage, Imgproc.COLOR_BGR2GRAY);
+//
+////            Boolean bool = depthMap.AddImage(grayMat);
+////            showToast("depthMap:  " + bool);
+//            this.check_depth = false;
+//        }
 //        if (edgeDetectionMode) {
         try {
             ControlCommand command = detectLending(imgToProcess, droneHeight);
@@ -114,8 +208,8 @@ public class ControllerImageDetection {
         } catch (Exception e) {
             Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
             showToast(Objects.requireNonNull(e.getMessage()));
-//            stopEdgeDetection();
-//            throw new RuntimeException(e);
+            stopEdgeDetection();
+            throw new RuntimeException(e);
         }
 
 //        }
@@ -157,8 +251,10 @@ public class ControllerImageDetection {
         if (not_found > 5) {
             if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
                 showToast(":  Land!!!!");
-//                ControlCommand command = flightControlMethods.stayOnPlace();
-                return null;
+                ControlCommand command = flightControlMethods.stayOnPlace();
+//                ControlCommand command = flightControlMethods.land();
+                return command;
+//                return null;
                 //TODO: check if it is possible to land here, and if so land.
             } else {
                 throw new Exception("Error in detection mode, edge disappear");
@@ -205,7 +301,8 @@ public class ControllerImageDetection {
             Imgproc.line(imgToProcess, detectLandLine[0], detectLandLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
         }
 //        error_y = (imgToProcess.cols() / 2.0 - aruco.center.y) / 100;
-        error_y = ((dy) / 100.0f) + 0.5f; // Check
+        error_y = ((dy) / 100.0f);
+//                + 0.5f; // Check
 
 
         p = (float) pitch_pid.update(error_y, dt, maxSpeed); // מעזכן את השגיאה בi
@@ -223,8 +320,9 @@ public class ControllerImageDetection {
     private double distancePointToLine(final Point point, final Point[] line) {
         final Point l1 = line[0];
         final Point l2 = line[1];
-        return Math.abs((l2.x - l1.x) * (l1.y - point.y) - (l1.x - point.x) * (l2.y - l1.y))
-                / Math.sqrt(Math.pow(l2.x - l1.x, 2) + Math.pow(l2.y - l1.y, 2));
+        double crossProduct = (l2.x - l1.x) * (l1.y - point.y) - (l1.x - point.x) * (l2.y - l1.y);
+        double distance = Math.abs(crossProduct) / Math.sqrt(Math.pow(l2.x - l1.x, 2) + Math.pow(l2.y - l1.y, 2));
+        return crossProduct > 0 ? -distance : distance;
     }
 
 }

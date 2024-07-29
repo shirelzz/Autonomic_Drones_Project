@@ -98,11 +98,11 @@ public class ALRemoteControllerView extends RelativeLayout
         goToUsingVS = new GoToUsingVS(dataFromDrone);
         flightControlMethods = new FlightControlMethods();
         droneFeatures = new DroneFeatures(flightControlMethods);
-        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, goToFMM_btn, stopButton, followPhone_btn, this::goToFunc
-//                , edgeDetect
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, this::goToFMM_BTN, this::stopBtnFunc, this::followPhone, this::goToFunc
+                , this::accurateLanding
         );
         gimbalController = new GimbalController(flightControlMethods);
-        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods);
+        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx);
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
@@ -259,8 +259,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
     public void stopBtnFunc() {
         controllerImageDetection.stopEdgeDetection();
-//        gimbalController.rotateGimbalToDegree(-90);
-        flightControlMethods.disableVirtualStickControl();
+        gimbalController.rotateGimbalToDegree(-90);
 //        Objects.requireNonNull(flightControlMethods.getFlightController().getFlightAssistant()).setLandingProtectionEnabled(true, djiError -> {
 //            if (djiError != null) showToast("" + djiError);
 //            else showToast("Landing protection DISABLED!");
@@ -268,8 +267,54 @@ public class ALRemoteControllerView extends RelativeLayout
 
         goToUsingVS.setTargetGpsLocation((GPSLocation) null);
         missionControlWrapper.stopGoToMission();
+        ControlCommand command = flightControlMethods.stayOnPlace();
+        flightControlMethods.sendVirtualStickCommands(command, 0.0f);
+        flightControlMethods.disableVirtualStickControl();
+
 
         //rotateGimbalToDegree(command.getGimbalPitch());
+    }
+
+    private void goToFMM_BTN() {
+        onGoToFMMMode = !onGoToFMMMode;
+        onGoToMode = false;
+
+        if (!onGoToFMMMode) {
+            goToFMM_btn.setBackgroundColor(Color.WHITE);
+//                    mVideoSurface.setVisibility(View.VISIBLE);
+            imgView.setVisibility(View.VISIBLE);
+            presentMap.MapVisibility(false);
+            return;
+        }
+        double lat_ = Double.parseDouble(lat.getText().toString());
+        double lon_ = Double.parseDouble(lon.getText().toString());
+//                float alt_ = Double.parseDouble(alt.getText().toString());
+        float alt_ = (float) dataFromDrone.getGPS().getAltitude();
+
+        LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_); // need to be in degrees
+//                MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
+//                        alt_ + 1.0F,
+//                        flightControlMethods.getFlightController(), dataFromDrone, dist);
+        missionControlWrapper.setTargetLocation(targetLoc);
+        missionControlWrapper.setAltitude(alt_ + 1.0F);
+        missionControlWrapper.startGoToMission();
+//                ToastUtils.showToast("active go-to mission");
+        goToFMM_btn.setBackgroundColor(Color.GREEN);
+        stopButton.setBackgroundColor(Color.RED);
+        goTo_btn.setBackgroundColor(Color.WHITE);
+
+    }
+
+    private void followPhone(){
+        onFollowPhoneMode = !onFollowPhoneMode;
+        onGoToFMMMode = false;
+        onGoToMode = false;
+
+        if (onFollowPhoneMode) {
+            startFollowingPhone();
+        } else {
+            stopFollowingPhone();
+        }
     }
 
     private void startFollowingPhone() {
@@ -301,7 +346,8 @@ public class ALRemoteControllerView extends RelativeLayout
         androidGPS.stopLocationUpdates();
     }
 
-    private void accurateLanding(boolean isEdgeDetect) {
+    private void accurateLanding() {
+        boolean isEdgeDetect = !controllerImageDetection.isEdgeDetectionMode();
         controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
         if (isEdgeDetect) {
             gimbalController.rotateGimbalToDegree(-45);
@@ -317,47 +363,14 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.EdgeDetect:
 //                flightControlMethods.goThrottle(0.5f);
 //                flightControlMethods.goPitch(0.5f) ;
-                accurateLanding(!controllerImageDetection.isEdgeDetectionMode());
+                accurateLanding();
                 break;
             case R.id.Follow_phone_FMM_btn:
-                onFollowPhoneMode = !onFollowPhoneMode;
-                onGoToFMMMode = false;
-                onGoToMode = false;
-
-                if (onFollowPhoneMode) {
-                    startFollowingPhone();
-                } else {
-                    stopFollowingPhone();
-                }
+                followPhone();
                 break;
 
             case R.id.GoTo_FMM_btn:
-                onGoToFMMMode = !onGoToFMMMode;
-                onGoToMode = false;
-
-                if (!onGoToFMMMode) {
-                    goToFMM_btn.setBackgroundColor(Color.WHITE);
-//                    mVideoSurface.setVisibility(View.VISIBLE);
-                    imgView.setVisibility(View.VISIBLE);
-                    presentMap.MapVisibility(false);
-                    break;
-                }
-                double lat_ = Double.parseDouble(lat.getText().toString());
-                double lon_ = Double.parseDouble(lon.getText().toString());
-//                float alt_ = Double.parseDouble(alt.getText().toString());
-                float alt_ = (float) dataFromDrone.getGPS().getAltitude();
-
-                LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_); // need to be in degrees
-//                MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
-//                        alt_ + 1.0F,
-//                        flightControlMethods.getFlightController(), dataFromDrone, dist);
-                missionControlWrapper.setTargetLocation(targetLoc);
-                missionControlWrapper.setAltitude(alt_ + 1.0F);
-                missionControlWrapper.startGoToMission();
-//                ToastUtils.showToast("active go-to mission");
-                goToFMM_btn.setBackgroundColor(Color.GREEN);
-                stopButton.setBackgroundColor(Color.RED);
-                goTo_btn.setBackgroundColor(Color.WHITE);
+                this.goToFMM_BTN();
                 break;
             case R.id.stop_btn:
                 stopBtnFunc();
