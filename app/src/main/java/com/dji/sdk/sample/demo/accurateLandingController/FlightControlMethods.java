@@ -274,9 +274,11 @@ public class FlightControlMethods {
 
                 FlightControlData flightControlData = new FlightControlData(0, 0, 0, 0);
                 // Sets the aircraft's velocity (m/s) along the y-axis or angle value (in degrees) for pitch
-                flightControlData.setPitch(command.getPitch());
+//                flightControlData.setPitch(command.getPitch());
+                flightControlData.setPitch(command.getRoll());
                 // Sets the aircraft's velocity (m/s) along the x-axis or angle value (in degrees) for roll
-                flightControlData.setRoll(command.getRoll());
+//                flightControlData.setRoll(command.getRoll());
+                flightControlData.setRoll(command.getPitch());
                 // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
                 flightControlData.setYaw(pZ);
                 // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl

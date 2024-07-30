@@ -30,7 +30,7 @@ public class ControllerImageDetection {
 
     private final int displayFps = 0;
     private final DataFromDrone dataFromDrone;
-//    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
+    //    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
     Double PP = 0.0, II = 0.02, DD = 0.01, MAX_I = 0.0;
     private int frameCounter = 0;
     private DepthMap depthMap;
@@ -39,8 +39,10 @@ public class ControllerImageDetection {
     private boolean first_detect = true;
     private int not_found = 0;
     private boolean edgeDetectionMode = false;
+    private boolean inCheckImageMode = false;
     private CenterTracker centerTracker;
-    private Mat previous_image;
+    private Mat previous_image = null;
+    private Mat current_image = null;
     private ExecutorService executorService = Executors.newFixedThreadPool(2);
     private boolean check_depth;
     private FlightControlMethods flightControlMethods;
@@ -126,7 +128,7 @@ public class ControllerImageDetection {
             double droneHeight = dataFromDrone.getGPS().getAltitude();
 
 //        ControlCommand command =
-            proccessImage(bitmap, droneHeight);
+            processImage(bitmap, droneHeight);
         } catch (Exception exception) {
             Log.e("Error: ", Objects.requireNonNull(exception.getMessage()));
             showToast(Objects.requireNonNull(exception.getMessage()));
@@ -144,12 +146,12 @@ public class ControllerImageDetection {
         return matOfByte.toArray();
     }
 
-    public void proccessImage(Bitmap frame, double droneHeight) {
+    public void processImage(Bitmap frame, double droneHeight) {
         // Added python function but it causes an error in loading
         Mat imgToProcess = new Mat();
 //        Mat prevImg = new Mat();
         Utils.bitmapToMat(frame, imgToProcess);
-
+        current_image = imgToProcess;
 //        if (check_depth) {
 //            // Create an empty matrix to store the grayscale image
 ////            Mat grayImage = new Mat();
@@ -203,8 +205,9 @@ public class ControllerImageDetection {
 //        if (edgeDetectionMode) {
         try {
             ControlCommand command = detectLending(imgToProcess, droneHeight);
-
-            flightControlMethods.sendVirtualStickCommands(command, 0.0f);
+            if (command != null) {
+                flightControlMethods.sendVirtualStickCommands(command, 0.0f);
+            }
         } catch (Exception e) {
             Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
             showToast(Objects.requireNonNull(e.getMessage()));
@@ -229,6 +232,29 @@ public class ControllerImageDetection {
         this.edgeDetectionMode = edgeDetectionMode;
     }
 
+    public ControlCommand checkImage(Mat image) {
+        if (previous_image == null || previous_image.empty()) {
+            previous_image = image;
+            inCheckImageMode = true;
+            long currTime = System.currentTimeMillis();
+            double dt = (currTime - prevTime) / 1000.0; // Give as the frame
+            prevTime = currTime;
+            double maxSpeed = 2;
+            p = (float) pitch_pid.update(-0.2, dt, maxSpeed); // מעזכן את השגיאה בi
+            ControlCommand ans = new ControlCommand(p, r, t);
+            double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
+            ans.setErr(1000, error_x, error_y, droneRelativeHeight);
+            ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+
+            return ans;
+
+//            flightControlMethods.sendVirtualStickCommands(command, 0.0f);
+
+        }
+        return null;
+//        return edgeDetectionMode;
+    }
+
     public ControlCommand detectLending(Mat imgToProcess, double droneHeight) throws Exception {
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0; // Give as the frame
@@ -249,10 +275,11 @@ public class ControllerImageDetection {
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
 
         if (not_found > 5) {
-            if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
+            if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.4) {
                 showToast(":  Land!!!!");
-                ControlCommand command = flightControlMethods.stayOnPlace();
-//                ControlCommand command = flightControlMethods.land();
+//                ControlCommand command = flightControlMethods.stayOnPlace();
+
+                ControlCommand command = checkImage(imgToProcess);
                 return command;
 //                return null;
                 //TODO: check if it is possible to land here, and if so land.
@@ -301,8 +328,7 @@ public class ControllerImageDetection {
             Imgproc.line(imgToProcess, detectLandLine[0], detectLandLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
         }
 //        error_y = (imgToProcess.cols() / 2.0 - aruco.center.y) / 100;
-        error_y = ((dy) / 100.0f);
-//                + 0.5f; // Check
+        error_y = ((dy) / 100.0f) + 0.5f; // 0.5 is for moving the drone forward like we do with throttle.
 
 
         p = (float) pitch_pid.update(error_y, dt, maxSpeed); // מעזכן את השגיאה בi
