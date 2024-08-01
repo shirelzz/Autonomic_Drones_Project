@@ -52,10 +52,10 @@ android {
            buildPython "/opt/homebrew/bin/python3.exe"
         }
 
-//        python {
-//            pip {
+        python {
+            pip {
 //                // A requirement specifier, with or without a version number:
-//                install("scipy")
+//                install("opencv-python")
 //                install("requests==2.24.0")
 //
 //                // An sdist or wheel filename, relative to the project directory:
@@ -68,8 +68,8 @@ android {
 //                // "-r"` followed by a requirements filename, relative to the
 //                // project directory:
 //                install("-r", "requirements.txt")
-//            }
-//        }
+            }
+        }
 
 
     }
