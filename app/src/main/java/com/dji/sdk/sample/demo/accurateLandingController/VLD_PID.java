@@ -49,9 +49,8 @@ public class VLD_PID {
 
     // Method to constrain a value within specified bounds
     private double constrain(double val, double max, double min) {
-        if (val > max) return max;
-        if (val < min) return min;
-        return val;
+        return Math.max(min, Math.min(max, val));
+
     }
 
     // Method to set new PID coefficients and maximum integral value
@@ -92,8 +91,7 @@ public class VLD_PID {
     }
 
     public void setMax_i(double max_i) {
-        assert max_i >= 0;
-        this.max_i = max_i;
+        this.max_i = max_i >= 0 ? max_i : this.max_i;
     }
 
     // Method to reset the integral term and the first_run flag

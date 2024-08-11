@@ -305,7 +305,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
     }
 
-    private void followPhone(){
+    private void followPhone() {
         onFollowPhoneMode = !onFollowPhoneMode;
         onGoToFMMMode = false;
         onGoToMode = false;
@@ -413,12 +413,14 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.y_minus_btn:
                 try {
                     flightControlMethods.goYaw(-1 * yaw);
+//                    flightControlMethods.goYaw((float) (-1 * (dataFromDrone.getYaw()+yaw)));
                 } catch (NumberFormatException e) {
                     showToast("not float");
                 }
                 break;
             case R.id.y_plus_btn:
                 try {
+//                    flightControlMethods.goYaw((float) (dataFromDrone.getYaw()+yaw));
                     flightControlMethods.goYaw(yaw);
                 } catch (NumberFormatException e) {
                     showToast("not float");
