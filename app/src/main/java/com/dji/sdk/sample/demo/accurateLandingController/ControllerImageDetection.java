@@ -255,10 +255,18 @@ public class ControllerImageDetection {
         first_detect = true;
     }
 
-    private byte[] matToBytes(Mat mat) {
-        MatOfByte matOfByte = new MatOfByte();
-        Imgcodecs.imencode(".png", mat, matOfByte);
-        return matOfByte.toArray();
+    public void setCurrentImage(Bitmap frame) {
+        Mat newCurrentImg = new Mat();
+        Utils.bitmapToMat(frame, newCurrentImg);
+
+        current_image = newCurrentImg;
+        if (current_image == null) {
+            previous_image = newCurrentImg;
+        } else {
+            Mat temp = current_image;
+            previous_image = temp;
+        }
+
     }
 
     public void processImage(Bitmap frame, double droneHeight) {
@@ -490,6 +498,8 @@ public class ControllerImageDetection {
 
     // Method to start video playback
     public void startDepthMapVideo() {
+        Log.d(TAG, "entered startDepthMapVideo");
+
         isPlaying = true;
 
         if (!Python.isStarted()) {
@@ -504,16 +514,39 @@ public class ControllerImageDetection {
             while (isPlaying) {
 
                 if (getOutputFunc != null) {
-                    PyObject result = depthMapClass.callAttr("getSGBMImageBytes");
+
+                    if(current_image == null) {
+                        Log.d(TAG, "current_image is null");
+                        return;
+                    }
+
+                    if(previous_image == null) {
+                        Log.d(TAG, "previous_image is null");
+                        return;
+                    }
+
+                    byte[] previousImageBytes = matToBytes(previous_image);
+                    byte[] currentImageBytes = matToBytes(current_image);
+
+//                    PyObject result = depthMapClass.callAttr("getSGBMImageBytes");
+//                    PyObject result = getOutputFunc.call(previousImageBytes, currentImageBytes);
+
+                    // Call Python function with the byte arrays
+                    PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes));
+
                     String imageBytesBase64 = result.toString();
+                    Log.d(TAG, "result: " + imageBytesBase64);
+
                     // Decode Base64 to byte array
                     byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
 
                     // Convert byte array to Bitmap
                     Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                    Log.d(TAG, "Convert byte array to Bitmap: " + bitmap.toString());
 
                     handler.post(() -> {
                         imageView.setImageBitmap(bitmap);  // Update the ImageView with the new frame
+                        Log.d(TAG, "imageView updated");
                     });
 
                 }
@@ -526,7 +559,8 @@ public class ControllerImageDetection {
                 }
             }
         }).start();
-//            Log.d(TAG, "The python function was called");
+
+        Log.d(TAG, "ended startDepthMapVideo");
 
     }
 
@@ -553,6 +587,19 @@ public class ControllerImageDetection {
             getOutputFunc = null;
         }
     }
+
+    // Convert Mat to byte array
+    public byte[] matToBytes(Mat mat) {
+        MatOfByte matOfByte = new MatOfByte();
+        Imgcodecs.imencode(".png", mat, matOfByte);
+        return matOfByte.toArray();
+    }
+
+    // Convert byte array to Bitmap
+    public Bitmap bytesToBitmap(byte[] bytes) {
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+    }
+
 
     // Utility method to convert Mat to Bitmap
     private Bitmap matToBitmap(Mat mat) {

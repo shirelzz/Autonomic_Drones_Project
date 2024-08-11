@@ -111,7 +111,7 @@ public class ALRemoteControllerView extends RelativeLayout
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
 
-        controllerImageDetection.startDepthMapVideo();
+//        controllerImageDetection.startDepthMapVideo();
     }
 
     private void initUI() {
@@ -200,6 +200,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
         }
 //        accuracyLog.closeLog();
+       controllerImageDetection.stopDepthMapVideo();
         return false;
     }
 
@@ -211,6 +212,9 @@ public class ALRemoteControllerView extends RelativeLayout
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
+        controllerImageDetection.setCurrentImage(droneIMG);
+        controllerImageDetection.startDepthMapVideo();
+
         imgView.setImageBitmap(droneIMG);
         if (controllerImageDetection.isEdgeDetectionMode()) {
             controllerImageDetection.setBitmapFrame(droneIMG);
