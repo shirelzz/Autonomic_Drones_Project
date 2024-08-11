@@ -528,9 +528,6 @@ public class ControllerImageDetection {
                     byte[] previousImageBytes = matToBytes(previous_image);
                     byte[] currentImageBytes = matToBytes(current_image);
 
-//                    PyObject result = depthMapClass.callAttr("getSGBMImageBytes");
-//                    PyObject result = getOutputFunc.call(previousImageBytes, currentImageBytes);
-
                     // Call Python function with the byte arrays
                     PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes));
 

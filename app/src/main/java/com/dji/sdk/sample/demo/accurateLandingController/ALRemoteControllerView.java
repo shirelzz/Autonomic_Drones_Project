@@ -82,6 +82,8 @@ public class ALRemoteControllerView extends RelativeLayout
     // depthmap.py video display
     private ImageView imageView;
 
+    private boolean videoNotStarted = true;
+
 
     public ALRemoteControllerView(Context context) {
         super(context);
@@ -213,7 +215,11 @@ public class ALRemoteControllerView extends RelativeLayout
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
         controllerImageDetection.setCurrentImage(droneIMG);
-        controllerImageDetection.startDepthMapVideo();
+
+        if (videoNotStarted) {
+            controllerImageDetection.startDepthMapVideo();
+            videoNotStarted = false;
+        }
 
         imgView.setImageBitmap(droneIMG);
         if (controllerImageDetection.isEdgeDetectionMode()) {
