@@ -63,7 +63,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private Button g_minus_btn_up, check_depth;
     private Bitmap droneIMG;
     private ReceivedVideo receivedVideo;
-    private AccuracyLog accuracyLog;
+//    private AccuracyLog accuracyLog;
     //    ExcelWriter excelWriter;
     private DataFromDrone dataFromDrone;
     private GoToUsingVS goToUsingVS;
@@ -79,6 +79,13 @@ public class ALRemoteControllerView extends RelativeLayout
     private ControllerImageDetection controllerImageDetection;
     private float pitch = 0.2f, yaw = 0.5f, roll = 0.2f, throttle = 0.2f;
 
+
+    // depthmap.py video display
+    private ImageView imageView;
+
+    private boolean videoNotStarted = true;
+
+
     public ALRemoteControllerView(Context context) {
         super(context);
         ctx = context;
@@ -92,8 +99,7 @@ public class ALRemoteControllerView extends RelativeLayout
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
         initUI();
 
-        accuracyLog = new AccuracyLog(dataLog, dist, this.getContext());
-
+//        accuracyLog = new AccuracyLog(dataLog, dist, this.getContext());
         dataFromDrone = new DataFromDrone();
         flightCommands = new FlightCommands();
         goToUsingVS = new GoToUsingVS(dataFromDrone);
@@ -105,16 +111,25 @@ public class ALRemoteControllerView extends RelativeLayout
 //        recordingVideo = new RecordingVideo(context);
 
         gimbalController = new GimbalController(flightControlMethods);
-        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx
-//                , recordingVideo
-        );
+//        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx
+////                , recordingVideo
+//        );
+        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView);
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
+
+//        controllerImageDetection.startDepthMapVideo();
     }
 
     private void initUI() {
         mVideoSurface = findViewById(R.id.video_previewer_surface);
+
+        imageView = findViewById(R.id.imageView); // depth map python output view
+//        dataLog = findViewById(R.id.dataLog);
+//        dist = findViewById(R.id.dist);
+
+
         imgView = findViewById(R.id.imgView);
         goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
         followPhone_btn = findViewById(R.id.Follow_phone_FMM_btn);
@@ -126,6 +141,7 @@ public class ALRemoteControllerView extends RelativeLayout
         dataLog = findViewById(R.id.dataLog);
 //        recordBtn = findViewById(R.id.recordBtn);
         dist = findViewById(R.id.dist);
+
         lat = findViewById(R.id.latEditText);
         lon = findViewById(R.id.lonEditText);
 //        alt = findViewById(R.id.altEditText);
@@ -173,6 +189,8 @@ public class ALRemoteControllerView extends RelativeLayout
 //        g_minus_btn_side.setOnClickListener(this);
 //        g_plus_btn_side.setOnClickListener(this);
 
+
+
     }
 
     @Override
@@ -208,18 +226,26 @@ public class ALRemoteControllerView extends RelativeLayout
             receivedVideo.setMCodecManager(null);
 
         }
-        accuracyLog.closeLog();
+//        accuracyLog.closeLog();
+       controllerImageDetection.stopDepthMapVideo();
         return false;
     }
 
     @SuppressLint("SetTextI18n")
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-        accuracyLog.updateData(dataFromDrone.getAll());
+//        accuracyLog.updateData(dataFromDrone.getAll());
 
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
+        controllerImageDetection.setCurrentImage(droneIMG);
+
+        if (videoNotStarted) {
+            controllerImageDetection.startDepthMapVideo();
+            videoNotStarted = false;
+        }
+
         imgView.setImageBitmap(droneIMG);
         if (controllerImageDetection.isEdgeDetectionMode()) {
             controllerImageDetection.setBitmapFrame(droneIMG);

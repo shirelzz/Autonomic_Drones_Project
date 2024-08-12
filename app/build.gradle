@@ -45,7 +45,7 @@ android {
         }
 
         python {
-            version "3.11" //11
+            version "3.8" // opencv only works with python 3.8
         }
 
         python {
@@ -53,21 +53,15 @@ android {
         }
 
         python {
+
             pip {
-//                // A requirement specifier, with or without a version number:
-//                install("opencv-python")
-//                install("requests==2.24.0")
-//
-//                // An sdist or wheel filename, relative to the project directory:
-//                install("MyPackage-1.2.3-py2.py3-none-any.whl")
-//
-//                // A directory containing a setup.py, relative to the project
-//                // directory (must contain at least one slash):
-//                install("./MyPackage")
-//
-//                // "-r"` followed by a requirements filename, relative to the
-//                // project directory:
-//                install("-r", "requirements.txt")
+
+                // A requirement specifier, with or without a version number:
+                // https://chaquo.com/pypi-13.1/   available libraries for chaukopy
+                install("numpy")
+                install "opencv-contrib-python-headless" // a version of opencv that works with chaukopy
+                install("scikit-learn")
+
             }
         }
 
@@ -140,8 +134,6 @@ android {
     flavorDimensions "pyVersion"
     productFlavors {
         create("py38") { dimension = "pyVersion" }
-        create("py310") { dimension = "pyVersion" }
-        create("py311") { dimension = "pyVersion" }
     }
 
 //    sourceSets.getByName("main") {
@@ -158,13 +150,11 @@ android {
 
 chaquopy {
     defaultConfig {
-        buildPython("/opt/homebrew/bin/python3.exe")
+        buildPython "/opt/homebrew/bin/python3"
     }
 
     productFlavors {
         getByName("py38") { version = "3.8" }
-        getByName("py310") { version = "3.10" }
-        getByName("py311") { version = "3.11" }
     }
 
     sourceSets {
@@ -209,10 +199,9 @@ dependencies {
     implementation 'com.quickbirdstudios:opencv-contrib:4.5.3.0'
 //    implementation project(':openCVLibrary342dev')
 //    implementation 'org.opencv:opencv-contrib:3.4.5'
-
 //    implementation 'org.opencv:opencv-android:4.5.3'
 
-    implementation group: 'org.boofcv', name: 'boofcv-core', version: '1.0.0'
+//    implementation group: 'org.boofcv', name: 'boofcv-core', version: '1.0.0'
 
     // Maps
     implementation 'com.google.maps.android:android-maps-utils:3.8.0'
