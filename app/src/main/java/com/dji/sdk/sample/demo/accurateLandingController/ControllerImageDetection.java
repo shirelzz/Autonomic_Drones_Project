@@ -26,6 +26,7 @@ import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
@@ -48,6 +49,8 @@ public class ControllerImageDetection {
     private boolean isPlaying = false;  // To control the video playback
     private Handler handler = new Handler(Looper.getMainLooper());  // For updating the UI
     private Python python;
+    private ArrayList<Bitmap> imageList = new ArrayList<>();
+
     private PyObject depthMapClass;
     private PyObject getOutputFunc;
     //

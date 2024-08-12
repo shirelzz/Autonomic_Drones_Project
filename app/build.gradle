@@ -10,6 +10,9 @@ plugins{
 //    id 'kotlin-parcelize' // Add this line if you use Parcelable
 
 }
+//Properties properties = new Properties()
+//properties.load(project.rootProject.file('local.properties').newDataInputStream())
+//def python_path = properties.getProperty('python_path')
 
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-parcelize'
@@ -48,9 +51,9 @@ android {
             version "3.8" // opencv only works with python 3.8
         }
 
-        python {
-           buildPython "/opt/homebrew/bin/python3.exe"
-        }
+//        python {
+//           buildPython "/opt/homebrew/bin/python3.exe"
+//        }
 
         python {
 
@@ -149,9 +152,9 @@ android {
 }
 
 chaquopy {
-    defaultConfig {
-        buildPython "/opt/homebrew/bin/python3"
-    }
+//    defaultConfig {
+//        buildPython "/opt/homebrew/bin/python3"
+//    }
 
     productFlavors {
         getByName("py38") { version = "3.8" }

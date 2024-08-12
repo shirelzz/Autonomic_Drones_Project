@@ -138,9 +138,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //        goTo_btn = findViewById(R.id.goTo_btn);
         land_btn = findViewById(R.id.land_btn);
         audioIcon = findViewById(R.id.audioIcon);
-        dataLog = findViewById(R.id.dataLog);
 //        recordBtn = findViewById(R.id.recordBtn);
-        dist = findViewById(R.id.dist);
 
         lat = findViewById(R.id.latEditText);
         lon = findViewById(R.id.lonEditText);
