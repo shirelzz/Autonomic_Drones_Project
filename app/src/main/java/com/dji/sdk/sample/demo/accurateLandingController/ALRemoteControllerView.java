@@ -48,7 +48,7 @@ public class ALRemoteControllerView extends RelativeLayout
         }
     }
 
-    protected ImageView audioIcon;
+    protected ImageView audioIcon, recIcon;
     protected ImageView imgView;
     protected TextureView mVideoSurface = null;
     protected TextView dataLog;
@@ -58,7 +58,7 @@ public class ALRemoteControllerView extends RelativeLayout
     protected EditText lon;
     protected PresentMap presentMap;
     private Context ctx;
-    private Button goToFMM_btn, followPhone_btn, stopButton, edgeDetect, goTo_btn;
+    private Button goToFMM_btn, followPhone_btn, stopButton, edgeDetect, goTo_btn, land_btn, recordBtn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
     private Button g_minus_btn_up, check_depth;
     private Bitmap droneIMG;
@@ -71,6 +71,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private MissionControlWrapper missionControlWrapper;
     private AndroidGPS androidGPS;
     private DroneFeatures droneFeatures;
+//    private RecordingVideo recordingVideo;
     private boolean onGoToMode = false, onGoToFMMMode = false, onFollowPhoneMode = false,
             edgeDetectionMode = false;
     private FlightCommands flightCommands;
@@ -101,8 +102,12 @@ public class ALRemoteControllerView extends RelativeLayout
         HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, this::goToFMM_BTN, this::stopBtnFunc, this::followPhone, this::goToFunc
                 , this::accurateLanding
         );
+//        recordingVideo = new RecordingVideo(context);
+
         gimbalController = new GimbalController(flightControlMethods);
-        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx);
+        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx
+//                , recordingVideo
+        );
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
@@ -115,9 +120,11 @@ public class ALRemoteControllerView extends RelativeLayout
         followPhone_btn = findViewById(R.id.Follow_phone_FMM_btn);
         stopButton = findViewById(R.id.stop_btn);
         edgeDetect = findViewById(R.id.EdgeDetect);
-        goTo_btn = findViewById(R.id.goTo_btn);
+//        goTo_btn = findViewById(R.id.goTo_btn);
+        land_btn = findViewById(R.id.land_btn);
         audioIcon = findViewById(R.id.audioIcon);
         dataLog = findViewById(R.id.dataLog);
+//        recordBtn = findViewById(R.id.recordBtn);
         dist = findViewById(R.id.dist);
         lat = findViewById(R.id.latEditText);
         lon = findViewById(R.id.lonEditText);
@@ -133,6 +140,8 @@ public class ALRemoteControllerView extends RelativeLayout
         t_plus_btn = findViewById(R.id.t_plus_btn);
         g_minus_btn_up = findViewById(R.id.gimbal_pitch_update);
         check_depth = findViewById(R.id.check_depth);
+//        recIcon = findViewById(R.id.recIcon);
+
 //        g_plus_btn_up = findViewById(R.id.g_plus_up_update);
 //        g_minus_btn_side = findViewById(R.id.g_minus_side_update);
 //        g_plus_btn_side = findViewById(R.id.g_plus_side_update);
@@ -142,11 +151,13 @@ public class ALRemoteControllerView extends RelativeLayout
         if (mVideoSurface != null) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
+//        recordBtn.setOnClickListener(this);
         goToFMM_btn.setOnClickListener(this);
         followPhone_btn.setOnClickListener(this);
         stopButton.setOnClickListener(this);
         edgeDetect.setOnClickListener(this);
-        goTo_btn.setOnClickListener(this);
+//        goTo_btn.setOnClickListener(this);
+        land_btn.setOnClickListener(this);
         y_minus_btn.setOnClickListener(this);
         y_plus_btn.setOnClickListener(this);
         r_minus_btn.setOnClickListener(this);
@@ -172,6 +183,17 @@ public class ALRemoteControllerView extends RelativeLayout
             receivedVideo.setMCodecManager(new DJICodecManager(ctx, surfaceTexture, width, height));
         }
     }
+
+//    public void setRecIconVisibility() {
+//        boolean isVisible = !recordingVideo.getIsRecording();
+//        if (isVisible) {
+//            recIcon.setVisibility(View.VISIBLE);
+//        } else {
+//            recIcon.setVisibility(View.INVISIBLE);
+//        }
+//        recordingVideo.toggleRecording();
+//
+//    }
 
     @Override
     public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surfaceTexture, int i, int i1) {
@@ -375,9 +397,13 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.stop_btn:
                 stopBtnFunc();
                 break;
-            case R.id.goTo_btn:
-                this.goToFunc();
+            case R.id.land_btn:
+                ControlCommand controlCommand = flightControlMethods.land();
+                flightControlMethods.sendVirtualStickCommands(controlCommand, 0.0f);
                 break;
+//            case R.id.goTo_btn:
+//                this.goToFunc();
+//                break;
             //-------- set Throttle ----------
             case R.id.t_minus_btn:
                 try {
@@ -413,14 +439,12 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.y_minus_btn:
                 try {
                     flightControlMethods.goYaw(-1 * yaw);
-//                    flightControlMethods.goYaw((float) (-1 * (dataFromDrone.getYaw()+yaw)));
                 } catch (NumberFormatException e) {
                     showToast("not float");
                 }
                 break;
             case R.id.y_plus_btn:
                 try {
-//                    flightControlMethods.goYaw((float) (dataFromDrone.getYaw()+yaw));
                     flightControlMethods.goYaw(yaw);
                 } catch (NumberFormatException e) {
                     showToast("not float");
@@ -442,6 +466,9 @@ public class ALRemoteControllerView extends RelativeLayout
                     showToast("not float");
                 }
                 break;
+//            case R.id.recordBtn:
+//                setRecIconVisibility();
+//                break;
             case R.id.check_depth:
                 gimbalController.rotateGimbalToDegree(-90);
                 controllerImageDetection.DepthBool();

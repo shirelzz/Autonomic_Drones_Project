@@ -37,6 +37,7 @@ public class ControllerImageDetection {
     Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
     private int frameCounter = 0;
     private DepthMap depthMap;
+
     //    private final ALRemoteControllerView mainView;
     private long prevTime = System.currentTimeMillis();
     private boolean first_detect = true;
@@ -69,13 +70,19 @@ public class ControllerImageDetection {
     private Queue<Double> errorQy = new LinkedList<Double>();
     private Queue<Double> errorQz = new LinkedList<Double>();
 
+    //    private RecordingVideo recordingVideo = null;
     //constructor
-    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context) {
+    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods,
+                                    Context context
+//            , RecordingVideo recordingVideo
+    ) {
         this.context = context;
 //        this.mainView = mainView;
         this.dataFromDrone = dataFromDrone;
         this.flightControlMethods = flightControlMethods;
         this.depthMap = new DepthMap();
+//        this.recordingVideo = recordingVideo;
+
         //Do we need it
 //        this.frameWidth = frameWidth;
 //        this.frameHeight = frameHeight;
@@ -195,14 +202,14 @@ public class ControllerImageDetection {
         return isPlane.toBoolean();
     }
 
-    public Future<Boolean> checkPlainAsync(Mat mat1) {
-        return executorService.submit(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return checkPlain(mat1);
-            }
-        });
-    }
+//    public Future<Boolean> checkPlainAsync(Mat mat1) {
+//        return executorService.submit(new Callable<Boolean>() {
+//            @Override
+//            public Boolean call() throws Exception {
+//                return checkPlain(mat1);
+//            }
+//        });
+//    }
 
     public void setBitmapFrame(Bitmap bitmap) {
         try {
@@ -218,13 +225,23 @@ public class ControllerImageDetection {
 
             double droneHeight = dataFromDrone.getGPS().getAltitude();
 
-//        ControlCommand command =
             processImage(bitmap, droneHeight);
+//            if (recordingVideo.getIsRecording()) {
+//                // Convert the Bitmap to a format suitable for FFmpeg
+////                byte[] frameData = convertBitmapToByteArray(bitmap);
+//                recordingVideo.writeFrame(bitmap);
+//            }
         } catch (Exception exception) {
             Log.e("Error: ", Objects.requireNonNull(exception.getMessage()));
             showToast(Objects.requireNonNull(exception.getMessage()));
         }
     }
+
+//    private byte[] convertBitmapToByteArray(Bitmap bitmap) {
+//        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+//        return byteArrayOutputStream.toByteArray();
+//    }
 
     public void stopEdgeDetection() {
         setEdgeDetectionMode(false);
@@ -326,28 +343,28 @@ public class ControllerImageDetection {
         this.edgeDetectionMode = edgeDetectionMode;
     }
 
-    public ControlCommand checkImage(Mat image) {
-        if (previous_image == null || previous_image.empty()) {
-            previous_image = image;
-            inCheckImageMode = true;
-            long currTime = System.currentTimeMillis();
-            double dt = (currTime - prevTime) / 1000.0; // Give as the frame
-            prevTime = currTime;
-            double maxSpeed = 2;
-            p = (float) pitch_pid.update(-0.2, dt, maxSpeed); // מעזכן את השגיאה בi
-            ControlCommand ans = new ControlCommand(p, r, t);
-            double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
-            ans.setErr(1000, error_x, error_y, droneRelativeHeight);
-            ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
-
-            return ans;
-
-//            flightControlMethods.sendVirtualStickCommands(command, 0.0f);
-
-        }
-        return null;
-//        return edgeDetectionMode;
-    }
+//    public ControlCommand checkImage(Mat image) {
+//        if (previous_image == null || previous_image.empty()) {
+//            previous_image = image;
+//            inCheckImageMode = true;
+//            long currTime = System.currentTimeMillis();
+//            double dt = (currTime - prevTime) / 1000.0; // Give as the frame
+//            prevTime = currTime;
+//            double maxSpeed = 2;
+//            p = (float) pitch_pid.update(-0.2, dt, maxSpeed); // מעזכן את השגיאה בi
+//            ControlCommand ans = new ControlCommand(p, r, t);
+//            double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
+//            ans.setErr(1000, error_x, error_y, droneRelativeHeight);
+//            ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+//
+//            return ans;
+//
+////            flightControlMethods.sendVirtualStickCommands(command, 0.0f);
+//
+//        }
+//        return null;
+////        return edgeDetectionMode;
+//    }
 
     public ControlCommand detectLending(Mat imgToProcess, double droneHeight) throws Exception {
 
@@ -365,17 +382,18 @@ public class ControllerImageDetection {
 
          */
 
-        double maxSpeed = 2;
+        double maxSpeed = 0.5;
 //        setDescentRate((float) dataFromDrone.getAltitudeBelow());
         Point[][] point_arr = EdgeDetection.detectLines(imgToProcess);
         double slop;
-        // Find the longest line
-        Point[] detectLandLine = null;
+
         if (point_arr.length > 0) {
             first_detect = false;
             not_found = 0;
         } else if (!first_detect) {
             not_found++;
+        } else {
+            throw new Exception("Error in detection mode, edge disappear");
         }
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
@@ -390,59 +408,84 @@ public class ControllerImageDetection {
             }
 
         }
-        double dy = 0.0;
-        for (Point[] points : point_arr) {
-            if (points != null && points[0] != null && points[1] != null) {
-                double x1 = points[0].x, y1 = points[0].y, x2 = points[1].x, y2 = points[1].y;
+        Point[] bestHorizontalLine = null;
+        Point[] bestLine = null;
 
-                //TODO: need to be changed, how do i choose the line that i want to land according to?
-                boolean isHorizontal = Math.abs(y1 - y2) < Math.abs(x1 - x2);
-                slop = (points[0].y - points[1].y) / (points[0].x - points[1].x);
-                if (slop < 2 && slop > -2) {
-                    isHorizontal = true;
-                }
-                if (isHorizontal) {
-                    detectLandLine = points;
-                }
-                Point centerPoint = new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0);
-                double calc_dis = distancePointToLine(centerPoint, points);
-                // Do we need the drone to know every time what the altitude according to the gps?
-                Imgproc.putText(imgToProcess, "dy: " + calc_dis, centerPoint, 5, 1, new Scalar(0, 255, 0));
-                dy = calc_dis;
+        double dy_best_horizontal = Double.MAX_VALUE;
+        double dy_best = Double.MAX_VALUE;
+        Point centerPoint = new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0);
+        double dy;
+        for (Point[] point : point_arr) {
+            if (point != null && point[0] != null && point[1] != null) {
+                Imgproc.line(imgToProcess, point[0], point[1], new Scalar(0, 255, 0), 3);
 
-                // TODO: We send a command to the drone how he need to go so it will be exactly
-                //  above the line and horizontal to the line.
-                // TODO: Move the Drone to be 90 degrees from the line, so it will still be in the
-                //  middle of the line, but the line is vertical
-                // TODO: We will move the drone to the left and to the right of the line, and each
-                //  time we will move or until the alt is different or until the line is not in the frame.
-                // TODO: we will turn the drone until he will on top the smaller altitude position.
-                // TODO: check radius 20CM from the line to the back and left and right if the
-                //  radius exist and all the altitude is the same.
-                // TODO: start lowering down and always check that the line is in sight if not, search for it.
-                Log.i("Is?", "Is the line horizontal? " + droneHeight + " Calc_dis:  " + calc_dis);
+                double angle = Math.atan2(point[1].y - point[0].y, point[1].x - point[0].x);
+                angle = Math.abs(angle);
+                slop = Math.tan(angle);
+
+                double c_x = (point[0].x + point[1].x) / 2.0;
+                double c_y = (point[0].y + point[1].y) / 2.0;
+
+                dy = imgToProcess.height() / 2.0 - c_y;
+
+                if (slop <= Math.PI / 32) {
+                    if (Math.abs(dy) < dy_best_horizontal) {
+                        bestHorizontalLine = point;
+                        dy_best_horizontal = Math.abs(dy);
+                    }
+                } else {
+                    if (Math.abs(dy) < dy_best) {
+                        bestLine = point;
+                        dy_best = Math.abs(dy);
+                    }
+                }
+
+                Log.i("Line Info", "Is the line horizontal? " + angle + " Calc_dis: " + dy);
             }
+        }
+//        if(bestLine)
+        Point[] finalLine = bestHorizontalLine != null ? bestHorizontalLine : bestLine;
+        Point p1 = finalLine[0];
+        Point p2 = finalLine[1];
+        Imgproc.line(imgToProcess, p1, p2, new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
-        }
-        if (detectLandLine != null) {
-            double x1 = detectLandLine[0].x, y1 = detectLandLine[0].y, x2 = detectLandLine[1].x, y2 = detectLandLine[1].y;
-            Log.i("Detect", "Longest line: (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
-            Imgproc.line(imgToProcess, detectLandLine[0], detectLandLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-        }
+        // Calculate pitch adjustment based on line displacement
+        double focalLength = 3.6; // In mm
+        double sensorHeight = 2.76; // In mm
+        double frameHeightPx = imgToProcess.height();
+
+        Imgproc.putText(imgToProcess, "dy: " + dy_best, centerPoint, 5, 1, new Scalar(0, 255, 0));
+        Imgproc.putText(imgToProcess, "px: " + p1, new Point(centerPoint.x, centerPoint.y - 20), 5, 1, new Scalar(0, 255, 0));
+        Imgproc.putText(imgToProcess, "py: " + p2, new Point(centerPoint.x, centerPoint.y - 40), 5, 1, new Scalar(0, 255, 0));
+        double deltaY = (frameHeightPx / 2.0) - ((p1.y + p2.y) / 2.0);
+        double deltaHeightMm = (deltaY / frameHeightPx) * sensorHeight;
+        double pitchAdjustment = Math.atan(deltaHeightMm / focalLength);
+
+        // Use PID controllers to calculate the necessary pitch and roll
+        double c_x = (p1.x + p2.x) / 2.0;
+        double c_y = (p1.y + p2.y) / 2.0;
+
+        double imageWidth = imgToProcess.width();
+        double imageHeight = imgToProcess.height();
+
+        double error_x = c_x - imageWidth / 2.0;
+        double error_y = c_y - imageHeight / 2.0;
+
+        // Adjust pitch_cmd calculation
 //        error_y = (imgToProcess.cols() / 2.0 - aruco.center.y) / 100;
-        if (dy != 0) {
-            error_y = ((dy) / 100.0f); // 0.2 is for moving the drone forward like we do with throttle.
+        if (dy_best != 0) {
             t = 0;
-
         } else {
-            error_y = 0.2f; // 0.2 is for moving the drone forward like we do with throttle.
-            t = -0.2f;
+            error_y = 0.2f;
+            t = -0.2f; // 0.2 is for moving the drone forward like we do with throttle.
         }
 
-        p = (float) pitch_pid.update(error_y, dt, maxSpeed); // מעזכן את השגיאה בi
-        //TODO maybe move the drone with yaw so the line will be horizontal completely to the drone
-        // Not at the moment because it is left and right and we want it to go front and back
-//        r = (float) roll_pid.update(error_x, dt, maxSpeed);
+        r = (float) roll_pid.update(0, error_x);
+        p = (float) pitch_pid.update(pitchAdjustment, error_y);
+
+        p = (float) Math.min(maxSpeed, Math.max(-maxSpeed, p));
+        r = (float) Math.min(maxSpeed, Math.max(-maxSpeed, r));
+
         ControlCommand ans = new ControlCommand(p, r, t);
         ans.setErr(1000, error_x, error_y, droneRelativeHeight);
         ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());

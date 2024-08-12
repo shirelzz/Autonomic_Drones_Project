@@ -171,7 +171,7 @@
         android:layout_width="50dp"
         android:layout_height="40dp"
         android:layout_alignParentStart="true"
-        android:layout_above="@+id/goTo_btn"
+        android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
         android:text="R: -" />
@@ -192,7 +192,7 @@
         android:layout_width="50dp"
         android:layout_height="40dp"
         android:layout_toEndOf="@id/r_minus_btn"
-        android:layout_above="@+id/goTo_btn"
+        android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
         android:text="+" />
@@ -235,7 +235,7 @@
         android:layout_height="40dp"
         android:layout_toEndOf="@id/r_plus_btn"
 
-        android:layout_above="@+id/goTo_btn"
+        android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
         android:text="P: -" />
@@ -256,7 +256,7 @@
         android:layout_width="50dp"
         android:layout_height="40dp"
         android:layout_toEndOf="@id/p_minus_btn"
-        android:layout_above="@+id/goTo_btn"
+        android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="0dp"
         android:text="+" />
@@ -295,7 +295,7 @@
         android:layout_width="50dp"
         android:layout_height="40dp"
         android:layout_toEndOf="@id/t_plus_btn"
-        android:layout_above="@+id/goTo_btn"
+        android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="10dp"
         android:text="p" />
@@ -305,7 +305,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toEndOf="@id/gimbal_pitch_update"
-        android:layout_above="@+id/goTo_btn"
+        android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="10dp"
         android:text="check depth" />
@@ -319,16 +319,24 @@
     <!--        android:layout_marginStart="0dp"-->
     <!--        android:text="+" />-->
 
+<!--    <Button-->
+<!--        android:id="@+id/goTo_btn"-->
+<!--        android:layout_width="75dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_alignParentStart="true"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_marginStart="0dp"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:text="Go To" />-->
     <Button
-        android:id="@+id/goTo_btn"
+        android:id="@+id/land_btn"
         android:layout_width="75dp"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
-        android:text="Go To" />
-
+        android:text="Land" />
     <Button
         android:id="@+id/GoTo_FMM_btn"
         android:layout_width="wrap_content"
@@ -337,7 +345,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
-        android:layout_toEndOf="@+id/goTo_btn"
+        android:layout_toEndOf="@+id/land_btn"
         android:text="GoTo with FMM" />
 
     <Button
