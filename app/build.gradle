@@ -51,9 +51,9 @@ android {
             version "3.8" // opencv only works with python 3.8
         }
 
-//        python {
-//           buildPython "/opt/homebrew/bin/python3.exe"
-//        }
+        python {
+           buildPython "/opt/homebrew/bin/python3.exe"
+        }
 
         python {
 
@@ -62,8 +62,11 @@ android {
                 // A requirement specifier, with or without a version number:
                 // https://chaquo.com/pypi-13.1/   available libraries for chaukopy
                 install("numpy")
-                install "opencv-contrib-python-headless" // a version of opencv that works with chaukopy
+                install("matplotlib")
+                install ("opencv-contrib-python-headless") // a version of opencv that works with chaukopy
                 install("scikit-learn")
+                install("pillow")
+                install("scikit-image")
 
             }
         }
@@ -152,9 +155,9 @@ android {
 }
 
 chaquopy {
-//    defaultConfig {
-//        buildPython "/opt/homebrew/bin/python3"
-//    }
+    defaultConfig {
+        buildPython "/opt/homebrew/bin/python3"
+    }
 
     productFlavors {
         getByName("py38") { version = "3.8" }
