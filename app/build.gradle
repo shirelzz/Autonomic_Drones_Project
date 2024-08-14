@@ -62,6 +62,7 @@ android {
                 // A requirement specifier, with or without a version number:
                 // https://chaquo.com/pypi-13.1/   available libraries for chaukopy
                 install("numpy")
+                install("matplotlib")
                 install "opencv-contrib-python-headless" // a version of opencv that works with chaukopy
                 install("scikit-learn")
 

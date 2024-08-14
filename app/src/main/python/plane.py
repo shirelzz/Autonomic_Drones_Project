@@ -1,7 +1,4 @@
-import random
-
 import numpy as np
-from scipy.spatial import ConvexHull
 
 
 class Plane:
@@ -43,7 +40,7 @@ class Plane:
         for it in range(maxIteration):
 
             # Samples 3 random points
-            id_samples = random.sample(range(0, n_points), 3)
+            id_samples = np.random.choice(n_points, 3, replace=False)
             pt_samples = pts[id_samples]
 
             vecA = pt_samples[1, :] - pt_samples[0, :]
@@ -78,17 +75,3 @@ class Plane:
         self.equation = best_eq
 
         return self.equation, self.inliers
-
-    def is_plane_filled(self, plane_points):
-        """Check if the plane is filled without significant gaps"""
-        if len(plane_points) == 0:
-            return False
-
-        hull = ConvexHull(plane_points[:, :2])  # Project to 2D for simplicity
-        hull_area = hull.volume  # In 2D, volume is actually the area
-        actual_area = len(plane_points) * np.mean(np.linalg.norm(np.diff(plane_points, axis=0), axis=1))
-
-        if actual_area / hull_area > 0.05:  # Adjust threshold as needed
-            return True
-
-        return False

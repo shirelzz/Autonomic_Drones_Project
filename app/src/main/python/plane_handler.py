@@ -9,15 +9,15 @@ from DepthMap import DepthMap
 
 def initialize_pipeline(imgLeft_bytes, imgRight_bytes):
     """Initializes the depth map with the given image bytes."""
-    depth_map = DepthMap(imgLeft_bytes=imgLeft_bytes, imgRight_bytes=imgRight_bytes)
-    return depth_map
+    points, colors = DepthMap(imgLeft_bytes=imgLeft_bytes, imgRight_bytes=imgRight_bytes)
+    return points, colors
 
 
 # @timer
-def run_pipeline(depth_map):
-    """Runs the depth map to generate points and colors."""
-    points, colors = depth_map.demo_stereo_sgbm()
-    return points, colors
+# def run_pipeline(depth_map):
+#     """Runs the depth map to generate points and colors."""
+#     points, colors = depth_map.demo_stereo_sgbm()
+#     return points, colors
 
 
 def process_point_cloud(points):
@@ -45,10 +45,23 @@ def visualize_plane(plane_points):
     plt.ylabel('Y')
     plt.title('Detected Plane Points')
     plt.savefig("plane.png")
-    plt.show()
+    # plt.show()
 
 
-def main():
+def start_detect(imgLeft, imgRight):
+
+    # Initialize depth map
+    points, colors = initialize_pipeline(imgLeft, imgRight)
+
+    # Process the point cloud
+    detected_planes = process_point_cloud(points)
+
+    # Visualize the first detected plane if available
+    if detected_planes:
+        visualize_plane(detected_planes[0])
+
+
+if __name__ == "__main__":
     # Initialize video capture
     cap = cv.VideoCapture('src/v2.mp4')
 
@@ -73,20 +86,4 @@ def main():
     # Convert the buffers to bytearray
     bytearray_left = bytearray(buffer_left)
     bytearray_right = bytearray(buffer_right)
-
-    # Initialize depth map
-    depth_map = initialize_pipeline(bytearray_left, bytearray_right)
-
-    # Run the pipeline
-    points, colors = run_pipeline(depth_map)
-
-    # Process the point cloud
-    detected_planes = process_point_cloud(points)
-
-    # Visualize the first detected plane if available
-    if detected_planes:
-        visualize_plane(detected_planes[0])
-
-
-if __name__ == "__main__":
-    main()
+    start_detect(imgLeft=bytearray_left, imgRight=bytearray_right)
