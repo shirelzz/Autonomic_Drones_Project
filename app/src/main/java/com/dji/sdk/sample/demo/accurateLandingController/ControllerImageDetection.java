@@ -544,7 +544,7 @@ public class ControllerImageDetection {
         }
 
         python = Python.getInstance();
-        depthMapClass = python.getModule("DepthMap");
+        depthMapClass = python.getModule("DepthMap_");
         getOutputFunc = depthMapClass.get("computeDepthMapSGBM");
 
         new Thread(() -> {
