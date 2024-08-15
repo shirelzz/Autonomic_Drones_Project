@@ -2,22 +2,22 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
-import static org.opencv.android.Utils.matToBitmap;
-
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Base64;
 import android.util.Log;
-import android.widget.Toast;
+import android.widget.ImageView;
 
 import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 import com.chaquo.python.android.AndroidPlatform;
 import com.dji.sdk.sample.demo.kcgremotecontroller.Controller;
 import com.dji.sdk.sample.demo.kcgremotecontroller.VLD_PID;
-import com.dji.sdk.sample.internal.controller.MainActivity;
 
+import org.json.JSONException;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -30,35 +30,28 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import android.os.Handler;
-import android.os.Looper;
-import android.widget.ImageView;
-import android.util.Base64;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class ControllerImageDetection {
 
     // depth map python view
 
     private static final String TAG = ControllerImageDetection.class.getSimpleName();
-    private ImageView imageView;  // ImageView to display the frames
-    private boolean isPlaying = false;  // To control the video playback
-    private Handler handler = new Handler(Looper.getMainLooper());  // For updating the UI
-    private Python python;
-    private ArrayList<Bitmap> imageList = new ArrayList<>();
-
-    private PyObject depthMapClass;
-    private PyObject getOutputFunc;
-    //
-
     private final int displayFps = 0;
     private final DataFromDrone dataFromDrone;
     //    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
     Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
+    private ImageView imageView;  // ImageView to display the frames
+    private boolean isPlaying = false;  // To control the video playback
+    private Handler handler = new Handler(Looper.getMainLooper());  // For updating the UI
+    private Python python;
+    //
+    private ArrayList<Bitmap> imageList = new ArrayList<>();
+    private PyObject depthMapClass;
+    private PyObject getOutputFunc;
     private int frameCounter = 0;
     private DepthMap depthMap;
 
@@ -205,35 +198,6 @@ public class ControllerImageDetection {
     }
 
     // Method to run the Python script asynchronously
-
-    public boolean checkPlain(Mat mat1) {
-
-        if (!Python.isStarted()) {
-            Python.start(new AndroidPlatform(context));
-        }
-
-        byte[] mat1Bytes = matToBytes(mat1);
-        byte[] mat2Bytes = matToBytes(previous_image);
-        Python py = Python.getInstance();
-        PyObject pyObj = py.getModule("DepthMapM").get("process_images");
-
-        // Handle the result from Python (true/false)
-        assert pyObj != null;
-        PyObject isPlane = pyObj.call(mat1Bytes, mat2Bytes);
-        Toast.makeText(context, "The ground is a plane: " + isPlane.toString(), Toast.LENGTH_LONG).show();
-
-//        return isPlane;
-        return isPlane.toBoolean();
-    }
-
-//    public Future<Boolean> checkPlainAsync(Mat mat1) {
-//        return executorService.submit(new Callable<Boolean>() {
-//            @Override
-//            public Boolean call() throws Exception {
-//                return checkPlain(mat1);
-//            }
-//        });
-//    }
 
     public void setBitmapFrame(Bitmap bitmap) {
         try {
@@ -528,73 +492,80 @@ public class ControllerImageDetection {
     }
 
 
-
-
-
     // display depthmap python
 
     // Method to start video playback
     public void startDepthMapVideo() {
+
         Log.d(TAG, "entered startDepthMapVideo");
 
         isPlaying = true;
 
-        if (!Python.isStarted()) {
-            Python.start(new AndroidPlatform(context)); // 'this' is the Context here
-        }
-
-        python = Python.getInstance();
-        depthMapClass = python.getModule("DepthMap_");
-        getOutputFunc = depthMapClass.get("computeDepthMapSGBM");
-
-        new Thread(() -> {
-            while (isPlaying) {
-
-                if (getOutputFunc != null) {
-
-                    if(current_image == null) {
-                        Log.d(TAG, "current_image is null");
-                        return;
-                    }
-
-                    if(previous_image == null) {
-                        Log.d(TAG, "previous_image is null");
-                        return;
-                    }
-
-                    byte[] previousImageBytes = matToBytes(previous_image);
-                    byte[] currentImageBytes = matToBytes(current_image);
-
-                    // Call Python function with the byte arrays
-                    PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes));
-
-                    String imageBytesBase64 = result.toString();
-                    Log.d(TAG, "result: " + imageBytesBase64);
-
-                    // Decode Base64 to byte array
-                    byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
-
-                    // Convert byte array to Bitmap
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                    Log.d(TAG, "Convert byte array to Bitmap: " + bitmap.toString());
-
-                    handler.post(() -> {
-                        imageView.setImageBitmap(bitmap);  // Update the ImageView with the new frame
-                        Log.d(TAG, "imageView updated");
-                    });
-
-                }
-
-
-                try {
-                    Thread.sleep(1000 / 30);  // Control frame rate (30 FPS)
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            if (!Python.isStarted()) {
+                Python.start(new AndroidPlatform(context)); // 'this' is the Context here
             }
-        }).start();
 
-        Log.d(TAG, "ended startDepthMapVideo");
+            python = Python.getInstance();
+
+
+//        depthMapClass = python.getModule("DepthMap_");
+//        getOutputFunc = depthMapClass.get("computeDepthMapSGBM");
+            depthMapClass = python.getModule("PlaneHandler");
+            getOutputFunc = depthMapClass.get("start_detect");
+
+            new Thread(() -> {
+                try {
+
+                    while (isPlaying) {
+
+                    if (getOutputFunc != null) {
+
+                        if (current_image == null) {
+                            Log.d(TAG, "current_image is null");
+                            return;
+                        }
+
+                        if (previous_image == null) {
+                            Log.d(TAG, "previous_image is null");
+                            return;
+                        }
+
+                        byte[] previousImageBytes = matToBytes(previous_image);
+                        byte[] currentImageBytes = matToBytes(current_image);
+
+                        // Call Python function with the byte arrays
+                        PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes));
+
+                        String imageBytesBase64 = result.toString();
+
+                        // Decode Base64 to byte array
+                        byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
+
+                        // Convert byte array to Bitmap
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                        Log.d(TAG, "Convert byte array to Bitmap: " + bitmap.toString());
+
+                        handler.post(() -> {
+                            imageView.setImageBitmap(bitmap);  // Update the ImageView with the new frame
+                            Log.d(TAG, "imageView updated");
+                        });
+
+                    }
+
+
+                    try {
+                        Thread.sleep(1000 / 30);  // Control frame rate (30 FPS)
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                } catch (Exception e) {
+                    e.printStackTrace();
+
+                }
+            }).start();
+
+            Log.d(TAG, "ended startDepthMapVideo");
 
     }
 

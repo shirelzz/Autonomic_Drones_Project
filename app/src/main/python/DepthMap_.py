@@ -37,5 +37,3 @@ def computeDepthMapSGBM(imgLeft_bytes, imgRight_bytes):
     # Return bytes encoded as Base64 string
     img_bytes_base64 = base64.b64encode(img_bytes).decode('utf-8')
     return img_bytes_base64
-
-    return img_bytes

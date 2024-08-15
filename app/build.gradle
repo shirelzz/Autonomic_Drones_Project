@@ -67,6 +67,7 @@ android {
                 install("scikit-learn")
                 install("pillow")
                 install("scikit-image")
+                install("torch")
 
             }
         }

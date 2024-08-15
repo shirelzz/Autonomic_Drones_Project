@@ -1,79 +1,68 @@
-import cv2 as cv
-import matplotlib.pyplot as plt
-from plane_detection import PlaneDetection
+"""Plane Detection Interface and concrete RANSAC implementation"""
+
+import numpy as np
 from plane import *
-from DepthMap import DepthMap
 
 
-def initialize_pipeline(imgLeft_bytes, imgRight_bytes):
-    """Initializes the depth map with the given image bytes."""
-    points, colors = DepthMap(imgLeft_bytes=imgLeft_bytes, imgRight_bytes=imgRight_bytes)
-    return points, colors
+class PlaneDetection:
+    """
+    Iterative RANSAC algorithm to detect n planes based on minimal plane size,
+    set by the user.
+    """
 
+    def __init__(
+        self,
+        geometry: Plane,
+        ransac_params,
+        store: bool = False,
+    ):
+        self.geometry = geometry
+        self.plane_size = ransac_params["PLANE_SIZE"]
+        self.thresh = ransac_params["THRESH"]
+        self.store = store
+        self.pcd_out = None
+        self.eqs = []
+        self.planes = []
 
-def process_point_cloud(points):
-    """Processes the point cloud using Iterative RANSAC."""
-    plane_detector = PlaneDetection(
-        geometry=Plane(),
-        ransac_params={
-            "THRESH": 0.02,
-            "PLANE_SIZE": 16500},
-    )
+    def detect_planes(self, point_cloud: np.ndarray):
+        """Detect planes using an iterative RANSAC algorithm
 
-    detected_planes = plane_detector.detect_planes(points)
-    return detected_planes
+        Args:
+            point_cloud (np.ndarray): point cloud data
 
+        Returns:
+            [np.ndarray]: list of detected planes
+        """
+        points = point_cloud
+        print("Iterative RANSAC...")
+        plane_counter = 0
 
-def visualize_plane(plane_points):
-    """Visualizes the first detected plane using Matplotlib."""
-    x, y, z = plane_points.T
-    print("x:  ", x)
-    print("y:  ", y)
-    plt.figure()
-    plt.scatter(x, y, color="#000000", s=5)
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Detected Plane Points')
-    plt.savefig("plane1.png")
-    # plt.show()
+        while True:
+            best_eq, best_inliers = self.geometry.fit(points, self.thresh)
 
+            if len(best_inliers) < self.plane_size:
+                break
 
-def start_detect(imgLeft, imgRight):
+            plane_counter += 1
+            self.eqs.append(best_eq)
 
-    # Initialize depth map
-    points, colors = initialize_pipeline(imgLeft, imgRight)
+            # Remove the best inliers from the overall point cloud
+            self.pcd_out = np.delete(points, best_inliers, axis=0)
+            plane = points[best_inliers]
+            self.planes.append(plane)
+            points = self.pcd_out
 
-    # Process the point cloud
-    detected_planes = process_point_cloud(points)
+        if not self.planes:
+            return None
 
-    # Visualize the first detected plane if available
-    if detected_planes:
-        visualize_plane(detected_planes[0])
+        # Get the axis-aligned bounding box
+        min_bound = np.min(self.planes[0], axis=0)
+        max_bound = np.max(self.planes[0], axis=0)
 
+        width = max_bound[0] - min_bound[0]
+        height = max_bound[1] - min_bound[1]
 
-if __name__ == "__main__":
-    # Initialize video capture
-    cap = cv.VideoCapture('src/v2.mp4')
+        print(f"Width: {width:.2f} units")
+        print(f"Height: {height:.2f} units")
 
-    # Extract two consecutive frames as left and right images
-    ret1, frame1 = cap.read()  # First frame as left image
-    ret2, frame2 = cap.read()  # Second frame as right image
-
-    cap.release()
-
-    if not ret1 or not ret2:
-        print("Failed to read frames from video")
-        exit()
-
-    # Convert frames to grayscale
-    imgLeft = cv.cvtColor(frame1, cv.COLOR_BGR2GRAY)
-    imgRight = cv.cvtColor(frame2, cv.COLOR_BGR2GRAY)
-
-    # Encode the images to PNG or JPEG format
-    _, buffer_left = cv.imencode('.png', imgLeft)
-    _, buffer_right = cv.imencode('.png', imgRight)
-
-    # Convert the buffers to bytearray
-    bytearray_left = bytearray(buffer_left)
-    bytearray_right = bytearray(buffer_right)
-    start_detect(imgLeft=bytearray_left, imgRight=bytearray_right)
+        return self.planes
