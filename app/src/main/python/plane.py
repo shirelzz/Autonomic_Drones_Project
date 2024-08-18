@@ -19,7 +19,7 @@ class Plane:
         self.equation = []
         self.planes = []
 
-    def fit(self, pts, thresh=0.05, minPoints=10, maxIteration=1000):
+    def fit(self, pts, thresh=0.05, minPoints=10, maxIteration=200):
         """
         Find the best equation for a plane.
 

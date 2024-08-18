@@ -1,4 +1,5 @@
 import cv2 as cv
+
 from plane_detection import PlaneDetection
 from plane import *
 from DepthMap import DepthMap
@@ -14,6 +15,7 @@ def initialize_pipeline(imgLeft_bytes, imgRight_bytes):
 
 def process_point_cloud(points):
     """Processes the point cloud using Iterative RANSAC and prepares it for visualization."""
+
     plane_detector = PlaneDetection(
         geometry=Plane(),
         ransac_params={
@@ -49,8 +51,17 @@ def visualize_plane_as_bitmap(detected_planes_tensor):
     for xi, yi in zip(x_norm, y_norm):
         cv.circle(img, (int(xi), int(yi)), 2, (255, 255, 255), -1)
 
+    # Rotate the image by -45 degrees
+    (h, w) = img.shape[:2]
+    center = (w // 2, h // 2)
+    M = cv.getRotationMatrix2D(center, 180, 1.0)
+    rotated_img = cv.warpAffine(img, M, (w, h), borderValue=(0, 0, 0))
+
+    # Mirror the image horizontally
+    mirrored_img = cv.flip(rotated_img, 1)
+
     # Encode the image to bitmap format
-    is_success, img_encoded = cv.imencode('.bmp', img)
+    is_success, img_encoded = cv.imencode('.bmp', mirrored_img)
 
     # Convert the buffer to bytearray
     if is_success:
@@ -72,7 +83,21 @@ def start_detect(imgLeft, imgRight):
 
     # Visualize the first detected plane and return it as a bitmap
     bitmap = visualize_plane_as_bitmap(detected_planes_tensor)
-
+    # if bitmap:
+    #
+    #     # Decode the base64 string back to bytes
+    #     image_bytes = base64.b64decode(bitmap)
+    #
+    #     # Convert the bytes to a NumPy array
+    #     np_array = np.frombuffer(image_bytes, np.uint8)
+    #
+    #     # Decode the NumPy array to an image
+    #     img = cv.imdecode(np_array, cv.IMREAD_COLOR)
+    #
+    #     # Display the image using OpenCV
+    #     cv.imshow("Detected Plane", img)
+    #     cv.waitKey(0)
+    #     cv.destroyAllWindows()
     return bitmap
 
 
