@@ -63,7 +63,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private Button g_minus_btn_up, check_depth;
     private Bitmap droneIMG;
     private ReceivedVideo receivedVideo;
-//    private AccuracyLog accuracyLog;
+    private AccuracyLog accuracyLog;
     //    ExcelWriter excelWriter;
     private DataFromDrone dataFromDrone;
     private GoToUsingVS goToUsingVS;
@@ -100,6 +100,7 @@ public class ALRemoteControllerView extends RelativeLayout
         initUI();
 
 //        accuracyLog = new AccuracyLog(dataLog, dist, this.getContext());
+        accuracyLog = new AccuracyLog(dist, this.getContext());
         dataFromDrone = new DataFromDrone();
         flightCommands = new FlightCommands();
         goToUsingVS = new GoToUsingVS(dataFromDrone);
@@ -224,7 +225,7 @@ public class ALRemoteControllerView extends RelativeLayout
             receivedVideo.setMCodecManager(null);
 
         }
-//        accuracyLog.closeLog();
+        accuracyLog.closeLog();
        controllerImageDetection.stopDepthMapVideo();
         return false;
     }
@@ -232,7 +233,7 @@ public class ALRemoteControllerView extends RelativeLayout
     @SuppressLint("SetTextI18n")
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-//        accuracyLog.updateData(dataFromDrone.getAll());
+        accuracyLog.updateData(dataFromDrone.getAll());
 
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
@@ -274,7 +275,7 @@ public class ALRemoteControllerView extends RelativeLayout
         onGoToMode = !onGoToMode;
         onGoToFMMMode = false;
         if (onGoToMode) {
-            goTo_btn.setBackgroundColor(Color.GREEN);
+//            goTo_btn.setBackgroundColor(Color.GREEN);
 //            button3.setBackgroundColor(Color.WHITE);
             goToFMM_btn.setBackgroundColor(Color.WHITE);
             stopButton.setBackgroundColor(Color.RED);
@@ -296,7 +297,7 @@ public class ALRemoteControllerView extends RelativeLayout
                 dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
             }
         } else {
-            goTo_btn.setBackgroundColor(Color.WHITE);
+//            goTo_btn.setBackgroundColor(Color.WHITE);
 //            mVideoSurface.setVisibility(View.VISIBLE);
             imgView.setVisibility(View.VISIBLE);
             presentMap.MapVisibility(false);
@@ -312,7 +313,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //        });
 
         goToUsingVS.setTargetGpsLocation((GPSLocation) null);
-        missionControlWrapper.stopGoToMission();
+//        missionControlWrapper.stopGoToMission();
         ControlCommand command = flightControlMethods.stayOnPlace();
         flightControlMethods.sendVirtualStickCommands(command, 0.0f);
         flightControlMethods.disableVirtualStickControl();
@@ -338,16 +339,16 @@ public class ALRemoteControllerView extends RelativeLayout
         float alt_ = (float) dataFromDrone.getGPS().getAltitude();
 
         LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_); // need to be in degrees
-//                MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
-//                        alt_ + 1.0F,
-//                        flightControlMethods.getFlightController(), dataFromDrone, dist);
+//        MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
+//                alt_ + 1.0F,
+//                flightControlMethods.getFlightController(), dataFromDrone, dist);
         missionControlWrapper.setTargetLocation(targetLoc);
         missionControlWrapper.setAltitude(alt_ + 1.0F);
         missionControlWrapper.startGoToMission();
 //                ToastUtils.showToast("active go-to mission");
         goToFMM_btn.setBackgroundColor(Color.GREEN);
         stopButton.setBackgroundColor(Color.RED);
-        goTo_btn.setBackgroundColor(Color.WHITE);
+//        goTo_btn.setBackgroundColor(Color.WHITE);
 
     }
 

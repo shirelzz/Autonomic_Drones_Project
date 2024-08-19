@@ -45,6 +45,12 @@ public class AccuracyLog {
         initLogFile();
     }
 
+    public AccuracyLog(TextView text, Context context) {
+        this.text = text;
+        this.context = context;
+        initLogFile();
+    }
+
     /**
      * Initializes the log file by creating a new CSV file for logging telemetry data.
      */
@@ -170,8 +176,8 @@ public class AccuracyLog {
             }
             debug.append("  ,  ");
         }
-
-        textViewLog.setText(debug.toString());
+        if (this.textViewLog != null)
+            textViewLog.setText(debug.toString());
     }
 
     public void updateData(Map<String, Double> droneTelemetry) {

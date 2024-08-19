@@ -74,7 +74,7 @@ public class SpeechToText implements RecognitionListener {
             speechRecognizer.destroy();
         }
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context);
-        Log.i(LOG_TAG, "isRecognitionAvailable: " + SpeechRecognizer.isRecognitionAvailable(context));
+//        Log.i(LOG_TAG, "isRecognitionAvailable: " + SpeechRecognizer.isRecognitionAvailable(context));
         if (SpeechRecognizer.isRecognitionAvailable(context)) {
             speechRecognizer.setRecognitionListener(this);
             return true;
@@ -84,19 +84,19 @@ public class SpeechToText implements RecognitionListener {
 
     @Override
     public void onBeginningOfSpeech() {
-        Log.i(LOG_TAG, "onBeginningOfSpeech");
+//        Log.i(LOG_TAG, "onBeginningOfSpeech");
 //        progressBar.setIndeterminate(false);
 //        progressBar.setMax(10);
     }
 
     @Override
     public void onBufferReceived(byte[] buffer) {
-        Log.i(LOG_TAG, "onBufferReceived: " + Arrays.toString(buffer));
+//        Log.i(LOG_TAG, "onBufferReceived: " + Arrays.toString(buffer));
     }
 
     @Override
     public void onEndOfSpeech() {
-        Log.i(LOG_TAG, "onEndOfSpeech");
+//        Log.i(LOG_TAG, "onEndOfSpeech");
 //        progressBar.setIndeterminate(true);
         stopListening();
     }
@@ -105,7 +105,7 @@ public class SpeechToText implements RecognitionListener {
     public void onResults(Bundle results) {
         ArrayList<String> matches = results
                 .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-        Log.i(LOG_TAG, "onResults" + matches);
+//        Log.i(LOG_TAG, "onResults" + matches);
 
         StringBuilder text = new StringBuilder();
         assert matches != null;
@@ -148,7 +148,7 @@ public class SpeechToText implements RecognitionListener {
     @Override
     public void onError(int errorCode) {
         String errorMessage = getErrorText(errorCode);
-        Log.i(LOG_TAG, "FAILED " + errorMessage);
+//        Log.i(LOG_TAG, "FAILED " + errorMessage);
 //        returnedError.setText(errorMessage);
         if (writeOnScreenCallback != null) {
             writeOnScreenCallback.accept("Error:" + errorMessage);
@@ -160,17 +160,17 @@ public class SpeechToText implements RecognitionListener {
 
     @Override
     public void onEvent(int arg0, Bundle arg1) {
-        Log.i(LOG_TAG, "onEvent");
+//        Log.i(LOG_TAG, "onEvent");
     }
 
     @Override
     public void onPartialResults(Bundle arg0) {
-        Log.i(LOG_TAG, "onPartialResults");
+//        Log.i(LOG_TAG, "onPartialResults");
     }
 
     @Override
     public void onReadyForSpeech(Bundle arg0) {
-        Log.i(LOG_TAG, "onReadyForSpeech");
+//        Log.i(LOG_TAG, "onReadyForSpeech");
     }
 
     @Override

@@ -4,6 +4,7 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 and object to describe controll comand to drone
  */
 
+import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 
 public class ControlCommand {
@@ -21,12 +22,21 @@ public class ControlCommand {
     private float roll; // The velocity rotation on the X axis
     private float verticalThrottle = 0;
     private float gimbalPitch = 0;
+    private RollPitchControlMode pitchMode = RollPitchControlMode.VELOCITY;
     private VerticalControlMode controllMode;
     //constructor
 
     public ControlCommand(float pitch, float roll, float verticalThrottle) {
         this.pitch = pitch;
         this.roll = roll;
+
+        this.verticalThrottle = verticalThrottle;
+    }
+
+    public ControlCommand(float pitch, float roll, float verticalThrottle, RollPitchControlMode pitchMode) {
+        this.pitch = pitch;
+        this.roll = roll;
+        this.pitchMode = pitchMode;
 
         this.verticalThrottle = verticalThrottle;
     }
@@ -59,6 +69,13 @@ public class ControlCommand {
         this.imageDistance = imageDistance;
     }
 
+    public RollPitchControlMode getPitchMode() {
+        return pitchMode;
+    }
+
+    public void setPitchMode(RollPitchControlMode pitchMode) {
+        this.pitchMode = pitchMode;
+    }
 
     public float getRoll() {
         return roll;

@@ -9,10 +9,10 @@ import org.opencv.imgproc.Imgproc;
 
 public class EdgeDetection {
 
-    private static final int edgeThreshold = 150;
-    private static final int threshold1 = 100;
-    private static final int threshold2 = 300;
-    private static final int apertureSize = 1;
+    private static final int edgeThreshold = 120;
+    private static final int threshold1 = 50;
+    private static final int threshold2 = 200;
+    private static final int apertureSize = 3;
 
     // adjust the maximum number of found lines in the image
     private static final int maxLines = 5;
@@ -26,7 +26,7 @@ public class EdgeDetection {
         Mat dst = new Mat(), cdst = new Mat();
 
         // Edge detection
-        Imgproc.Canny(input, dst, threshold1, threshold2, apertureSize, true);
+        Imgproc.Canny(input, dst, threshold1, threshold2, apertureSize, false);
 
         // Copy edges to the images that will display the results in BGR
         Imgproc.cvtColor(dst, cdst, Imgproc.COLOR_GRAY2BGR);

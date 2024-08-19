@@ -273,6 +273,8 @@ public class FlightControlMethods {
             // If virtual stick is enabled, send the command, otherwise turn it on
             if (virtualStickEnabled) {
 
+                flightController.setRollPitchControlMode(command.getPitchMode());
+
                 FlightControlData flightControlData = new FlightControlData(0, 0, 0, 0);
 //              flightControlData.setPitch(command.getPitch());
 //              flightControlData.setRoll(command.getRoll());
@@ -280,9 +282,15 @@ public class FlightControlMethods {
                 //pitch and roll are opposite !!!! we still don't know why
 
                 // Sets the aircraft's velocity (m/s) along the y-axis or angle value (in degrees) for pitch
-                flightControlData.setPitch(command.getRoll());
-                // Sets the aircraft's velocity (m/s) along the x-axis or angle value (in degrees) for roll
-                flightControlData.setRoll(command.getPitch());
+                if (command.getPitchMode() == RollPitchControlMode.VELOCITY) {
+                    flightControlData.setPitch(command.getRoll());
+                    flightControlData.setRoll(command.getPitch());
+                } else {
+                    flightControlData.setPitch(command.getPitch());
+                    // Sets the aircraft's velocity (m/s) along the x-axis or angle value (in degrees) for roll
+                    flightControlData.setRoll(command.getRoll());
+                }
+
                 // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
                 flightControlData.setYaw((float) pZ * yawJoyControlMaxSpeed);
                 // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
