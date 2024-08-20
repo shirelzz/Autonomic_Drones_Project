@@ -28,12 +28,11 @@ import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 
 public class ControllerImageDetection {
 
@@ -289,9 +288,6 @@ public class ControllerImageDetection {
         this.edgeDetectionMode = edgeDetectionMode;
     }
 
-
-    // display depthmap python
-
     public ControlCommand detectLending(Mat imgToProcess, double droneHeight) throws Exception {
 
         long currTime = System.currentTimeMillis();
@@ -325,7 +321,8 @@ public class ControllerImageDetection {
 
         if (bestLine != null) {
             Imgproc.line(imgToProcess, bestLine[0], bestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-            double dyReal = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight, dt);
+            double dyReal = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight);
+            showToast("dyReal:  " + dyReal);
             return buildControlCommand(dyReal, dt, imgToProcess);
 
         } else {
@@ -362,7 +359,8 @@ public class ControllerImageDetection {
         return bestHorizontalLine != null ? bestHorizontalLine : bestLine;
     }
 
-    private double adjustDronePosition(Point[] finalLine, double frameHeightPx, double droneRelativeHeight, double dt) {
+    private double adjustDronePosition(Point[] finalLine, double frameHeightPx, double droneRelativeHeight) {
+//        double fovVerticalRadians = Math.toRadians(horizontalFOV);
         double fovVerticalRadians = Math.toRadians(VerticalFOV);
         double dy_best = frameHeightPx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
 
@@ -374,7 +372,7 @@ public class ControllerImageDetection {
         p = (float) pitch_pid.update(dyReal / 100f, dt, maxSpeed);
         r = (float) roll_pid.update(0, dt, maxSpeed);
 
-        Imgproc.putText(imgToProcess, "dy: " + p, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
+        Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
         showToast("p: " + p);
 
         ControlCommand ans = new ControlCommand(p, r, t);
@@ -385,6 +383,8 @@ public class ControllerImageDetection {
     }
 
     // Method to start video playback
+    // display depthmap python
+
     public void startDepthMapVideo() {
 
         Log.d(TAG, "entered startDepthMapVideo");
@@ -425,24 +425,32 @@ public class ControllerImageDetection {
 
                         // Call Python function with the byte arrays
                         PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes));
+                        List<Object> javaList = new ArrayList<>();
+                        try {
+                            PyObject imageBytesObj = result.asList().get(0);
+                            PyObject positionsObj = result.asList().get(1);
 
-                        String imageBytesBase64 = result.toString();
+                            String imageBytesBase64 = imageBytesObj.toString();
+                            List<PyObject> positionsPyList = positionsObj.asList();
 
-                        // Decode Base64 to byte array
-                        byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
+                            for (PyObject item : positionsPyList) {
+                                javaList.add(item.toJava(Object.class));  // Convert each Python object to a Java object
+                            }
+                            // Decode Base64 to byte array
+                            byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
 
-                        // Convert byte array to Bitmap
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                        Log.d(TAG, "Convert byte array to Bitmap: " + bitmap.toString());
+                            // Convert byte array to Bitmap
+                            Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                            Log.d(TAG, "Convert byte array to Bitmap: " + bitmap.toString());
 
-                        handler.post(() -> {
-                            imageView.setImageBitmap(bitmap);  // Update the ImageView with the new frame
-                            Log.d(TAG, "imageView updated");
-                        });
-
+                            handler.post(() -> {
+                                imageView.setImageBitmap(bitmap);  // Update the ImageView with the new frame
+                                Log.d(TAG, "imageView updated");
+                            });
+                        } catch (ClassCastException e) {
+                            throw new RuntimeException("Error processing Python result", e);
+                        }
                     }
-
-
                     try {
                         Thread.sleep(1000 / 30);  // Control frame rate (30 FPS)
                     } catch (InterruptedException e) {
@@ -456,7 +464,6 @@ public class ControllerImageDetection {
         }).start();
 
         Log.d(TAG, "ended startDepthMapVideo");
-
     }
 
     // Method to stop video playback

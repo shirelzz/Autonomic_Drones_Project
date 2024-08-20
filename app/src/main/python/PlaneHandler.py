@@ -6,6 +6,8 @@ from DepthMap import DepthMap
 import torch
 import base64
 
+from ConvertPLY2PNG import find_white_areas, plot_white_areas, calculate_movement_to_landing_spot
+
 
 def initialize_pipeline(imgLeft_bytes, imgRight_bytes):
     """Initializes the depth map with the given image bytes."""
@@ -28,8 +30,11 @@ def process_point_cloud(points):
     if detected_planes is None:
         return None
 
+    # Concatenate along a specific axis (e.g., axis=0)
+    detected_planes_array = np.concatenate(detected_planes, axis=0)
+
     # Convert the detected planes to a PyTorch tensor
-    detected_planes_tensor = torch.tensor(detected_planes, dtype=torch.float32)
+    detected_planes_tensor = torch.tensor(detected_planes_array, dtype=torch.float32)
 
     return detected_planes_tensor
 
@@ -60,13 +65,33 @@ def visualize_plane_as_bitmap(detected_planes_tensor):
     # Mirror the image horizontally
     mirrored_img = cv.flip(rotated_img, 1)
 
+    # Find white areas of size 50 cm x 50 cm
+    white_areas = find_white_areas(mirrored_img, min_size=20)
+    dx, dy = 0, 0
+    # Check if any white areas are found
+    if not white_areas:
+        print("No white areas found.")
+    else:
+        print(f"Found {len(white_areas)} white areas.")
+        # for area in white_areas:
+        #     print(f"Type of area: {type(area)}")  # This will help identify the actual type
+        #     if isinstance(area, dict):
+        print(f"Area with bbox {white_areas['bbox']} and size {white_areas['area']} pixels.")
+        # else:
+        #     print(f"Unexpected type: {area}")
+        # print(f"Area with bbox {area['bbox']} ")
+        # print(f"and size {area['area']} pixels.")
+
+        # Plot the results with red borders
+        plot_white_areas(mirrored_img, [white_areas])
+        dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas)
     # Encode the image to bitmap format
     is_success, img_encoded = cv.imencode('.bmp', mirrored_img)
 
     # Convert the buffer to bytearray
     if is_success:
         image_bytes = bytearray(img_encoded)
-        return base64.b64encode(image_bytes).decode('utf-8')
+        return [base64.b64encode(image_bytes).decode('utf-8'), [dx, dy]]
     else:
         return None
 
@@ -103,6 +128,7 @@ def start_detect(imgLeft, imgRight):
 
 # if __name__ == "__main__":
 #     # Initialize video capture
+#
 #     cap = cv.VideoCapture('src/v2.mp4')
 #
 #     # Extract two consecutive frames as left and right images
@@ -126,4 +152,8 @@ def start_detect(imgLeft, imgRight):
 #     # Convert the buffers to bytearray
 #     bytearray_left = bytearray(buffer_left)
 #     bytearray_right = bytearray(buffer_right)
-#     start_detect(imgLeft=bytearray_left, imgRight=bytearray_right)
+#     bitmapArr = start_detect(imgLeft=bytearray_left, imgRight=bytearray_right)
+#     bitmap = bitmapArr[0]
+#     movement = bitmapArr[1]
+#     print("dx (roll adjustment):", movement[0])
+#     print("dy (pitch adjustment):", movement[1])
