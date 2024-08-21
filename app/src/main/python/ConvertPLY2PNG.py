@@ -91,6 +91,70 @@ import matplotlib.patches as patches
 #     return np.array(img)
 
 
+def remove_overlapping_areas(areas, overlap_threshold=0.5):
+    """
+    Remove overlapping bounding boxes based on an overlap threshold.
+    :param areas: List of detected areas with 'bbox' and 'area'.
+    :param overlap_threshold: Threshold to determine significant overlap.
+    :return: List of filtered areas.
+    """
+    filtered_areas = []
+
+    for i in range(len(areas)):
+        keep = True
+        minrA, mincA, maxrA, maxcA = areas[i]['bbox']
+        for j in range(i):
+            minrB, mincB, maxrB, maxcB = areas[j]['bbox']
+            iou = calculate_iou((minrA, mincA, maxrA, maxcA), (minrB, mincB, maxrB, maxcB))
+            if iou > overlap_threshold:
+                keep = False
+                break
+        if keep:
+            filtered_areas.append(areas[i])
+
+    return filtered_areas
+
+
+def find_fixed_size_white_areas(image_array, fixed_size):
+    """
+    Detects fixed-size white areas in the image with no black pixels.
+
+    :param image_array: Input image array (grayscale).
+    :param fixed_size: Tuple (height, width) specifying the fixed size of the white areas to detect.
+    :return: List of detected white areas, each with 'bbox' and 'area'.
+    """
+
+    if len(image_array.shape) == 3:
+        # Convert to grayscale if the image is in color
+        image_array = cv.cvtColor(image_array, cv.COLOR_BGR2GRAY)
+
+    # Apply a threshold to create a binary image
+    _, binary_image = cv.threshold(image_array, 240, 255, cv.THRESH_BINARY)
+
+    # Apply morphological operations to clean the image
+    cleaned_image = closing(binary_image, square(3))
+    # Optionally apply dilation and erosion for better results
+    cleaned_image = cv.dilate(cleaned_image, None, iterations=1)
+    cleaned_image = cv.erode(cleaned_image, None, iterations=1)
+
+    # Get dimensions of the fixed size
+    fixed_height, fixed_width = fixed_size
+
+    white_areas = []
+
+    # Slide a fixed-size window over the image
+    for y in range(0, cleaned_image.shape[0] - fixed_height + 1):
+        for x in range(0, cleaned_image.shape[1] - fixed_width + 1):
+            region = cleaned_image[y:y + fixed_height, x:x + fixed_width]
+            if np.all(region == 255):  # Check if all pixels in the region are white
+                white_areas.append({
+                    'bbox': (y, x, y + fixed_height, x + fixed_width),
+                    'area': fixed_height * fixed_width
+                })
+
+    return white_areas
+
+
 # Function to find white areas in the PNG image
 def find_white_areas(image_array, min_size):
     min_size_area = min_size * min_size
@@ -171,6 +235,26 @@ def plot_white_areas(image_array, white_areas):
         minr, minc, maxr, maxc = area['bbox']
         rect = patches.Rectangle((minc, minr), maxc - minc, maxr - minr, linewidth=1, edgecolor='red', facecolor='none')
         ax.add_patch(rect)
+
+    plt.show()
+
+
+def plot_white_areas_plane(image_array, white_areas):
+    fig, ax = plt.subplots()
+    ax.imshow(image_array, cmap='gray')
+
+    for area_list in white_areas:
+        # Ensure area_list is a list of dictionaries
+        if isinstance(area_list, list):
+            for area in area_list:
+                if isinstance(area, dict) and 'bbox' in area:
+                    minr, minc, maxr, maxc = area['bbox']
+                    rect = patches.Rectangle((minc, minr), maxc - minc, maxr - minr, linewidth=1, edgecolor='red', facecolor='none')
+                    ax.add_patch(rect)
+                else:
+                    print(f"Unexpected area format in list: {area}")
+        else:
+            print(f"Unexpected area format: {area_list}")
 
     plt.show()
 

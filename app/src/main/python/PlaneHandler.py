@@ -6,7 +6,7 @@ from DepthMap import DepthMap
 import torch
 import base64
 
-from ConvertPLY2PNG import find_white_areas, plot_white_areas, calculate_movement_to_landing_spot
+from ConvertPLY2PNG import find_fixed_size_white_areas, remove_overlapping_areas, plot_white_areas_plane, plot_white_areas, calculate_movement_to_landing_spot
 
 
 def initialize_pipeline(imgLeft_bytes, imgRight_bytes):
@@ -65,17 +65,21 @@ def visualize_plane_as_bitmap(detected_planes_tensor):
     # Mirror the image horizontally
     mirrored_img = cv.flip(rotated_img, 1)
 
-    # Find white areas of size 50 cm x 50 cm
-    white_areas = find_white_areas(mirrored_img, min_size=20)
+    # Find white areas of size ?
+    white_areas = find_fixed_size_white_areas(mirrored_img, (15, 15))
+    white_areas = remove_overlapping_areas(white_areas, overlap_threshold=0.5)
+
     dx, dy = 0, 0
     # Check if any white areas are found
     if not white_areas:
         print("No white areas found.")
     else:
         print(f"Found {len(white_areas)} white areas.")
+
         # for area in white_areas:
         #     print(f"Type of area: {type(area)}")  # This will help identify the actual type
         #     if isinstance(area, dict):
+
         print(f"Area with bbox {white_areas['bbox']} and size {white_areas['area']} pixels.")
         # else:
         #     print(f"Unexpected type: {area}")
@@ -83,7 +87,8 @@ def visualize_plane_as_bitmap(detected_planes_tensor):
         # print(f"and size {area['area']} pixels.")
 
         # Plot the results with red borders
-        plot_white_areas(mirrored_img, [white_areas])
+        plot_white_areas_plane(mirrored_img, [white_areas])
+
         dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas)
     # Encode the image to bitmap format
     is_success, img_encoded = cv.imencode('.bmp', mirrored_img)
