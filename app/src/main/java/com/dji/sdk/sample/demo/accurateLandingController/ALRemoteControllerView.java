@@ -71,7 +71,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private MissionControlWrapper missionControlWrapper;
     private AndroidGPS androidGPS;
     private DroneFeatures droneFeatures;
-//    private RecordingVideo recordingVideo;
+    //    private RecordingVideo recordingVideo;
     private boolean onGoToMode = false, onGoToFMMMode = false, onFollowPhoneMode = false,
             edgeDetectionMode = false;
     private FlightCommands flightCommands;
@@ -189,7 +189,6 @@ public class ALRemoteControllerView extends RelativeLayout
 //        g_plus_btn_side.setOnClickListener(this);
 
 
-
     }
 
     @Override
@@ -226,29 +225,29 @@ public class ALRemoteControllerView extends RelativeLayout
 
         }
         accuracyLog.closeLog();
-       controllerImageDetection.stopDepthMapVideo();
+        controllerImageDetection.stopDepthMapVideo();
         return false;
     }
 
     @SuppressLint("SetTextI18n")
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
-        accuracyLog.updateData(dataFromDrone.getAll());
 
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
         droneIMG = mVideoSurface.getBitmap();
         controllerImageDetection.setCurrentImage(droneIMG);
+        imgView.setImageBitmap(droneIMG);
 
         if (videoNotStarted) {
             controllerImageDetection.startDepthMapVideo();
             videoNotStarted = false;
         }
 
-        imgView.setImageBitmap(droneIMG);
         if (controllerImageDetection.isEdgeDetectionMode()) {
             controllerImageDetection.setBitmapFrame(droneIMG);
         }
+        accuracyLog.updateData(dataFromDrone.getAll(), controllerImageDetection.getControlStatus());
 
         if (!onGoToMode && !onGoToFMMMode) {
 //            mVideoSurface.setVisibility(View.VISIBLE);
@@ -396,11 +395,11 @@ public class ALRemoteControllerView extends RelativeLayout
     private void accurateLanding() {
         boolean isEdgeDetect = !controllerImageDetection.isEdgeDetectionMode();
         controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
-        if (isEdgeDetect) {
-            gimbalController.rotateGimbalToDegree(-45);
-        } else {
+//        if (isEdgeDetect) {
+//            gimbalController.rotateGimbalToDegree(-45);
+//        } else {
             gimbalController.rotateGimbalToDegree(-90);
-        }
+//        }
     }
 
     @SuppressLint("NonConstantResourceId")

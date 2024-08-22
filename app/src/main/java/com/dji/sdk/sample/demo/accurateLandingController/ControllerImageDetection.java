@@ -15,8 +15,8 @@ import android.widget.ImageView;
 import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 import com.chaquo.python.android.AndroidPlatform;
-import com.dji.sdk.sample.demo.kcgremotecontroller.Controller;
 import com.dji.sdk.sample.demo.kcgremotecontroller.VLD_PID;
+import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
@@ -27,10 +27,10 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -47,21 +47,22 @@ public class ControllerImageDetection {
     private boolean isPlaying = false;  // To control the video playback
     private Handler handler = new Handler(Looper.getMainLooper());  // For updating the UI
     private Python python;
-    private double horizontalFOV = 84.0;
-    //
+    private double focal_length = 4.8; // Field of View in mm
+    private double sensor_width = 6.4;  // Sensor width in millimeters (approximate for 1/2" CMOS sensor)
     private ArrayList<Bitmap> imageList = new ArrayList<>();
     private PyObject depthMapClass;
     private PyObject getOutputFunc;
     private int frameCounter = 0;
     private DepthMap depthMap;
+    private Map<String, Double> controlStatus = new HashMap<>();
 
     //    private final ALRemoteControllerView mainView;
     private long prevTime = System.currentTimeMillis();
     private boolean first_detect = true;
     private int not_found = 0;
 
-    private double aspectRatio = 0;
-    private double VerticalFOV = 0;
+    //    private double aspectRatio = 0;
+//    private double VerticalFOV = 0;
     private boolean edgeDetectionMode = false;
     private CenterTracker centerTracker;
     private Mat previous_image = null;
@@ -78,16 +79,14 @@ public class ControllerImageDetection {
     private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I); //vertical up and down motion
     private Context context;
     private int frameHeight, frameWidth;
-    private Controller controller;
 
     private float lastP = 0, lastR = 0; // previous error
 
-    private float p, r, t, gp = 0;
+    private float r, gp = 0;
+    private float p = 0.5f, i = 0.02f, d = 0.01f, max_i = 1, t = -0.6f;//t fot vertical throttle
+
 
     private double error_x, error_y, error_z, error_yaw, D;
-    private Queue<Double> errorQx = new LinkedList<Double>();
-    private Queue<Double> errorQy = new LinkedList<Double>();
-    private Queue<Double> errorQz = new LinkedList<Double>();
 
     //    private RecordingVideo recordingVideo = null;
     //constructor
@@ -106,21 +105,67 @@ public class ControllerImageDetection {
         this.frameWidth = 640;
         this.frameHeight = 480;
 
+//        p = Float.parseFloat(textP.getText().toString());
+//        i = Float.parseFloat(textI.getText().toString());
+//        d = Float.parseFloat(textD.getText().toString());
+//        t = Float.parseFloat(textT.getText().toString());
+//
+        initPIDs(p, i, d, max_i, "roll");
+        initPIDs(p, i, d, max_i, "pitch");
+        initPIDs(p, i, d, max_i, "throttle");
+        setDescentRate(t);
+
 //        this.objectTracking = new ObjectTracking(true, "GREEN");
 //        centerTracker = new CenterTracker();
     }
 
-    private double calculateVerticalFOV(double horizontalFOV, double aspectRatio) {
-        double halfHorizontalFOV = Math.toRadians(horizontalFOV / 2);
-        double verticalFOV = 2 * Math.atan(Math.tan(halfHorizontalFOV) / aspectRatio);
-        return Math.toDegrees(verticalFOV);
+    private void updateLog(ControlCommand control, Point[][] edges, Point[] chosenEdge, double dy) {
+
+//        saw_target, edgeX,edgeY,edgeDist,PitchOutput,RollOutput,ErrorX,ErrorY,P,I,D,MaxI
+
+//        controlStatus.put("saw_target",(double)(imageCoordinates.saw_target()? 1 : 0));
+        controlStatus.put("saw_target", (double) edges.length);
+        if (edges.length > 0) {
+            controlStatus.put("edgeX", (chosenEdge[0].x + chosenEdge[1].x) / 2.0);
+            controlStatus.put("edgeY", (chosenEdge[0].y + chosenEdge[1].y) / 2.0);
+            controlStatus.put("edgeDist", dy);
+        }
+
+        controlStatus.put("PitchOutput", (double) control.getPitch());
+        controlStatus.put("RollOutput", (double) control.getRoll());
+
+        controlStatus.put("ErrorX", control.xError);
+        controlStatus.put("ErrorY", control.yError);
+
+        controlStatus.put("Pp", control.p_pitch);
+        controlStatus.put("Ip", control.i_pitch);
+        controlStatus.put("Dp", control.d_pitch);
+
+        controlStatus.put("Pr", control.p_roll);
+        controlStatus.put("Ir", control.i_roll);
+        controlStatus.put("Dr", control.d_roll);
+
+        controlStatus.put("Pt", control.p_Throttle);
+        controlStatus.put("It", control.i_Throttle);
+        controlStatus.put("Dt", control.d_Throttle);
+
+        controlStatus.put("maxI", control.maxI);
+
+        controlStatus.put("Throttle", (double) control.getVerticalThrottle());
+
+        boolean autonomous_mode = DJISampleApplication.getAircraftInstance().getFlightController().isVirtualStickControlModeAvailable();
+        controlStatus.put("autonomous_mode", (double) (autonomous_mode ? 1 : 0));
+
     }
 
-    private double calculatePitchAdjustment(int dyPixels, int imageHeight) {
-        // Calculate the angular offset needed
-        double thetaOffset = ((double) dyPixels / imageHeight) * this.VerticalFOV;
-        return thetaOffset; // This is the pitch adjustment needed in degrees
+    public Map<String, Double> getControlStatus() {
+        return controlStatus;
     }
+    //    private double calculateVerticalFOV(double FOV, double aspectRatio) {
+//        double halfHorizontalFOV = Math.toRadians(FOV / 2);
+//        double verticalFOV = 2 * Math.atan(Math.tan(halfHorizontalFOV) / aspectRatio);
+//        return Math.toDegrees(verticalFOV);
+//    }
 
     public void DepthBool() {
         this.check_depth = true;
@@ -226,10 +271,10 @@ public class ControllerImageDetection {
 //        }
 
             double droneHeight = dataFromDrone.getGPS().getAltitude();
-            if (aspectRatio == 0) {
-                aspectRatio = calculateAspectRatio(bitmap.getWidth(), bitmap.getHeight());
-                VerticalFOV = calculateVerticalFOV(horizontalFOV, aspectRatio);
-            }
+//            if (aspectRatio == 0) {
+//                aspectRatio = calculateAspectRatio(bitmap.getWidth(), bitmap.getHeight());
+////                VerticalFOV = calculateVerticalFOV(FOV, aspectRatio);
+//            }
             processImage(bitmap, droneHeight);
 //            if (recordingVideo.getIsRecording()) {
 //                // Convert the Bitmap to a format suitable for FFmpeg
@@ -267,6 +312,7 @@ public class ControllerImageDetection {
         Utils.bitmapToMat(frame, imgToProcess);
         try {
             ControlCommand command = detectLending(imgToProcess, droneHeight);
+
             if (command != null) {
                 flightControlMethods.sendVirtualStickCommands(command, 0.0f);
             }
@@ -321,9 +367,12 @@ public class ControllerImageDetection {
 
         if (bestLine != null) {
             Imgproc.line(imgToProcess, bestLine[0], bestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-            double dyReal = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight);
-            showToast("dyReal:  " + dyReal);
-            return buildControlCommand(dyReal, dt, imgToProcess);
+            double dyRealPitch = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight);
+            showToast("dyRealPitch:  " + dyRealPitch);
+            ControlCommand command = buildControlCommand(dyRealPitch, dt, imgToProcess);
+            updateLog(command, pointArr, bestLine, dyRealPitch);
+
+            return command;
 
         } else {
             return null; // No line detected or valid
@@ -359,17 +408,31 @@ public class ControllerImageDetection {
         return bestHorizontalLine != null ? bestHorizontalLine : bestLine;
     }
 
-    private double adjustDronePosition(Point[] finalLine, double frameHeightPx, double droneRelativeHeight) {
-//        double fovVerticalRadians = Math.toRadians(horizontalFOV);
-        double fovVerticalRadians = Math.toRadians(VerticalFOV);
-        double dy_best = frameHeightPx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
+    /**
+     * @param finalLine
+     * @param frameSizePx is the size of the image in pixels, if calculating the roll - width,
+     *                    if calculating the pitch - height
+     * @param droneHeight
+     * @return
+     */
+    private double adjustDronePosition(Point[] finalLine, double frameSizePx, double droneHeight) {
+        double dy_best = frameSizePx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
+        double GSD = (sensor_width * droneHeight * 100) / (focal_length * frameSizePx);
 
-        return 2 * droneRelativeHeight * Math.tan(fovVerticalRadians / 2) * (dy_best / frameHeightPx);
+        return GSD * dy_best;
     }
 
     private ControlCommand buildControlCommand(double dyReal, double dt, Mat imgToProcess) {
         double maxSpeed = 2.0;
-        p = (float) pitch_pid.update(dyReal / 100f, dt, maxSpeed);
+        double Kp = 0.01;  // Proportional gain, adjust as needed
+        error_y = dyReal * Kp;
+
+        if (Math.abs(error_y) < 0.0001) {
+            t = -0.2f;
+            p = 0f;
+//            p = 0.2f;
+        }
+        p = (float) pitch_pid.update(error_y, dt, maxSpeed);
         r = (float) roll_pid.update(0, dt, maxSpeed);
 
         Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
@@ -490,9 +553,9 @@ public class ControllerImageDetection {
         }
     }
 
-    public double calculateAspectRatio(int width, int height) {
-        return (double) width / height;
-    }
+//    public double calculateAspectRatio(int width, int height) {
+//        return (double) width / height;
+//    }
 
     // Convert Mat to byte array
     public byte[] matToBytes(Mat mat) {

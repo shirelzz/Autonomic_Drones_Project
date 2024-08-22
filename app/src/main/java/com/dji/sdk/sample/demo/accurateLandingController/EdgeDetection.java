@@ -9,17 +9,16 @@ import org.opencv.imgproc.Imgproc;
 
 public class EdgeDetection {
 
-    private static final int edgeThreshold = 120;
-    private static final int threshold1 = 50;
-    private static final int threshold2 = 200;
+    private static final int edgeThreshold = 150;
+    private static final int threshold1 = 200;
+    private static final int threshold2 = 300;
     private static final int apertureSize = 3;
 
     // adjust the maximum number of found lines in the image
     private static final int maxLines = 5;
+    private static final double minLineLength = 100;  // Minimum length of the detected line
+    private static final double maxLineGap = 20;      // Maximum gap between line segments
 
-//    public EdgeDetection() {
-//
-//    }
     // Check if it works = return an array with edges
     public static Point[][] detectLines(Mat input) {
         // Declare the output variables
