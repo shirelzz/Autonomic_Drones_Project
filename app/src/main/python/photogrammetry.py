@@ -1,39 +1,36 @@
-import math
 import numpy as np
+import cv2 as cv
 
 # https://www.dji.com/support/product/mavic-air-2
 
 
 def calculate_image_size_in_meters(altitude, image_width_px, image_height_px):
-    fov_degrees = 84  # Field of View
-    sensor_width_mm = 6.3  # Sensor width in millimeters (approximate for 1/2" CMOS sensor)
-    sensor_height_mm = 4.7  # Sensor height in millimeters (approximate for 1/2" CMOS sensor)
+    focal_length = 4.44  # Field of View mm
+    sensor_width_mm = 6.4  # Sensor width in millimeters (approximate for 1/2" CMOS sensor)
+    sensor_height_mm = 4.8  # Sensor height in millimeters (approximate for 1/2" CMOS sensor)
 
-    # Convert sensor dimensions from mm to meters
-    sensor_width_m = sensor_width_mm / 1000
-    sensor_height_m = sensor_height_mm / 1000
-
-    # Calculate the Field of View in meters at the given altitude
-    fov_radians = math.radians(fov_degrees)
-    width_m = 2 * (altitude * math.tan(fov_radians / 2))
-    height_m = width_m * (sensor_height_m / sensor_width_m)
-
-    # Calculate the pixel size in meters
-    pixel_width_m = width_m / image_width_px
-    pixel_height_m = height_m / image_height_px
+    # Calculate the GSD
+    height_m = altitude * sensor_height_mm * 100 / (focal_length * image_height_px)
+    width_m = altitude * sensor_width_mm * 100 / (focal_length * image_width_px)
 
     # Size of the entire image in meters
-    image_width_m = pixel_width_m * image_width_px
-    image_height_m = pixel_height_m * image_height_px
+    image_width_m = width_m * image_width_px
+    image_height_m = height_m * image_height_px
 
-    return width_m, height_m, pixel_width_m, pixel_height_m, image_width_m, image_height_m
+    return width_m, height_m, image_width_m, image_height_m
 
 
 def get_kernel_for_specific_dimensions(window_size_m, pixel_width_m, pixel_height_m):
 
     # Calculate the kernel size in pixels
     kernel_width_px = round(window_size_m / pixel_width_m)
+    if kernel_width_px == 0:
+        kernel_width_px = 1
+    print("kernel_width_px:", kernel_width_px)
     kernel_height_px = round(window_size_m / pixel_height_m)
+    if kernel_height_px == 0:
+        kernel_height_px = 1
+    print("kernel_height_px:", kernel_height_px)
 
     # Create a kernel of the calculated size
     kernel = np.ones((kernel_height_px, kernel_width_px), dtype=np.uint8)
@@ -44,25 +41,31 @@ def get_kernel_for_specific_dimensions(window_size_m, pixel_width_m, pixel_heigh
     return kernel
 
 
-# Usage:
+def get_window(altitude, image_width_px, image_height_px):
+    window_size_m = 0.5
+    # Calculate image size in meters
+    pixel_width_m, pixel_height_m, image_width_m, image_height_m = calculate_image_size_in_meters(
+        altitude, image_width_px, image_height_px)
+    kernel = get_kernel_for_specific_dimensions(window_size_m, pixel_width_m, pixel_height_m)
+    return kernel
 
-# Camera specifications
-altitude = 10  # in meters
-image_width_px = 640  # Image width in pixels
-image_height_px = 480  # Image height in pixels
 
-# Calculate image size in meters
-width_m, height_m, pixel_width_m, pixel_height_m, image_width_m, image_height_m = calculate_image_size_in_meters(
-    altitude, image_width_px, image_height_px)
+if __name__ == "__main__":
 
-print(f"Field of View Width (meters): {width_m:.2f}")
-print(f"Field of View Height (meters): {height_m:.2f}")
-print(f"Pixel Width (meters): {pixel_width_m:.4f}")
-print(f"Pixel Height (meters): {pixel_height_m:.4f}")
-print(f"Image Width (meters): {image_width_m:.2f}")
-print(f"Image Height (meters): {image_height_m:.2f}")
+    # Camera specifications
+    altitude = 0.05  # in cm
+    image_width_px = 256  # Image width in pixels
+    image_height_px = 256  # Image height in pixels
 
-window_size_m = 0.5     # Size of the window to detect in meters
-kernel = get_kernel_for_specific_dimensions(window_size_m, pixel_width_m, pixel_height_m)
+    # Calculate image size in meters
+    pixel_width_m, pixel_height_m, image_width_m, image_height_m = calculate_image_size_in_meters(
+        altitude, image_width_px, image_height_px)
 
+    print(f"Pixel Width (meters): {pixel_width_m:.2f}")
+    print(f"Pixel Height (meters): {pixel_height_m:.2f}")
+    print(f"Image Width (meters): {image_width_m:.2f}")
+    print(f"Image Height (meters): {image_height_m:.2f}")
+
+    window_size_m = 0.5   # Size of the window to detect in meters
+    kernel = get_kernel_for_specific_dimensions(window_size_m, pixel_width_m, pixel_height_m)
 

@@ -4,6 +4,8 @@ import io
 from skimage.measure import label, regionprops
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import cv2 as cv
+from skimage.morphology import closing, square
 
 
 # # Function to convert PLY content to PNG
@@ -91,6 +93,28 @@ import matplotlib.patches as patches
 #     return np.array(img)
 
 
+def calculate_iou(boxA, boxB):
+    """
+    Calculate the Intersection over Union (IoU) of two bounding boxes.
+    :param boxA: Tuple (ymin, xmin, ymax, xmax) of the first box.
+    :param boxB: Tuple (ymin, xmin, ymax, xmax) of the second box.
+    :return: IoU value.
+    """
+    yA = max(boxA[0], boxB[0])
+    xA = max(boxA[1], boxB[1])
+    yB = min(boxA[2], boxB[2])
+    xB = min(boxA[3], boxB[3])
+
+    interArea = max(0, yB - yA) * max(0, xB - xA)
+
+    boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
+    boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
+
+    iou = interArea / float(boxAArea + boxBArea - interArea)
+
+    return iou
+
+
 def remove_overlapping_areas(areas, overlap_threshold=0.5):
     """
     Remove overlapping bounding boxes based on an overlap threshold.
@@ -139,7 +163,8 @@ def find_fixed_size_white_areas(image_array, fixed_size):
 
     # Get dimensions of the fixed size
     fixed_height, fixed_width = fixed_size
-
+    print("fixed_height: ", fixed_height)
+    print("fixed_width: ", fixed_width)
     white_areas = []
 
     # Slide a fixed-size window over the image
