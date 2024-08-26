@@ -29,6 +29,7 @@ import org.opencv.core.Core;
 
 import java.util.Arrays;
 
+import dji.common.flightcontroller.LocationCoordinate3D;
 import dji.common.model.LocationCoordinate2D;
 import dji.sdk.codec.DJICodecManager;
 
@@ -237,8 +238,9 @@ public class ALRemoteControllerView extends RelativeLayout
 
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
+        double[] currentPos = dataFromDrone.getCurrentPosition();
         droneIMG = mVideoSurface.getBitmap();
-        controllerImageDetection.setCurrentImage(droneIMG);
+        controllerImageDetection.setCurrentImage(droneIMG, currentPos);
 
         if (videoNotStarted) {
             controllerImageDetection.startDepthMapVideo();

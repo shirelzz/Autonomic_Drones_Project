@@ -34,6 +34,8 @@ import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import dji.common.flightcontroller.LocationCoordinate3D;
+
 public class ControllerImageDetection {
 
     // depth map python view
@@ -66,6 +68,9 @@ public class ControllerImageDetection {
     private CenterTracker centerTracker;
     private Mat previous_image = null;
     private Mat current_image = null;
+    private double[] previous_image_pos = null;
+    private double[] current_image_pos = null;
+
     private ExecutorService executorService = Executors.newFixedThreadPool(2);
     private boolean check_depth;
     private FlightControlMethods flightControlMethods;
@@ -247,18 +252,23 @@ public class ControllerImageDetection {
         first_detect = true;
     }
 
-    public void setCurrentImage(Bitmap frame) {
+    public void setCurrentImage(Bitmap frame, double[] pos) {
         Mat newCurrentImg = new Mat();
         Utils.bitmapToMat(frame, newCurrentImg);
 
-        current_image = newCurrentImg;
-        if (current_image == null) {
+        if (previous_image == null) {
+            // This is the first image being set
             previous_image = newCurrentImg;
+            previous_image_pos = pos;
         } else {
-            Mat temp = current_image;
-            previous_image = temp;
+            // Move the current image to previous_image
+            previous_image = current_image;
+            previous_image_pos = current_image_pos;
         }
 
+        // Set the new current image
+        current_image = newCurrentImg;
+        current_image_pos = pos;
     }
 
     public void processImage(Bitmap frame, double droneHeight) {
@@ -330,6 +340,48 @@ public class ControllerImageDetection {
         }
 
 //        return buildControlCommand(dyReal, dt);
+    }
+
+    // Function to calculate the Euclidean distance (baseline)
+    private double calculateBaseline(double[] pos1, double[] pos2) {
+
+        if (pos1 == null || pos2 == null) {
+            Log.d(TAG, "pos1 == null || pos2 == null");
+            return -1;
+        }
+
+        double[] vector = Cords.flatWorldDist(pos1, pos2);
+        if (vector != null) {
+            double baseline = Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
+            Log.d(TAG,"The baseline between the two frames is: " + baseline + " meters");
+            return baseline;
+        } else {
+            Log.d(TAG,"Failed to calculate the distance between the two positions.");
+            return -2;
+        }
+
+//        double lat1 = Math.toRadians(pos1.getLatitude());
+//        double lon1 = Math.toRadians(pos1.getLongitude());
+//        double alt1 = pos1.getAltitude();
+//
+//        double lat2 = Math.toRadians(pos2.getLatitude());
+//        double lon2 = Math.toRadians(pos2.getLongitude());
+//        double alt2 = pos2.getAltitude();
+//
+//        // Earth radius in meters
+//        final double R = 6371000;
+//
+//        // Haversine formula
+//        double dLat = lat2 - lat1;
+//        double dLon = lon2 - lon1;
+//        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+//                Math.cos(lat1) * Math.cos(lat2) *
+//                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+//        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+//        double horizontalDistance = R * c;
+//
+//        // Total baseline distance (Euclidean)
+//        return Math.sqrt(horizontalDistance * horizontalDistance + Math.pow((alt2 - alt1), 2));
     }
 
     private Point[] selectBestLine(Point[][] pointArr, Mat imgToProcess) {
