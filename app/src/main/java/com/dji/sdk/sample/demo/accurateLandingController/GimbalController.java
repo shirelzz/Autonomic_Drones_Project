@@ -8,8 +8,8 @@ import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import dji.common.error.DJIError;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
@@ -18,7 +18,6 @@ import dji.common.gimbal.CapabilityKey;
 import dji.common.gimbal.GimbalMode;
 import dji.common.gimbal.Rotation;
 import dji.common.gimbal.RotationMode;
-import dji.common.util.CommonCallbacks;
 import dji.common.util.DJIParamCapability;
 import dji.common.util.DJIParamMinMaxCapability;
 import dji.sdk.base.BaseProduct;
@@ -29,6 +28,7 @@ import dji.sdk.sdkmanager.DJISDKManager;
 
 public class GimbalController implements gimbelListener {
     FlightController flightController;
+    boolean finishRotate = false;
     private float gimbalValue = 0;
     private Controller controller;
     private Gimbal gimbal = null;
@@ -123,7 +123,7 @@ public class GimbalController implements gimbelListener {
 
 
     public void rotateGimbalToDegree(float degree) {
-
+        finishRotate = false;
         if (gimbal == null) {
             return;
         }
@@ -147,12 +147,33 @@ public class GimbalController implements gimbelListener {
 
         float finalDegree = degree;
         gimbal.rotate(pitchBuilder.build(), djiError -> {
+            finishRotate = true;
             if (djiError != null) {
                 ToastUtils.setResultToToast("Gimbal rotation error: " + djiError.getDescription());
             } else {
                 ToastUtils.setResultToToast("Gimbal rotated successfully to degree: " + finalDegree);
             }
         });
+    }
+
+    public boolean isFinishRotate() {
+        return finishRotate;
+    }
+
+    public boolean isGimbalPitchVal() {
+       AtomicBoolean rotateCorrect = new AtomicBoolean(false);
+        gimbal.setStateCallback(gimbalState -> {
+            float pitch = gimbalState.getAttitudeInDegrees().getPitch();
+            if(pitch==-45f){
+                rotateCorrect.set(true);
+            }
+            rotateCorrect.set(false);
+        });
+        return rotateCorrect.get();
+    }
+
+    public float getPrevDegree() {
+        return prevDegree;
     }
 
     public void updateGimbel(float gimbalValue) {

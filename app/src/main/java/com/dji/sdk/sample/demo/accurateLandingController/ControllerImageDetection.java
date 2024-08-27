@@ -79,6 +79,8 @@ public class ControllerImageDetection {
     private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I); //vertical up and down motion
     private Context context;
     private int frameHeight, frameWidth;
+    private GimbalController gimbalController;
+
 
     private float lastP = 0, lastR = 0; // previous error
 
@@ -91,6 +93,7 @@ public class ControllerImageDetection {
     //    private RecordingVideo recordingVideo = null;
     //constructor
     public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context, ImageView imageView
+            , GimbalController gimbalController
 //            , RecordingVideo recordingVideo
     ) {
         this.context = context;
@@ -99,6 +102,7 @@ public class ControllerImageDetection {
         this.flightControlMethods = flightControlMethods;
         this.depthMap = new DepthMap();
 //        this.recordingVideo = recordingVideo;
+        this.gimbalController = gimbalController;
         this.imageView = imageView;  // Initialize the ImageView
 
         //Do we need it
@@ -119,13 +123,13 @@ public class ControllerImageDetection {
 //        centerTracker = new CenterTracker();
     }
 
-    private void updateLog(ControlCommand control, Point[][] edges, Point[] chosenEdge, double dy) {
+    private void updateLog(ControlCommand control, int numEdges, Point[] chosenEdge, double dy) {
 
 //        saw_target, edgeX,edgeY,edgeDist,PitchOutput,RollOutput,ErrorX,ErrorY,P,I,D,MaxI
 
 //        controlStatus.put("saw_target",(double)(imageCoordinates.saw_target()? 1 : 0));
-        controlStatus.put("saw_target", (double) edges.length);
-        if (edges.length > 0) {
+        controlStatus.put("saw_target", (double) numEdges);
+        if (numEdges > 0) {
             controlStatus.put("edgeX", (chosenEdge[0].x + chosenEdge[1].x) / 2.0);
             controlStatus.put("edgeY", (chosenEdge[0].y + chosenEdge[1].y) / 2.0);
             controlStatus.put("edgeDist", dy);
@@ -153,8 +157,8 @@ public class ControllerImageDetection {
 
         controlStatus.put("Throttle", (double) control.getVerticalThrottle());
 
-        boolean autonomous_mode = DJISampleApplication.getAircraftInstance().getFlightController().isVirtualStickControlModeAvailable();
-        controlStatus.put("autonomous_mode", (double) (autonomous_mode ? 1 : 0));
+        boolean autonomous_mode = Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().isVirtualStickControlModeAvailable();
+        controlStatus.put("AutonomousMode", (double) (autonomous_mode ? 1 : 0));
 
     }
 
@@ -288,6 +292,9 @@ public class ControllerImageDetection {
     }
 
     public void stopEdgeDetection() {
+        ControlCommand stay = stayOnPlace();
+        flightControlMethods.sendVirtualStickCommands(stay, 0.0f);
+
         setEdgeDetectionMode(false);
         first_detect = true;
     }
@@ -334,26 +341,55 @@ public class ControllerImageDetection {
         this.edgeDetectionMode = edgeDetectionMode;
     }
 
+    private ControlCommand stayOnPlace() {
+        //  מאפס את כל הערכים לאפס - מתייצב
+        roll_pid.reset();
+        pitch_pid.reset();
+        t = 0;
+        r = 0;
+        p = 0;
+//        y = 0;
+//        need to set another gp
+//        set first gimbal angle
+//        gp = (float) gimbelValue;
+        ControlCommand ans = new ControlCommand(p, r, t);
+        ans.setErr(1000, 0, 0, 0);
+        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+        ans.setImageDistance(-1);
+
+        return ans;
+    }
+
     public ControlCommand detectLending(Mat imgToProcess, double droneHeight) throws Exception {
 
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
         prevTime = currTime;
-
-        // Initialize variables for edge detection and pitch/roll adjustment
-        Point[][] pointArr = EdgeDetection.detectLines(imgToProcess);
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
 
-        if (pointArr.length > 0) {
+        if ((isUltrasonicBeingUsed && droneRelativeHeight <= 0.2) || droneHeight <= 0.2) {
+            showToast("Land!!!!");
+            ControlCommand ans = new ControlCommand(0, 0, -3);
+            ans.setErr(1000, error_x, error_y, dataFromDrone.getAltitudeBelow());
+            ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+            return ans;
+
+        }
+        // Initialize variables for edge detection and pitch/roll adjustment
+        List<Object[]> pointArr = EdgeDetection.detectLines(imgToProcess);
+
+        if (pointArr.size() > 0) {
             first_detect = false;
             not_found = 0;
         } else if (!first_detect) {
+            ControlCommand stay = stayOnPlace();
+            flightControlMethods.sendVirtualStickCommands(stay, 0.0f);
             not_found++;
             if (not_found > 5) {
-                if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.4) {
-                    showToast("Land!!!!");
-                    return flightControlMethods.land();
+                if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
+                    showToast("Land2!!!!");
+//                    return flightControlMethods.land();
                 } else {
                     throw new Exception("Error in detection mode, edge disappear");
                 }
@@ -368,9 +404,9 @@ public class ControllerImageDetection {
         if (bestLine != null) {
             Imgproc.line(imgToProcess, bestLine[0], bestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
             double dyRealPitch = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight);
-            showToast("dyRealPitch:  " + dyRealPitch);
+//            showToast("dyRealPitch:  " + dyRealPitch);
             ControlCommand command = buildControlCommand(dyRealPitch, dt, imgToProcess);
-            updateLog(command, pointArr, bestLine, dyRealPitch);
+            updateLog(command, pointArr.size(), bestLine, dyRealPitch);
 
             return command;
 
@@ -381,23 +417,31 @@ public class ControllerImageDetection {
 //        return buildControlCommand(dyReal, dt);
     }
 
-    private Point[] selectBestLine(Point[][] pointArr, Mat imgToProcess) {
+    private Point[] selectBestLine(List<Object[]> pointArr, Mat imgToProcess) {
         Point[] bestHorizontalLine = null;
         Point[] bestLine = null;
         double dy_best_horizontal = Double.MAX_VALUE;
         double dy_best = Double.MAX_VALUE;
 
-        for (Point[] point : pointArr) {
+        Log.i("EdgeDetection", "" + pointArr.size());
+        for (Object[] entry : pointArr) {
+            Point[] point = (Point[]) entry[0];
+
             if (point != null && point[0] != null && point[1] != null) {
-                double angle = Math.atan2(point[1].y - point[0].y, point[1].x - point[0].x);
-                double slope = Math.tan(Math.abs(angle));
+
+                // Access the horizontal flag (cast to Boolean)
+                boolean isHorizontal = (Boolean) entry[1];
 
                 double c_y = (point[0].y + point[1].y) / 2.0;
                 double dy = imgToProcess.height() / 2.0 - c_y;
+//                Imgproc.putText(imgToProcess, String.valueOf(slope), new Point((point[0].x + point[1].x) / 2.0 - 20, (point[0].y + point[1].y) / 2.0 - 20) , 5, 1, new Scalar(255, 255, 0));
 
-                if (slope <= Math.PI / 32 && Math.abs(dy) < dy_best_horizontal) {
-                    bestHorizontalLine = point;
-                    dy_best_horizontal = Math.abs(dy);
+//                Log.d("EdgeDetection", Arrays.toString(point) + " : " + slope);
+                if (isHorizontal) {
+                    if (Math.abs(dy) < dy_best_horizontal) {
+                        bestHorizontalLine = point;
+                        dy_best_horizontal = Math.abs(dy);
+                    }
                 } else if (Math.abs(dy) < dy_best) {
                     bestLine = point;
                     dy_best = Math.abs(dy);
@@ -424,17 +468,31 @@ public class ControllerImageDetection {
 
     private ControlCommand buildControlCommand(double dyReal, double dt, Mat imgToProcess) {
         double maxSpeed = 2.0;
-        double Kp = 0.01;  // Proportional gain, adjust as needed
+        double Kp = 0.02;  // Proportional gain, adjust as needed - 0.01
         error_y = dyReal * Kp;
 
-        if (Math.abs(error_y) < 0.0001) {
-            t = -0.2f;
-            p = 0f;
-//            p = 0.2f;
+
+        if (0 <= error_y && error_y <= 0.001) {
+//            if (gimbalController.getPrevDegree() == -90) {
+//                return flightControlMethods.land();
+//            }
+            showToast("Landing!!");
+//            float gd = gimbalController.getPrevDegree() - 10;
+//            gd = gd < -90 ? -90 : gd;
+//            gimbalController.rotateGimbalToDegree(gd);
+
+            t = -0.05f;
+            error_y = 0.05f;
+
+//////            p = 0f;
+//            return stayOnPlace();
+
+        } else {
+            t = 0;
         }
         p = (float) pitch_pid.update(error_y, dt, maxSpeed);
         r = (float) roll_pid.update(0, dt, maxSpeed);
-
+        t = (float) throttle_pid.update(t, dt, maxSpeed);
         Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
         showToast("p: " + p);
 
@@ -485,9 +543,10 @@ public class ControllerImageDetection {
 
                         byte[] previousImageBytes = matToBytes(previous_image);
                         byte[] currentImageBytes = matToBytes(current_image);
+                        double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
 
                         // Call Python function with the byte arrays
-                        PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes));
+                        PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude);
                         List<Object> javaList = new ArrayList<>();
                         try {
                             PyObject imageBytesObj = result.asList().get(0);

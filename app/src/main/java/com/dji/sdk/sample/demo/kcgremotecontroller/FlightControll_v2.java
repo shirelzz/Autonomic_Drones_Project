@@ -382,158 +382,158 @@ public class FlightControll_v2 implements gimbelListener{
 
     }
 
-    public ControllCommand doKalman(ArrayList<ArucoMarker> arucos,float aircraftHeight) {
-
-
-        float usAircraftHeight = aircraftHeight;
-
-        long currTime = System.currentTimeMillis();
-        double dt = (currTime-prevTime) / 1000.0;
-        prevTime = currTime;
-
-        predictedPoints_10 = predictKF(dt,kf_array_id_10,predictedPoints_10);
-        predictedPoints_20 = predictKF(dt,kf_array_id_20,predictedPoints_20);
-
-        Mat ncMat = kf_array_id_10[0].getErrorCovPost();
-        Mat ncMat2 = kf_array_id_20[0].getErrorCovPost();
-
-        final double id_10_confidence = Core.norm(ncMat);
-        final double id_20_confidence = Core.norm(ncMat2);
-
-        double min_confidence = id_10_confidence;
-
-        Mat[] points_array_to_use = predictedPoints_10;
-//        float size = 0.6f;
-//        if(id_20_confidence < id_10_confidence || id_20_confidence < 5) {
-//            points_array_to_use = predictedPoints_20;
-//            min_confidence = id_20_confidence;
-//            size = 0.1f;
+//    public ControllCommand doKalman(ArrayList<ArucoMarker> arucos,float aircraftHeight) {
+//
+//
+//        float usAircraftHeight = aircraftHeight;
+//
+//        long currTime = System.currentTimeMillis();
+//        double dt = (currTime-prevTime) / 1000.0;
+//        prevTime = currTime;
+//
+//        predictedPoints_10 = predictKF(dt,kf_array_id_10,predictedPoints_10);
+//        predictedPoints_20 = predictKF(dt,kf_array_id_20,predictedPoints_20);
+//
+//        Mat ncMat = kf_array_id_10[0].getErrorCovPost();
+//        Mat ncMat2 = kf_array_id_20[0].getErrorCovPost();
+//
+//        final double id_10_confidence = Core.norm(ncMat);
+//        final double id_20_confidence = Core.norm(ncMat2);
+//
+//        double min_confidence = id_10_confidence;
+//
+//        Mat[] points_array_to_use = predictedPoints_10;
+////        float size = 0.6f;
+////        if(id_20_confidence < id_10_confidence || id_20_confidence < 5) {
+////            points_array_to_use = predictedPoints_20;
+////            min_confidence = id_20_confidence;
+////            size = 0.1f;
+////        }
+//
+//
+//
+//
+////        if(aircraftHeight > 4) aircraftHeight = 4;
+////        final Mat central_point = calcCentralPoint(points_array_to_use,aircraftHeight);
+////        double imageDistance = approximateDistance(points_array_to_use,central_point,size);
+//
+//        float gimbalDegree = calcGimbalDegree(arucos.get(0).approximateDistance());
+//
+//        //final Mat target_vector = ImageCoordinates.invIntrinsicMatrix.mul(central_point.t());
+//
+//        final Mat a = ImageCoordinates.invIntrinsicMatrix;
+////        final Mat b = central_point;
+//
+//
+////        Core.gemm(a,b,1,new Mat(),0,temp_mat);
+//
+//        // שגיאה של המטרה ביחס למרכז
+//        double x_error = temp_mat.get(0,0)[0];
+//        double y_error = -temp_mat.get(1,0)[0];
+////        double z_error = temp_mat.get(2,0)[0];
+//
+//
+//        //------ up to here, done with image proessing ?? -------
+//
+//
+//        //Pitch and roll are swapped : https://developer.dji.com/mobile-sdk/documentation/introduction/component-guide-flightController.html#virtual-sticks
+////        float p = (float) roll_pid.update(x_error,dt,5.0);
+////        float r = (float) pitch_pid.update(y_error,dt,5.0);
+///**
+// * The aircraftHeight paramter is bounded to [0.5,4] meter as it is used for max velocity.
+// * This is a BUG as even in low height the drone still needs to flow a moving targt.
+// *
+// * */
+//        //  if(aircraftHeight > 4) {aircraftHeight = 4;}
+//        // if(aircraftHeight < ) {aircraftHeight = 1;}
+//        //  double NNN = 1.0;
+//        //  double min_speed = 2, max_Speed=4;
+//        double maxSpeed = 2;//aircraftHeight;
+//        if(aircraftHeight<2 && aircraftHeight>0.3) {
+//            double ah = Math.max(0.5,aircraftHeight);
+//            double NN = 1;
+//            // Do proportional to the error
+//            if(min_confidence<10) {NN = 2/ah;} //If your
+//            x_error *= NN;
+//            y_error *= NN;
 //        }
-
-
-
-
-//        if(aircraftHeight > 4) aircraftHeight = 4;
-//        final Mat central_point = calcCentralPoint(points_array_to_use,aircraftHeight);
-//        double imageDistance = approximateDistance(points_array_to_use,central_point,size);
-
-        float gimbalDegree = calcGimbalDegree(arucos.get(0).approximateDistance());
-
-        //final Mat target_vector = ImageCoordinates.invIntrinsicMatrix.mul(central_point.t());
-
-        final Mat a = ImageCoordinates.invIntrinsicMatrix;
-//        final Mat b = central_point;
-
-
-//        Core.gemm(a,b,1,new Mat(),0,temp_mat);
-
-        // שגיאה של המטרה ביחס למרכז
-        double x_error = temp_mat.get(0,0)[0];
-        double y_error = -temp_mat.get(1,0)[0];
-//        double z_error = temp_mat.get(2,0)[0];
-
-
-        //------ up to here, done with image proessing ?? -------
-
-
-        //Pitch and roll are swapped : https://developer.dji.com/mobile-sdk/documentation/introduction/component-guide-flightController.html#virtual-sticks
-//        float p = (float) roll_pid.update(x_error,dt,5.0);
-//        float r = (float) pitch_pid.update(y_error,dt,5.0);
-/**
- * The aircraftHeight paramter is bounded to [0.5,4] meter as it is used for max velocity.
- * This is a BUG as even in low height the drone still needs to flow a moving targt.
- *
- * */
-        //  if(aircraftHeight > 4) {aircraftHeight = 4;}
-        // if(aircraftHeight < ) {aircraftHeight = 1;}
-        //  double NNN = 1.0;
-        //  double min_speed = 2, max_Speed=4;
-        double maxSpeed = 2;//aircraftHeight;
-        if(aircraftHeight<2 && aircraftHeight>0.3) {
-            double ah = Math.max(0.5,aircraftHeight);
-            double NN = 1;
-            // Do proportional to the error
-            if(min_confidence<10) {NN = 2/ah;} //If your
-            x_error *= NN;
-            y_error *= NN;
-        }
-        // if(maxSpeed>max_Speed) {maxSpeed = max_Speed;}
-        // if(maxSpeed<min_speed) {maxSpeed = min_speed;}
-        float p = (float) roll_pid.update(x_error,dt,maxSpeed);
-        float r = (float) pitch_pid.update(y_error,dt,maxSpeed);
-        float t = descentRate;//droneAlt;//
-        float gp = gimbalDegree;
-
-//        float y = droneTelemetry.get("yaw").floatValue();
-//        float y = drone.getYaw();
-        // (float) throttle_pid.update(z_error,dt);
-
-// todo Please log the following:pitch, roll, P,I,D, lat, lon, SOG, CoG, target pixel.
-
-
-        if((min_confidence > 1000 && aircraftHeight > 2) ){
-            roll_pid.reset();
-            pitch_pid.reset();
-            t = aircraftHeight;  // is it 5 meter?? if so sould be ~8
-            r = 0;
-            p = 0;
-            //gp = -90;
-
-            ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.POSITION,gp);
-            ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
-            ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
-//            ans.setImageDistance(imageDistance);
-
-            // todo Should change mode for "Stop" (not "autonomuse")
-            return ans;
-        }
-        if((min_confidence > 1000 && aircraftHeight <=2 && aircraftHeight > 0.3) ){
-            roll_pid.reset();
-            pitch_pid.reset();
-            t = aircraftHeight;
-            r = 0;
-            p = 0;
-//            y = 0;
-            //gp = -30;
-            ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.POSITION,gp);
-            ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
-            ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
-//            ans.setImageDistance(imageDistance);
-
-            return ans;
-        }
-
-        if (min_confidence > 5 && aircraftHeight <= 0.3){
-            t = -3;
-            r = lastR;
-            p = lastP;
-            //gp = 5;
-
-            ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY,gp);
-            ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
-            ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
-//            ans.setImageDistance(imageDistance);
-            return ans;
-
-        }
-        float PP = 0.01f;
-        if(lastP==0 && lastR == 0) {
-            lastP = p;
-            lastR = r;
-        }
-        else {
-            lastP = p*PP +lastP*(1-PP);
-            lastR = r*PP +lastR*(1-PP);
-
-        }
-        //     ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY);
-        ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY,gp);
-        ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
-        ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
-//        ans.setImageDistance(imageDistance);
-        // Boaz 20.2
-        return ans;
-    }
+//        // if(maxSpeed>max_Speed) {maxSpeed = max_Speed;}
+//        // if(maxSpeed<min_speed) {maxSpeed = min_speed;}
+//        float p = (float) roll_pid.update(x_error,dt,maxSpeed);
+//        float r = (float) pitch_pid.update(y_error,dt,maxSpeed);
+//        float t = descentRate;//droneAlt;//
+//        float gp = gimbalDegree;
+//
+////        float y = droneTelemetry.get("yaw").floatValue();
+////        float y = drone.getYaw();
+//        // (float) throttle_pid.update(z_error,dt);
+//
+//// todo Please log the following:pitch, roll, P,I,D, lat, lon, SOG, CoG, target pixel.
+//
+//
+//        if((min_confidence > 1000 && aircraftHeight > 2) ){
+//            roll_pid.reset();
+//            pitch_pid.reset();
+//            t = aircraftHeight;  // is it 5 meter?? if so sould be ~8
+//            r = 0;
+//            p = 0;
+//            //gp = -90;
+//
+//            ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.POSITION,gp);
+//            ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
+//            ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
+////            ans.setImageDistance(imageDistance);
+//
+//            // todo Should change mode for "Stop" (not "autonomuse")
+//            return ans;
+//        }
+//        if((min_confidence > 1000 && aircraftHeight <=2 && aircraftHeight > 0.3) ){
+//            roll_pid.reset();
+//            pitch_pid.reset();
+//            t = aircraftHeight;
+//            r = 0;
+//            p = 0;
+////            y = 0;
+//            //gp = -30;
+//            ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.POSITION,gp);
+//            ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
+//            ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
+////            ans.setImageDistance(imageDistance);
+//
+//            return ans;
+//        }
+//
+//        if (min_confidence > 5 && aircraftHeight <= 0.3){
+//            t = -3;
+//            r = lastR;
+//            p = lastP;
+//            //gp = 5;
+//
+//            ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY,gp);
+//            ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
+//            ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
+////            ans.setImageDistance(imageDistance);
+//            return ans;
+//
+//        }
+//        float PP = 0.01f;
+//        if(lastP==0 && lastR == 0) {
+//            lastP = p;
+//            lastR = r;
+//        }
+//        else {
+//            lastP = p*PP +lastP*(1-PP);
+//            lastR = r*PP +lastR*(1-PP);
+//
+//        }
+//        //     ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY);
+//        ControllCommand ans = new ControllCommand(p,r,t,VerticalControlMode.VELOCITY,gp);
+//        ans.setErr(min_confidence,x_error,y_error,usAircraftHeight);
+//        ans.setPID(throttle_pid.getP(),throttle_pid.getI(),throttle_pid.getD(),pitch_pid.getP(),pitch_pid.getI(),pitch_pid.getD(),roll_pid.getP(),roll_pid.getI(),roll_pid.getD(),roll_pid.getMax_i());
+////        ans.setImageDistance(imageDistance);
+//        // Boaz 20.2
+//        return ans;
+//    }
 
     private Mat[] predictKF(double dt, MyKalmanFilter[] kf_array, Mat[] predictedPoints){
 

@@ -1,6 +1,7 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.setResultToToast;
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 import android.util.Log;
 
@@ -8,6 +9,8 @@ import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.Objects;
+
+import dji.common.flightcontroller.FlightControllerState;
 
 import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
@@ -30,10 +33,6 @@ public class FlightControlMethods {
     protected final float throttleJoyControlMaxSpeed = 4;
     private final FlightController flightController;
     Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
-    private float pitch;
-    private float roll;
-    private float yaw;
-    private float throttle;
     private float descentRate = 0;
     private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); //
     private VLD_PID pitch_pid = new VLD_PID(PP, II, DD, MAX_I);
@@ -51,6 +50,7 @@ public class FlightControlMethods {
     public FlightControlMethods() {
         flightController = getFlightControllerFromAircraft();
         configureFlightController();
+
     }
 
     /**
@@ -107,6 +107,20 @@ public class FlightControlMethods {
          */
 //        flightController.setVerticalControlMode(VerticalControlMode.POSITION);
         flightController.setVerticalControlMode(VerticalControlMode.VELOCITY); // Asaf
+
+
+//        FlightController flightController = Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController();
+//        Objects.requireNonNull(flightController.getFlightAssistant()).setLandingProtectionEnabled(false, djiError -> {
+//
+//        });
+//
+//        flightController.getFlightAssistant().setActiveObstacleAvoidanceEnabled(false, djiError -> {
+//
+//        });
+//
+//        flightController.getFlightAssistant().setCollisionAvoidanceEnabled(false, djiError -> {
+//
+//        });
 
     }
 
@@ -298,6 +312,22 @@ public class FlightControlMethods {
                 flightControlData.setVerticalThrottle(command.getVerticalThrottle());
                 Log.i("command:  ", flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
 
+//                if (command.getControllMode() == VerticalControlMode.VELOCITY) {
+//                if(confirmLand )
+//                    flightController.confirmLanding(djiError -> {
+//                        showToast("hey");
+//                        String finalText = "";
+//
+//                        if (djiError != null) {
+////            showToast(""+djiError);
+////            err+=djiError;
+////            ep=p;er=r;et=t;
+//
+//                            finalText += "djiErr: " + djiError;
+//                            showToast(djiError.getDescription());
+//                        }
+//                    });
+//                }
                 flightController.sendVirtualStickFlightControlData(flightControlData, djiError -> {
                             ToastUtils.showToast("VS:" + flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
 //                            if (command.getControllMode() == VerticalControlMode.VELOCITY) {

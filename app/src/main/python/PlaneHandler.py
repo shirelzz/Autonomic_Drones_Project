@@ -6,7 +6,9 @@ from DepthMap import DepthMap
 import torch
 import base64
 
-from ConvertPLY2PNG import find_fixed_size_white_areas, remove_overlapping_areas, plot_white_areas_plane, plot_white_areas, calculate_movement_to_landing_spot
+from ConvertPLY2PNG import find_fixed_size_white_areas, remove_overlapping_areas, plot_white_areas_plane, \
+    calculate_movement_to_landing_spot, find_white_areas, plot_white_areas
+from photogrammetry import get_window
 
 
 def initialize_pipeline(imgLeft_bytes, imgRight_bytes):
@@ -39,7 +41,7 @@ def process_point_cloud(points):
     return detected_planes_tensor
 
 
-def visualize_plane_as_bitmap(detected_planes_tensor):
+def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
     """Visualizes the first detected plane as a bitmap image."""
 
     combined_points = detected_planes_tensor.numpy().reshape(-1, 3)  # Convert tensor to numpy array and reshape
@@ -65,31 +67,41 @@ def visualize_plane_as_bitmap(detected_planes_tensor):
     # Mirror the image horizontally
     mirrored_img = cv.flip(rotated_img, 1)
 
+    # Calculate image size in meters
+    print("h:", mirrored_img.shape)
+    print("w:", w)
+    kernel = get_window(altitude, w, h)
     # Find white areas of size ?
-    white_areas = find_fixed_size_white_areas(mirrored_img, (15, 15))
-    white_areas = remove_overlapping_areas(white_areas, overlap_threshold=0.5)
-
+    # white_areas = find_fixed_size_white_areas(mirrored_img, kernel.shape)
+    # white_areas = remove_overlapping_areas(white_areas, overlap_threshold=0.5)
+    if kernel.shape[0] > kernel.shape[1]:
+        size = kernel.shape[0]
+    else:
+        size = kernel.shape[1]
+    white_area = find_white_areas(mirrored_img, size)
+    # white_area = find_white_areas(mirrored_img, kernel)
     dx, dy = 0, 0
     # Check if any white areas are found
-    if not white_areas:
+    if not white_area:
+        # if not white_areas:
         print("No white areas found.")
     else:
-        print(f"Found {len(white_areas)} white areas.")
+        print(f"Found {len(white_area)} white areas.")
+        # print(f"Found {len(white_areas)} white areas.")
 
         # for area in white_areas:
         #     print(f"Type of area: {type(area)}")  # This will help identify the actual type
         #     if isinstance(area, dict):
-
-        print(f"Area with bbox {white_areas['bbox']} and size {white_areas['area']} pixels.")
-        # else:
-        #     print(f"Unexpected type: {area}")
-        # print(f"Area with bbox {area['bbox']} ")
-        # print(f"and size {area['area']} pixels.")
+        #         print(f"Area with bbox {area['bbox']} and size {area['area']} pixels.")
+        #     else:
+        #         print(f"Unexpected type: {area}")
+        print(f"Area with bbox {white_area['bbox']} and size {white_area['area']} pixels.")
 
         # Plot the results with red borders
-        plot_white_areas_plane(mirrored_img, [white_areas])
+#         plot_white_areas(mirrored_img, [white_area]) // only one area
+        # plot_white_areas_plane(mirrored_img, [white_areas]) // multiple areas
 
-        dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas)
+        dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_area)
     # Encode the image to bitmap format
     is_success, img_encoded = cv.imencode('.bmp', mirrored_img)
 
@@ -101,7 +113,7 @@ def visualize_plane_as_bitmap(detected_planes_tensor):
         return None
 
 
-def start_detect(imgLeft, imgRight):
+def start_detect(imgLeft, imgRight, altitude):
     # Initialize depth map
     points, colors = initialize_pipeline(imgLeft, imgRight)
 
@@ -112,7 +124,7 @@ def start_detect(imgLeft, imgRight):
         return None
 
     # Visualize the first detected plane and return it as a bitmap
-    bitmap = visualize_plane_as_bitmap(detected_planes_tensor)
+    bitmap = visualize_plane_as_bitmap(detected_planes_tensor, altitude)
     # if bitmap:
     #
     #     # Decode the base64 string back to bytes
@@ -157,7 +169,9 @@ def start_detect(imgLeft, imgRight):
 #     # Convert the buffers to bytearray
 #     bytearray_left = bytearray(buffer_left)
 #     bytearray_right = bytearray(buffer_right)
-#     bitmapArr = start_detect(imgLeft=bytearray_left, imgRight=bytearray_right)
+#
+#     altitude = 1
+#     bitmapArr = start_detect(imgLeft=bytearray_left, imgRight=bytearray_right, altitude=altitude)
 #     bitmap = bitmapArr[0]
 #     movement = bitmapArr[1]
 #     print("dx (roll adjustment):", movement[0])

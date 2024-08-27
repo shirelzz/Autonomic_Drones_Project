@@ -8,7 +8,8 @@ def calculate_image_size_in_meters(altitude, image_width_px, image_height_px):
     focal_length = 4.44  # Field of View mm
     sensor_width_mm = 6.4  # Sensor width in millimeters (approximate for 1/2" CMOS sensor)
     sensor_height_mm = 4.8  # Sensor height in millimeters (approximate for 1/2" CMOS sensor)
-
+    print("image_height_px: ", image_height_px)
+    print("image_width_px: ", image_width_px)
     # Calculate the GSD
     height_m = altitude * sensor_height_mm * 100 / (focal_length * image_height_px)
     width_m = altitude * sensor_width_mm * 100 / (focal_length * image_width_px)

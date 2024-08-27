@@ -180,17 +180,27 @@ def find_fixed_size_white_areas(image_array, fixed_size):
     return white_areas
 
 
-# Function to find white areas in the PNG image
+"""
+    Finds the largest white square area in the image that is larger than the specified min_size.
+
+    Args:
+        image_array (numpy.ndarray): The binary image to search within.
+        min_size (int): The minimum width and height of the white square to be considered.
+
+    Returns:
+        dict: A dictionary containing the bounding box (bbox) and area of the largest white square.
+              Returns None if no such area is found.
+"""
+
+
 def find_white_areas(image_array, min_size):
-    min_size_area = min_size * min_size
 
     # Find connected components in the image
     labeled_image, num_labels = label(image_array == 255, connectivity=2, return_num=True)
 
-    target_size = min_size
-    white_areas = []
     best_landing_spot = None
     max_area = 0
+
     for region in regionprops(labeled_image):
         if len(region.bbox) == 4:
             minr, minc, maxr, maxc = region.bbox
@@ -199,7 +209,7 @@ def find_white_areas(image_array, min_size):
         else:
             continue  # Skip if the bounding box is not in the expected format
 
-            # Calculate the width and height of the region
+        # Calculate the width and height of the region
         width = maxc - minc
         height = maxr - minr
 
@@ -208,23 +218,24 @@ def find_white_areas(image_array, min_size):
             continue
 
         # Loop over the region and check for the largest all-white sub-region
-        for i in range(minr, maxr - min_size + 1):
-            for j in range(minc, maxc - min_size + 1):
-                # Extract the sub-image
-                sub_image = image_array[i:i + min_size, j:j + min_size]
+        for size in range(min(width, height), min_size - 1, -1):
+            for i in range(minr, maxr - size + 1):
+                for j in range(minc, maxc - size + 1):
+                    # Extract the sub-image
+                    sub_image = image_array[i:i + size, j:j + size]
 
-                # Check if all pixels in the sub-image are white
-                if np.all(sub_image == 255):
-                    # Calculate the area of the sub-image
-                    area = min_size * min_size
+                    # Check if all pixels in the sub-image are white
+                    if np.all(sub_image == 255):
+                        # Calculate the area of the sub-image
+                        area = size * size
 
-                    # Update the best landing spot if this area is larger
-                    if area > max_area:
-                        max_area = area
-                        best_landing_spot = {
-                            'bbox': (i, j, i + min_size, j + min_size),
-                            'area': area
-                        }
+                        # Update the best landing spot if this area is larger
+                        if area > max_area:
+                            max_area = area
+                            best_landing_spot = {
+                                'bbox': (i, j, i + size, j + size),
+                                'area': area
+                            }
 
     return best_landing_spot
 

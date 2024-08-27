@@ -101,53 +101,50 @@ public class DataFromDrone {
 
     private void initStateListeners() {
         if (ModuleVerificationUtil.isFlightControllerAvailable()) {
-            Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().setStateCallback(new FlightControllerState.Callback() {
-                @Override
-                public void onUpdate(FlightControllerState flightControllerState) {
+            Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().setStateCallback(flightControllerState -> {
 
-                    gpsSignalLevel = flightControllerState.getGPSSignalLevel();
-                    isUltrasonicBeingUsed = flightControllerState.isUltrasonicBeingUsed();
-                    if (isUltrasonicBeingUsed)
-                        altitudeBelow = flightControllerState.getUltrasonicHeightInMeters();
+                gpsSignalLevel = flightControllerState.getGPSSignalLevel();
+                isUltrasonicBeingUsed = flightControllerState.isUltrasonicBeingUsed();
+                if (isUltrasonicBeingUsed)
+                    altitudeBelow = flightControllerState.getUltrasonicHeightInMeters();
 
-                    // Retrieve drone's GPS location
-                    LocationCoordinate3D aircraftLocation = flightControllerState.getAircraftLocation();
+                // Retrieve drone's GPS location
+                LocationCoordinate3D aircraftLocation = flightControllerState.getAircraftLocation();
 
-                    //get drone location
-                    if (!Double.isNaN(aircraftLocation.getAltitude()))
-                        GPS.setAltitude(aircraftLocation.getAltitude());
-                    if (!Double.isNaN(aircraftLocation.getLatitude()))
-                        GPS.setLatitude(aircraftLocation.getLatitude());
-                    else {
-                        GPS.setLatitude(32.085114);
-                    }
-                    if (!Double.isNaN(aircraftLocation.getLongitude()))
-                        GPS.setLongitude(aircraftLocation.getLongitude());
-                    else {
-                        GPS.setLongitude(34.852653);
-                    }
+                //get drone location
+                if (!Double.isNaN(aircraftLocation.getAltitude()))
+                    GPS.setAltitude(aircraftLocation.getAltitude());
+                if (!Double.isNaN(aircraftLocation.getLatitude()))
+                    GPS.setLatitude(aircraftLocation.getLatitude());
+                else {
+                    GPS.setLatitude(32.085114);
+                }
+                if (!Double.isNaN(aircraftLocation.getLongitude()))
+                    GPS.setLongitude(aircraftLocation.getLongitude());
+                else {
+                    GPS.setLongitude(34.852653);
+                }
 //                    GPS[0] = aircraftLocation.getLatitude();
 //                    GPS[1] = aircraftLocation.getLongitude();
 //                    GPS[2] = aircraftLocation.getAltitude();
 //                    showToast(String.valueOf(aircraftLocation));
-                    headDirection = flightControllerState.getAircraftHeadDirection();
+                headDirection = flightControllerState.getAircraftHeadDirection();
 
-                    //get drone velocity
-                    velocity[0] = flightControllerState.getVelocityX();
-                    velocity[1] = flightControllerState.getVelocityY();
-                    velocity[2] = flightControllerState.getVelocityZ();
+                //get drone velocity
+                velocity[0] = flightControllerState.getVelocityX();
+                velocity[1] = flightControllerState.getVelocityY();
+                velocity[2] = flightControllerState.getVelocityZ();
 
-                    //get drone attitude
-                    yaw = flightControllerState.getAttitude().yaw;
-                    pitch = flightControllerState.getAttitude().pitch;
-                    roll = flightControllerState.getAttitude().roll;
+                //get drone attitude
+                yaw = flightControllerState.getAttitude().yaw;
+                pitch = flightControllerState.getAttitude().pitch;
+                roll = flightControllerState.getAttitude().roll;
 
-                    satelliteCount = flightControllerState.getSatelliteCount();
+                satelliteCount = flightControllerState.getSatelliteCount();
 
 
 //                    controller.addTelemetryLog(droneTelemetry);
 
-                }
             });
         }
 
