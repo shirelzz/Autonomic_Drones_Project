@@ -235,9 +235,10 @@ public class ALRemoteControllerView extends RelativeLayout
 
 //        if (!onGoToMode) {
 //            imgView.setVisibility(View.VISIBLE);
+        double[] currentPos = dataFromDrone.getCurrentPosition();
         droneIMG = mVideoSurface.getBitmap();
+        controllerImageDetection.setCurrentImage(droneIMG, currentPos);
         imgView.setImageBitmap(droneIMG);
-        controllerImageDetection.setCurrentImage(droneIMG);
 
         if (videoNotStarted) {
             controllerImageDetection.startDepthMapVideo();

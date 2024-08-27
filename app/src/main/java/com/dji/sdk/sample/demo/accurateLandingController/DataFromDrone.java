@@ -18,6 +18,9 @@ import dji.common.flightcontroller.adsb.AirSenseSystemInformation;
 import dji.common.gimbal.GimbalState;
 import dji.sdk.airlink.AirLink;
 import dji.sdk.base.BaseComponent;
+import dji.sdk.base.BaseProduct;
+import dji.sdk.flightcontroller.FlightController;
+import dji.sdk.products.Aircraft;
 import dji.sdk.sdkmanager.DJISDKManager;
 
 public class DataFromDrone {
@@ -37,9 +40,11 @@ public class DataFromDrone {
     private int satelliteCount = 0;
     private GPSSignalLevel gpsSignalLevel;
     private int signalQuality = 0;
+    private FlightController flightController;
 
     public DataFromDrone() {
         initStateListeners();
+        initFlightController();
     }
 
     public GPSLocation getGPS() {
@@ -98,6 +103,13 @@ public class DataFromDrone {
         return isUltrasonicBeingUsed;
     }
 
+    // Initialize the flight controller
+    private void initFlightController() {
+        BaseProduct product = DJISDKManager.getInstance().getProduct();
+        if (product != null && product instanceof Aircraft) {
+            flightController = ((Aircraft) product).getFlightController();
+        }
+    }
 
     private void initStateListeners() {
         if (ModuleVerificationUtil.isFlightControllerAvailable()) {
@@ -196,6 +208,14 @@ public class DataFromDrone {
                 }
             }
         };
+    }
+
+    public double[] getCurrentPosition() {
+        if (flightController != null) {
+            LocationCoordinate3D location = flightController.getState().getAircraftLocation();
+            return new double[]{location.getLatitude(), location.getLongitude(), location.getAltitude()};
+        }
+        return null;
     }
 
     public Map<String, Double> getAll() {
