@@ -11,9 +11,9 @@ from ConvertPLY2PNG import find_fixed_size_white_areas, remove_overlapping_areas
 from photogrammetry import get_window
 
 
-def initialize_pipeline(imgLeft_bytes, imgRight_bytes):
+def initialize_pipeline(imgLeft_bytes, imgRight_bytes, baseLine):
     """Initializes the depth map with the given image bytes."""
-    points, colors = DepthMap(imgLeft_bytes=imgLeft_bytes, imgRight_bytes=imgRight_bytes)
+    points, colors = DepthMap(imgLeft_bytes=imgLeft_bytes, imgRight_bytes=imgRight_bytes, baseLine=baseLine)
     return points, colors
 
 
@@ -30,6 +30,7 @@ def process_point_cloud(points):
     detected_planes = plane_detector.detect_planes(points)
 
     if detected_planes is None:
+        print("not exist!")
         return None
 
     # Concatenate along a specific axis (e.g., axis=0)
@@ -98,8 +99,8 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
         print(f"Area with bbox {white_area['bbox']} and size {white_area['area']} pixels.")
 
         # Plot the results with red borders
-#         plot_white_areas(mirrored_img, [white_area]) // only one area
-        # plot_white_areas_plane(mirrored_img, [white_areas]) // multiple areas
+        # plot_white_areas(mirrored_img, [white_area])  # only one area
+        # plot_white_areas_plane(mirrored_img, [white_areas])  # multiple areas
 
         dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_area)
     # Encode the image to bitmap format
@@ -113,15 +114,18 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
         return None
 
 
-def start_detect(imgLeft, imgRight, altitude):
+def start_detect(imgLeft, imgRight, altitude, baseLine):
     # Initialize depth map
-    points, colors = initialize_pipeline(imgLeft, imgRight)
+    points, colors = initialize_pipeline(imgLeft, imgRight, baseLine)
 
     # Process the point cloud
     detected_planes_tensor = process_point_cloud(points)
 
     if detected_planes_tensor is None:
-        return None
+        return -2
+
+    if altitude == 0 or not altitude:
+       altitude = 1
 
     # Visualize the first detected plane and return it as a bitmap
     bitmap = visualize_plane_as_bitmap(detected_planes_tensor, altitude)
@@ -170,8 +174,9 @@ def start_detect(imgLeft, imgRight, altitude):
 #     bytearray_left = bytearray(buffer_left)
 #     bytearray_right = bytearray(buffer_right)
 #
+#     baseLine = 1
 #     altitude = 1
-#     bitmapArr = start_detect(imgLeft=bytearray_left, imgRight=bytearray_right, altitude=altitude)
+#     bitmapArr = start_detect(imgLeft=bytearray_left, imgRight=bytearray_right, altitude=altitude, baseLine=baseLine)
 #     bitmap = bitmapArr[0]
 #     movement = bitmapArr[1]
 #     print("dx (roll adjustment):", movement[0])

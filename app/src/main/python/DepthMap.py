@@ -2,12 +2,16 @@ import numpy as np
 import cv2 as cv
 
 
-def generate_point_cloud(disparity, imgLeft, imgRight):
+def generate_point_cloud(disparity, imgLeft, imgRight, baseLine):
     # Assuming camera parameters (you should replace these with your actual calibration data)
     h, w = imgLeft.shape
-    focal_length = 0.8 * w  # Example value
-    baseline = 0.54  # Example value in meters
+    focal_length = 4.44 * w  # Example value
 
+    baseline = 0.54  # Example value in meters
+    if baseLine != 0.0:
+        baseline = baseLine
+    print("baseLine", baseline)
+    print("disparity:  ", disparity)
     # Reprojection matrix Q
     Q = np.float32([[1, 0, 0, -0.5 * w],
                     [0, -1, 0, 0.5 * h],
@@ -16,6 +20,7 @@ def generate_point_cloud(disparity, imgLeft, imgRight):
 
     # Reproject disparity to 3D
     points_3D = cv.reprojectImageTo3D(disparity, Q)
+    print(points_3D)
     colors = cv.cvtColor(imgLeft, cv.COLOR_GRAY2RGB)  # Assume left image for colors
 
     # Mask to filter out points with no disparity
@@ -47,7 +52,7 @@ def compute_depth_map_sgbm(imgLeft, imgRight):
     return disparity
 
 
-def DepthMap(imgLeft_bytes, imgRight_bytes):
+def DepthMap(imgLeft_bytes, imgRight_bytes, baseLine):
     # Convert bytes to numpy arrays
     imgLeft_np = np.frombuffer(imgLeft_bytes, np.uint8)
     imgRight_np = np.frombuffer(imgRight_bytes, np.uint8)
@@ -67,5 +72,5 @@ def DepthMap(imgLeft_bytes, imgRight_bytes):
     disparity = compute_depth_map_sgbm(imgLeft, imgRight)
 
     # Generate and visualize the point cloud
-    points, colors = generate_point_cloud(disparity, imgLeft, imgRight)
+    points, colors = generate_point_cloud(disparity, imgLeft, imgRight, baseLine)
     return points, colors

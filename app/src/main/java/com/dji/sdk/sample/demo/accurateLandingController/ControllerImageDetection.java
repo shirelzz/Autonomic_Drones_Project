@@ -55,7 +55,6 @@ public class ControllerImageDetection {
     private PyObject depthMapClass;
     private PyObject getOutputFunc;
     private int frameCounter = 0;
-    private DepthMap depthMap;
     private Map<String, Double> controlStatus = new HashMap<>();
 
     //    private final ALRemoteControllerView mainView;
@@ -75,7 +74,6 @@ public class ControllerImageDetection {
     private ExecutorService executorService = Executors.newFixedThreadPool(2);
     private boolean check_depth;
     private FlightControlMethods flightControlMethods;
-    private ObjectTracking objectTracking;
     private float descentRate = 0;
 
     private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); // side-to-side tilt of the drone
@@ -105,7 +103,7 @@ public class ControllerImageDetection {
 //        this.mainView = mainView;
         this.dataFromDrone = dataFromDrone;
         this.flightControlMethods = flightControlMethods;
-        this.depthMap = new DepthMap();
+
 //        this.recordingVideo = recordingVideo;
         this.gimbalController = gimbalController;
         this.imageView = imageView;  // Initialize the ImageView
@@ -399,7 +397,7 @@ public class ControllerImageDetection {
             if (not_found > 5) {
                 if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
                     showToast("Land2!!!!");
-//                    return flightControlMethods.land();
+                    return flightControlMethods.land();
                 } else {
                     throw new Exception("Error in detection mode, edge disappear");
                 }
@@ -414,7 +412,6 @@ public class ControllerImageDetection {
         if (bestLine != null) {
             Imgproc.line(imgToProcess, bestLine[0], bestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
             double dyRealPitch = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight);
-//            showToast("dyRealPitch:  " + dyRealPitch);
             ControlCommand command = buildControlCommand(dyRealPitch, dt, imgToProcess);
             updateLog(command, pointArr.size(), bestLine, dyRealPitch);
 
@@ -423,8 +420,6 @@ public class ControllerImageDetection {
         } else {
             return null; // No line detected or valid
         }
-
-//        return buildControlCommand(dyReal, dt);
     }
 
     // Function to calculate the Euclidean distance (baseline)
@@ -596,9 +591,9 @@ public class ControllerImageDetection {
                         byte[] previousImageBytes = matToBytes(previous_image);
                         byte[] currentImageBytes = matToBytes(current_image);
                         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
-
+                        double baseLine = calculateBaseline(previous_image_pos, current_image_pos);
                         // Call Python function with the byte arrays
-                        PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude);
+                        PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
                         List<Object> javaList = new ArrayList<>();
                         try {
                             PyObject imageBytesObj = result.asList().get(0);

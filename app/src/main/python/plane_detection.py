@@ -36,6 +36,7 @@ class PlaneDetection:
         points = point_cloud
         print("Iterative RANSAC...")
         plane_counter = 0
+        print("points", points)
 
         while True:
             best_eq, best_inliers = self.geometry.fit(points, self.thresh)
@@ -53,6 +54,7 @@ class PlaneDetection:
             points = self.pcd_out
 
         if not self.planes:
+            print("self.planes")
             return None
 
         # Get the axis-aligned bounding box
