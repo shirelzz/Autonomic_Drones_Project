@@ -1,6 +1,9 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.internal.controller.DJISampleApplication.TAG;
 import static com.dji.sdk.sample.internal.controller.DJISampleApplication.getProductInstance;
+
+import android.util.Log;
 
 import com.dji.sdk.sample.demo.kcgremotecontroller.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
@@ -45,6 +48,7 @@ public class DataFromDrone {
     public DataFromDrone() {
         initStateListeners();
         initFlightController();
+        setupStateCallback();
     }
 
     public GPSLocation getGPS() {
@@ -102,6 +106,8 @@ public class DataFromDrone {
     public boolean isUltrasonicBeingUsed() {
         return isUltrasonicBeingUsed;
     }
+    private LocationCoordinate3D currentLocation;
+
 
     // Initialize the flight controller
     private void initFlightController() {
@@ -210,11 +216,34 @@ public class DataFromDrone {
         };
     }
 
-    public double[] getCurrentPosition() {
+//    public double[] getCurrentPosition() {
+//        if (flightController != null) {
+//            LocationCoordinate3D location = flightController.getState().getAircraftLocation();
+//            return new double[]{location.getLatitude(), location.getLongitude(), location.getAltitude()};
+//        }
+//        Log.d(TAG, "Couldn't get current position");
+//        return null;
+//    }
+
+    // Set up the state callback to get the drone's location
+    private void setupStateCallback() {
         if (flightController != null) {
-            LocationCoordinate3D location = flightController.getState().getAircraftLocation();
-            return new double[]{location.getLatitude(), location.getLongitude(), location.getAltitude()};
+            flightController.setStateCallback(new FlightControllerState.Callback() {
+                @Override
+                public void onUpdate(FlightControllerState state) {
+                    // Retrieve the current location
+                    currentLocation = state.getAircraftLocation();
+                }
+            });
         }
+    }
+
+    // Function to get the current position
+    public double[] getCurrentPosition() {
+        if (currentLocation != null) {
+            return new double[]{currentLocation.getLatitude(), currentLocation.getLongitude(), currentLocation.getAltitude()};
+        }
+        Log.d(TAG, "Couldn't get current position");
         return null;
     }
 
