@@ -5,6 +5,7 @@ from plane import *
 from DepthMap import DepthMap
 import torch
 import base64
+import time
 
 from ConvertPLY2PNG import find_fixed_size_white_areas, remove_overlapping_areas, plot_white_areas_plane, \
     calculate_movement_to_landing_spot, find_white_areas, plot_white_areas
@@ -26,9 +27,9 @@ def process_point_cloud(points):
             "THRESH": 0.02,
             "PLANE_SIZE": 16500},
     )
-
+    print("points", points)
     detected_planes = plane_detector.detect_planes(points)
-
+    print(detected_planes)
     if detected_planes is None:
         print("not exist!")
         return None
@@ -71,7 +72,7 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
     # Calculate image size in meters
     print("h:", mirrored_img.shape)
     print("w:", w)
-    kernel = get_window(altitude, w, h)
+    kernel, pixel_width_m, pixel_height_m = get_window(altitude, w, h)
     # Find white areas of size ?
     # white_areas = find_fixed_size_white_areas(mirrored_img, kernel.shape)
     # white_areas = remove_overlapping_areas(white_areas, overlap_threshold=0.5)
@@ -88,21 +89,23 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
         print("No white areas found.")
     else:
         print(f"Found {len(white_area)} white areas.")
-        # print(f"Found {len(white_areas)} white areas.")
+#     print(f"Found {len(white_areas)} white areas.")
 
-        # for area in white_areas:
-        #     print(f"Type of area: {type(area)}")  # This will help identify the actual type
-        #     if isinstance(area, dict):
-        #         print(f"Area with bbox {area['bbox']} and size {area['area']} pixels.")
-        #     else:
-        #         print(f"Unexpected type: {area}")
-        print(f"Area with bbox {white_area['bbox']} and size {white_area['area']} pixels.")
+#     for area in white_areas:
+#         print(f"Type of area: {type(area)}")  # This will help identify the actual type
+#         if isinstance(area, dict):
+#             print(f"Area with bbox {area['bbox']} and size {area['area']} pixels.")
+#         else:
+#             print(f"Unexpected type: {area}")
+        # print(f"Area with bbox {white_area['bbox']} and size {white_area['area']} pixels.")
 
         # Plot the results with red borders
-        # plot_white_areas(mirrored_img, [white_area])  # only one area
-        # plot_white_areas_plane(mirrored_img, [white_areas])  # multiple areas
+    # plot_white_areas(mirrored_img, [white_area])  # only one area
+#     plot_white_areas_plane(mirrored_img, [white_areas])  # multiple areas
 
-        dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_area)
+    dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_area, pixel_width_m, pixel_height_m )
+
+#     dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas[0])
     # Encode the image to bitmap format
     is_success, img_encoded = cv.imencode('.bmp', mirrored_img)
 
@@ -116,34 +119,21 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
 
 def start_detect(imgLeft, imgRight, altitude, baseLine):
     # Initialize depth map
+    print(1)
     points, colors = initialize_pipeline(imgLeft, imgRight, baseLine)
-
+    print(2)
     # Process the point cloud
     detected_planes_tensor = process_point_cloud(points)
 
     if detected_planes_tensor is None:
         return -2
-
+    print("altitude:", altitude)
     if altitude == 0 or not altitude:
-       altitude = 1
+       altitude = 0.1
 
     # Visualize the first detected plane and return it as a bitmap
     bitmap = visualize_plane_as_bitmap(detected_planes_tensor, altitude)
-    # if bitmap:
-    #
-    #     # Decode the base64 string back to bytes
-    #     image_bytes = base64.b64decode(bitmap)
-    #
-    #     # Convert the bytes to a NumPy array
-    #     np_array = np.frombuffer(image_bytes, np.uint8)
-    #
-    #     # Decode the NumPy array to an image
-    #     img = cv.imdecode(np_array, cv.IMREAD_COLOR)
-    #
-    #     # Display the image using OpenCV
-    #     cv.imshow("Detected Plane", img)
-    #     cv.waitKey(0)
-    #     cv.destroyAllWindows()
+
     return bitmap
 
 
@@ -174,9 +164,18 @@ def start_detect(imgLeft, imgRight, altitude, baseLine):
 #     bytearray_left = bytearray(buffer_left)
 #     bytearray_right = bytearray(buffer_right)
 #
-#     baseLine = 1
-#     altitude = 1
+#     baseLine = "1"
+#     altitude = 0.5
+#     start_time = time.time()
+#
 #     bitmapArr = start_detect(imgLeft=bytearray_left, imgRight=bytearray_right, altitude=altitude, baseLine=baseLine)
+#
+#     end_time = time.time()
+#
+#     # Calculate the running time
+#     running_time = end_time - start_time
+#
+#     print(f"Running time: {running_time:.6f} seconds")
 #     bitmap = bitmapArr[0]
 #     movement = bitmapArr[1]
 #     print("dx (roll adjustment):", movement[0])

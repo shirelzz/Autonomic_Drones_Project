@@ -48,25 +48,25 @@ def get_window(altitude, image_width_px, image_height_px):
     pixel_width_m, pixel_height_m, image_width_m, image_height_m = calculate_image_size_in_meters(
         altitude, image_width_px, image_height_px)
     kernel = get_kernel_for_specific_dimensions(window_size_m, pixel_width_m, pixel_height_m)
-    return kernel
+    return (kernel, pixel_width_m, pixel_height_m)
 
 
-if __name__ == "__main__":
-
-    # Camera specifications
-    altitude = 0.05  # in cm
-    image_width_px = 256  # Image width in pixels
-    image_height_px = 256  # Image height in pixels
-
-    # Calculate image size in meters
-    pixel_width_m, pixel_height_m, image_width_m, image_height_m = calculate_image_size_in_meters(
-        altitude, image_width_px, image_height_px)
-
-    print(f"Pixel Width (meters): {pixel_width_m:.2f}")
-    print(f"Pixel Height (meters): {pixel_height_m:.2f}")
-    print(f"Image Width (meters): {image_width_m:.2f}")
-    print(f"Image Height (meters): {image_height_m:.2f}")
-
-    window_size_m = 0.5   # Size of the window to detect in meters
-    kernel = get_kernel_for_specific_dimensions(window_size_m, pixel_width_m, pixel_height_m)
-
+# if __name__ == "__main__":
+#
+#     # Camera specifications
+#     altitude = 0.05  # in cm
+#     image_width_px = 256  # Image width in pixels
+#     image_height_px = 256  # Image height in pixels
+#
+#     # Calculate image size in meters
+#     pixel_width_m, pixel_height_m, image_width_m, image_height_m = calculate_image_size_in_meters(
+#         altitude, image_width_px, image_height_px)
+#
+#     print(f"Pixel Width (meters): {pixel_width_m:.2f}")
+#     print(f"Pixel Height (meters): {pixel_height_m:.2f}")
+#     print(f"Image Width (meters): {image_width_m:.2f}")
+#     print(f"Image Height (meters): {image_height_m:.2f}")
+#
+#     window_size_m = 0.5   # Size of the window to detect in meters
+#     kernel = get_kernel_for_specific_dimensions(window_size_m, pixel_width_m, pixel_height_m)
+#

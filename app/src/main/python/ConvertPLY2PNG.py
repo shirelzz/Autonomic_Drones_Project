@@ -219,6 +219,7 @@ def find_white_areas(image_array, min_size):
 
         # Loop over the region and check for the largest all-white sub-region
         for size in range(min(width, height), min_size - 1, -1):
+            found = False  # Flag to exit the loop early if a sub-region is found
             for i in range(minr, maxr - size + 1):
                 for j in range(minc, maxc - size + 1):
                     # Extract the sub-image
@@ -236,11 +237,15 @@ def find_white_areas(image_array, min_size):
                                 'bbox': (i, j, i + size, j + size),
                                 'area': area
                             }
+                        found = True  # Set the flag to True if a valid area is found
+                        break  # Exit the inner loop since we want the largest sub-region
+                if found:
+                    break  # Exit the outer loop early if a sub-region is found
 
     return best_landing_spot
 
 
-def calculate_movement_to_landing_spot(image_array, best_landing_spot):
+def calculate_movement_to_landing_spot(image_array, best_landing_spot, pixel_width_m, pixel_height_m ):
     # Get the dimensions of the image
     height, width = image_array.shape[:2]
 
@@ -256,10 +261,14 @@ def calculate_movement_to_landing_spot(image_array, best_landing_spot):
     center_rect_y = (minr + maxr) / 2
 
     # Calculate the differences in x and y directions
-    dx = center_rect_x - center_image_x
-    dy = center_rect_y - center_image_y
+    dx_px = center_rect_x - center_image_x
+    dy_px = center_rect_y - center_image_y
 
-    return dx, dy
+    # Convert pixel movement to meters
+    dx_real = dx_px * pixel_width_m
+    dy_real = dy_px * pixel_height_m
+
+    return dx_real, dy_real
 
 
 # Function to plot white areas with red square borders

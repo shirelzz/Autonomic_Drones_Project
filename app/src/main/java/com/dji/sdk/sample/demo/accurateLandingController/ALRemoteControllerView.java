@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
+import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -27,6 +28,9 @@ import com.dji.sdk.sample.internal.view.PresentableView;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 import dji.common.model.LocationCoordinate2D;
@@ -60,7 +64,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private Context ctx;
     private Button goToFMM_btn, followPhone_btn, stopButton, edgeDetect, goTo_btn, land_btn, recordBtn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
-    private Button g_minus_btn_up, check_depth;
+    private Button g_minus_btn_up, start_algo;
     private Bitmap droneIMG;
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
@@ -154,7 +158,7 @@ public class ALRemoteControllerView extends RelativeLayout
         t_minus_btn = findViewById(R.id.t_minus_btn);
         t_plus_btn = findViewById(R.id.t_plus_btn);
         g_minus_btn_up = findViewById(R.id.gimbal_pitch_update);
-        check_depth = findViewById(R.id.check_depth);
+        start_algo = findViewById(R.id.start_algo);
 //        recIcon = findViewById(R.id.recIcon);
 
 //        g_plus_btn_up = findViewById(R.id.g_plus_up_update);
@@ -183,7 +187,7 @@ public class ALRemoteControllerView extends RelativeLayout
         t_plus_btn.setOnClickListener(this);
 
         g_minus_btn_up.setOnClickListener(this);
-        check_depth.setOnClickListener(this);
+        start_algo.setOnClickListener(this);
 //        g_plus_btn_up.setOnClickListener(this);
 //        g_minus_btn_side.setOnClickListener(this);
 //        g_plus_btn_side.setOnClickListener(this);
@@ -233,17 +237,20 @@ public class ALRemoteControllerView extends RelativeLayout
     @Override
     public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
 
-//        if (!onGoToMode) {
-//            imgView.setVisibility(View.VISIBLE);
-        double[] currentPos = dataFromDrone.getCurrentPosition();
         droneIMG = mVideoSurface.getBitmap();
-        controllerImageDetection.setCurrentImage(droneIMG, currentPos);
         imgView.setImageBitmap(droneIMG);
 
-        if (videoNotStarted) {
+//        if (controllerImageDetection.isCheck_depth()) {
+        double[] currentPos = dataFromDrone.getCurrentPosition();
+        controllerImageDetection.setCurrentImage(droneIMG, currentPos);
+
+        if (!videoNotStarted) {
             controllerImageDetection.startDepthMapVideo();
-            videoNotStarted = false;
+//                videoNotStarted = false;
         }
+        videoNotStarted = false;
+
+//        }
 
         if (controllerImageDetection.isEdgeDetectionMode() && gimbalController.isFinishRotate()) {
             controllerImageDetection.setBitmapFrame(droneIMG);
@@ -270,6 +277,40 @@ public class ALRemoteControllerView extends RelativeLayout
 
     }
 
+    public boolean saveImage(Bitmap bitmap, String filename) {
+        // Define the file path
+        File directory = new File(Environment.getExternalStorageDirectory(), "MyAppImages");
+        if (!directory.exists()) {
+            directory.mkdirs();  // Create the directory if it doesn't exist
+        }
+
+        // Create the image file
+        File imageFile = new File(directory, filename + ".png");
+        FileOutputStream fos = null;
+
+        try {
+            // Open a FileOutputStream to write the image data
+            fos = new FileOutputStream(imageFile);
+
+            // Compress the bitmap and write to the OutputStream
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos); // PNG is lossless, so quality is ignored
+
+            fos.flush();  // Make sure all data is written
+            return true;  // Return true if the image was saved successfully
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;  // Return false if there was an error
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();  // Close the OutputStream
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     @SuppressLint("SetTextI18n")
     private void goToFunc() {
         onGoToMode = !onGoToMode;
@@ -280,25 +321,13 @@ public class ALRemoteControllerView extends RelativeLayout
             goToFMM_btn.setBackgroundColor(Color.WHITE);
             stopButton.setBackgroundColor(Color.RED);
             GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
-//            double[] pos = gpsLocation.getAll();
-//            if (gpsLocation == null) {
-//                double curr_lat = dataFromDrone.getGPS().getLatitude() + 0.001;
-//                double curr_lon = dataFromDrone.getGPS().getLongitude() + 0.000001;
-//                double curr_alt = dataFromDrone.getGPS().getAltitude();
-//
-//                pos = new double[]{curr_lat, curr_lon, curr_alt};
-//                goToUsingVS.setTargetGpsLocation(pos);
-//            } else {
-//                pos = gpsLocation.getAll();
-//            }
+
             goToUsingVS.setCurrentGpsLocation(dataFromDrone.getGPS());
             if (gpsLocation != null) {
                 double[] pos = gpsLocation.getAll();
                 dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) + " [" + Arrays.toString(goToUsingVS.calculateMovement()));
             }
         } else {
-//            goTo_btn.setBackgroundColor(Color.WHITE);
-//            mVideoSurface.setVisibility(View.VISIBLE);
             imgView.setVisibility(View.VISIBLE);
             presentMap.MapVisibility(false);
         }
@@ -497,7 +526,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //            case R.id.recordBtn:
 //                setRecIconVisibility();
 //                break;
-            case R.id.check_depth:
+            case R.id.start_algo:
                 gimbalController.rotateGimbalToDegree(-90);
                 controllerImageDetection.DepthBool();
                 break;

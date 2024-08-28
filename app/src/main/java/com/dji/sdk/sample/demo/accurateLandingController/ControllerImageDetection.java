@@ -34,8 +34,6 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import dji.common.flightcontroller.LocationCoordinate3D;
-
 public class ControllerImageDetection {
 
     // depth map python view
@@ -176,6 +174,10 @@ public class ControllerImageDetection {
 
     public void DepthBool() {
         this.check_depth = true;
+    }
+
+    public boolean isCheck_depth() {
+        return check_depth;
     }
 
     public void setDescentRate(float descentRate) {
@@ -433,10 +435,10 @@ public class ControllerImageDetection {
         double[] vector = Cords.flatWorldDist(pos1, pos2);
         if (vector != null) {
             double baseline = Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
-            Log.d(TAG,"The baseline between the two frames is: " + baseline + " meters");
+            Log.d(TAG, "The baseline between the two frames is: " + baseline + " meters");
             return baseline;
         } else {
-            Log.d(TAG,"Failed to calculate the distance between the two positions.");
+            Log.d(TAG, "Failed to calculate the distance between the two positions.");
             return -2;
         }
 
@@ -574,7 +576,7 @@ public class ControllerImageDetection {
         new Thread(() -> {
             try {
 
-                while (isPlaying) {
+//                while (isPlaying) {
 
                     if (getOutputFunc != null) {
 
@@ -592,10 +594,11 @@ public class ControllerImageDetection {
                         byte[] currentImageBytes = matToBytes(current_image);
                         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
                         double baseLine = calculateBaseline(previous_image_pos, current_image_pos);
-                        // Call Python function with the byte arrays
-                        PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
-                        List<Object> javaList = new ArrayList<>();
                         try {
+                            // Call Python function with the byte arrays
+                            PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
+                             List<Object> javaList = new ArrayList<>();
+
                             PyObject imageBytesObj = result.asList().get(0);
                             PyObject positionsObj = result.asList().get(1);
 
@@ -605,6 +608,8 @@ public class ControllerImageDetection {
                             for (PyObject item : positionsPyList) {
                                 javaList.add(item.toJava(Object.class));  // Convert each Python object to a Java object
                             }
+                            Log.i("EdgeDetect:", javaList.toString());
+//                            javaList.get(0);
                             // Decode Base64 to byte array
                             byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
 
@@ -617,8 +622,10 @@ public class ControllerImageDetection {
                                 Log.d(TAG, "imageView updated");
                             });
                         } catch (ClassCastException e) {
-                            throw new RuntimeException("Error processing Python result", e);
-                        }
+                            e.printStackTrace();
+
+//                            throw new RuntimeException("Error processing Python result", e);
+//                        }
                     }
                     try {
                         Thread.sleep(1000 / 30);  // Control frame rate (30 FPS)

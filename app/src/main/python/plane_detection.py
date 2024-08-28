@@ -36,7 +36,7 @@ class PlaneDetection:
         points = point_cloud
         print("Iterative RANSAC...")
         plane_counter = 0
-        print("points", points)
+        # print("points", points)
 
         while True:
             best_eq, best_inliers = self.geometry.fit(points, self.thresh)

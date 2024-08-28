@@ -314,14 +314,14 @@
         android:text="p" />
 
     <Button
-        android:id="@+id/check_depth"
+        android:id="@+id/start_algo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toEndOf="@id/gimbal_pitch_update"
         android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="10dp"
-        android:text="check depth" />
+        android:text="Start Algo" />
     <!--    <Button-->
     <!--        android:id="@+id/g_plus_side_update"-->
     <!--        android:layout_width="50dp"-->
