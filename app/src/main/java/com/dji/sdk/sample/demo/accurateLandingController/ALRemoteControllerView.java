@@ -251,6 +251,7 @@ public class ALRemoteControllerView extends RelativeLayout
         videoNotStarted = false;
 
 //        }
+        controllerImageDetection.buildControlCommand();
 
         if (controllerImageDetection.isEdgeDetectionMode() && gimbalController.isFinishRotate()) {
             controllerImageDetection.setBitmapFrame(droneIMG);
@@ -272,41 +273,6 @@ public class ALRemoteControllerView extends RelativeLayout
                 double[] pos = goToUsingVS.getDestGpsLocation().getAll();
                 dist.setText(Arrays.toString(flightCommands.calcDistFrom(pos, dataFromDrone)) +
                         " [" + Arrays.toString(goToUsingVS.calculateMovement()));
-            }
-        }
-
-    }
-
-    public boolean saveImage(Bitmap bitmap, String filename) {
-        // Define the file path
-        File directory = new File(Environment.getExternalStorageDirectory(), "MyAppImages");
-        if (!directory.exists()) {
-            directory.mkdirs();  // Create the directory if it doesn't exist
-        }
-
-        // Create the image file
-        File imageFile = new File(directory, filename + ".png");
-        FileOutputStream fos = null;
-
-        try {
-            // Open a FileOutputStream to write the image data
-            fos = new FileOutputStream(imageFile);
-
-            // Compress the bitmap and write to the OutputStream
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos); // PNG is lossless, so quality is ignored
-
-            fos.flush();  // Make sure all data is written
-            return true;  // Return true if the image was saved successfully
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;  // Return false if there was an error
-        } finally {
-            if (fos != null) {
-                try {
-                    fos.close();  // Close the OutputStream
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
         }
     }

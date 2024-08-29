@@ -6,6 +6,7 @@ import static org.opencv.android.Utils.matToBitmap;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
@@ -26,6 +27,10 @@ import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -90,6 +95,10 @@ public class ControllerImageDetection {
 
 
     private double error_x, error_y, error_z, error_yaw, D;
+
+    private double pitch = 0.0, roll = 0.0, alt = 0.0, dt = 0.0;
+    private boolean activate = false;
+
 
     //    private RecordingVideo recordingVideo = null;
     //constructor
@@ -229,6 +238,100 @@ public class ControllerImageDetection {
 //        }
     }
 
+    public void saveImage(Bitmap bitmap, String filename) {
+        File pictureFile = getOutputMediaFile();
+        if (pictureFile == null) {
+            Log.d(TAG,
+                    "Error creating media file, check storage permissions: ");// e.getMessage());
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            Log.d(TAG, "File not found: " + e.getMessage());
+        } catch (IOException e) {
+            Log.d(TAG, "Error accessing file: " + e.getMessage());
+        }
+    }
+//        BufferedWriter logFile;
+//        File externalStorage = context.getExternalFilesDir(null);
+//        String fileName = externalStorage.getAbsolutePath() + filename + System.currentTimeMillis() + ".png";
+//        File log = new File(fileName);
+//
+//        try {
+//            if (!log.exists()) {
+//                boolean data = log.createNewFile();
+//            }
+//        } catch (IOException e) {
+//            ToastUtils.showToast(e.getMessage());
+//            e.printStackTrace();
+//        }
+//        try {
+//
+//            logFile = new BufferedWriter(new FileWriter(log.getAbsoluteFile()));
+////            logFile.write(String.join(",", header) + "\r\n");
+//            logFile.compress(Bitmap.CompressFormat.PNG, 100, fos); // PNG is lossless, so quality is ignored
+//
+//            logFile.flush();
+//            logFile.close();
+//            logFile = null;
+//            ToastUtils.showToast("Close Log");
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+////            text.setText(e.getMessage());
+//
+//        }
+
+    //        // Create the image file
+//        File imageFile = new File(Environment.getExternalStorageDirectory(), filename + ".png");
+//        FileOutputStream fos = null;
+//
+//        try {
+//            // Open a FileOutputStream to write the image data
+//            fos = new FileOutputStream(imageFile);
+//
+//            // Compress the bitmap and write to the OutputStream
+//            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos); // PNG is lossless, so quality is ignored
+//
+//            fos.flush();  // Make sure all data is written
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } finally {
+//            if (fos != null) {
+//                try {
+//                    fos.close();  // Close the OutputStream
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+    private File getOutputMediaFile() {
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+        File mediaStorageDir = new File(Environment.getExternalStorageDirectory()
+                + "/Android/data/"
+                + context.getPackageName()
+                + "/Files");
+
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
+
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                return null;
+            }
+        }
+        // Create a media file name
+        File mediaFile;
+        String mImageName = "MI_" + System.currentTimeMillis() + ".jpg";
+        mediaFile = new File(mediaStorageDir.getPath() + File.separator + mImageName);
+        return mediaFile;
+    }
+
     public double[] getPIDs(String type) {
         double[] ans = {-1, -1, -1};
         if (type.equals("roll")) {
@@ -309,10 +412,14 @@ public class ControllerImageDetection {
         Utils.bitmapToMat(frame, newCurrentImg);
 
         if (previous_image == null) {
+//            saveImage(frame, "current_image");
+
             // This is the first image being set
             previous_image = newCurrentImg;
             previous_image_pos = pos;
         } else {
+//            saveImage(frame, "previous_image");
+
             // Move the current image to previous_image
             previous_image = current_image;
             previous_image_pos = current_image_pos;
@@ -414,7 +521,7 @@ public class ControllerImageDetection {
         if (bestLine != null) {
             Imgproc.line(imgToProcess, bestLine[0], bestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
             double dyRealPitch = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight);
-            ControlCommand command = buildControlCommand(dyRealPitch, dt, imgToProcess);
+            ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
             updateLog(command, pointArr.size(), bestLine, dyRealPitch);
 
             return command;
@@ -515,26 +622,16 @@ public class ControllerImageDetection {
         return GSD * dy_best;
     }
 
-    private ControlCommand buildControlCommand(double dyReal, double dt, Mat imgToProcess) {
+    private ControlCommand buildControlCommandEdge(double dyReal, double dt, Mat imgToProcess) {
         double maxSpeed = 2.0;
         double Kp = 0.02;  // Proportional gain, adjust as needed - 0.01
         error_y = dyReal * Kp;
 
-
         if (0 <= error_y && error_y <= 0.001) {
-//            if (gimbalController.getPrevDegree() == -90) {
-//                return flightControlMethods.land();
-//            }
             showToast("Landing!!");
-//            float gd = gimbalController.getPrevDegree() - 10;
-//            gd = gd < -90 ? -90 : gd;
-//            gimbalController.rotateGimbalToDegree(gd);
 
             t = -0.05f;
             error_y = 0.05f;
-
-//////            p = 0f;
-//            return stayOnPlace();
 
         } else {
             t = 0;
@@ -550,6 +647,34 @@ public class ControllerImageDetection {
         ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
 
         return ans;
+    }
+
+    void buildControlCommand() {
+
+        if (!activate) {
+            return;
+        }
+        Log.i("buildControlCommand", "buildControlCommand");
+        double maxSpeed = 2.0;
+        double Kp = 0.02;  // Proportional gain, adjust as needed - 0.01
+        error_y = this.pitch * Kp;
+        error_x = this.roll * Kp;
+        if (this.alt > 2) {
+            error_z = 2;
+        } else {
+            error_z = 0;
+        }
+
+        p = (float) pitch_pid.update(error_y, this.dt, maxSpeed);
+        r = (float) roll_pid.update(error_x, this.dt, maxSpeed);
+        t = (float) throttle_pid.update(error_z, this.dt, maxSpeed);
+        showToast("p: " + p);
+
+        ControlCommand ans = new ControlCommand(p, r, t);
+        ans.setErr(1000, error_x, error_y, error_z);
+        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+        flightControlMethods.sendVirtualStickCommands(ans, 0.0f);
+        activate = false;
     }
 
     // Method to start video playback
@@ -576,9 +701,9 @@ public class ControllerImageDetection {
         new Thread(() -> {
             try {
 
-//                while (isPlaying) {
+                while (isPlaying) {
 
-                    if (getOutputFunc != null) {
+                    if (getOutputFunc != null && !activate) {
 
                         if (current_image == null) {
                             Log.d(TAG, "current_image is null");
@@ -590,14 +715,18 @@ public class ControllerImageDetection {
                             return;
                         }
 
+                        long currTime = System.currentTimeMillis();
+                        double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
+                        prevTime = currTime;
                         byte[] previousImageBytes = matToBytes(previous_image);
                         byte[] currentImageBytes = matToBytes(current_image);
                         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
                         double baseLine = calculateBaseline(previous_image_pos, current_image_pos);
+                        Log.i("baseLine", "" + baseLine);
                         try {
                             // Call Python function with the byte arrays
                             PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
-                             List<Object> javaList = new ArrayList<>();
+                            List<Object> javaList = new ArrayList<>();
 
                             PyObject imageBytesObj = result.asList().get(0);
                             PyObject positionsObj = result.asList().get(1);
@@ -609,6 +738,13 @@ public class ControllerImageDetection {
                                 javaList.add(item.toJava(Object.class));  // Convert each Python object to a Java object
                             }
                             Log.i("EdgeDetect:", javaList.toString());
+                            if (javaList.size() == 2) {
+                                this.pitch = (double) javaList.get(1);
+                                this.roll = (double) javaList.get(0);
+                                this.activate = true;
+                                this.alt = altitude;
+                                this.dt = dt;
+                            }
 //                            javaList.get(0);
                             // Decode Base64 to byte array
                             byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
@@ -625,7 +761,7 @@ public class ControllerImageDetection {
                             e.printStackTrace();
 
 //                            throw new RuntimeException("Error processing Python result", e);
-//                        }
+                        }
                     }
                     try {
                         Thread.sleep(1000 / 30);  // Control frame rate (30 FPS)

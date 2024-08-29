@@ -12,10 +12,11 @@ def generate_point_cloud(disparity, imgLeft, imgRight, baseLine):
         baseLine = float(baseLine)
     except ValueError:
         baseLine = 0.54  # Example value in meters
+#     print("baseLine", baseLine)
 
     if baseLine > 0.0:
         baseline = baseLine
-
+#     print("baseline", baseline)
     # Reprojection matrix Q
     Q = np.float32([[1, 0, 0, -0.5 * w],
                     [0, -1, 0, 0.5 * h],
