@@ -966,11 +966,11 @@ public class ControllerImageDetection {
 
                     if (isHazardous) {
                         System.out.println("Landing aborted due to hazards.");
-                        showToast("Landing aborted due to hazards.");
+                        runOnUiThread(() -> showToast("Landing aborted due to hazards."));
                         findOtherLandingSpot();
                     } else {
                         System.out.println("No hazards detected. Safe to land.");
-                        showToast("No hazards detected. Safe to land.");
+                        runOnUiThread(() -> showToast("No hazards detected. Safe to land."));
                         stopObjectDetectionAlgo();
                     }
 
@@ -981,8 +981,13 @@ public class ControllerImageDetection {
             }
         }).start();
 
-        Log.d(TAG, "ended startPlaneDetectionAlgo");
+        Log.d(TAG, "ended startObjectDetectionAlgo");
 
+    }
+
+    private void runOnUiThread(Runnable runnable) {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(runnable);
     }
 
     private void findOtherLandingSpot() {
