@@ -321,7 +321,7 @@
         android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="10dp"
-        android:text="Start Algo" />
+        android:text="Plane Detection" />
     <!--    <Button-->
     <!--        android:id="@+id/g_plus_side_update"-->
     <!--        android:layout_width="50dp"-->

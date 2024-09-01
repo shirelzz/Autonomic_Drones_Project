@@ -50,12 +50,13 @@ public class ControllerImageDetection {
     Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
     private ImageView imageView;  // ImageView to display the frames
     private boolean isPlaying = false;  // To control the video playback
+    private boolean isDetectingPlane = false;  // To control the video playback
     private Handler handler = new Handler(Looper.getMainLooper());  // For updating the UI
     private Python python;
     private double focal_length = 4.8; // Field of View in mm
     private double sensor_width = 6.4;  // Sensor width in millimeters (approximate for 1/2" CMOS sensor)
     private ArrayList<Bitmap> imageList = new ArrayList<>();
-    private PyObject depthMapClass;
+    private PyObject PlaneHandlerClass;
     private PyObject getOutputFunc;
     private int frameCounter = 0;
     private Map<String, Double> controlStatus = new HashMap<>();
@@ -69,6 +70,7 @@ public class ControllerImageDetection {
 //    private double VerticalFOV = 0;
     private boolean edgeDetectionMode = false;
     private CenterTracker centerTracker;
+    private Bitmap current_frame;
     private Mat previous_image = null;
     private Mat current_image = null;
     private double[] previous_image_pos = null;
@@ -131,6 +133,11 @@ public class ControllerImageDetection {
 
 //        this.objectTracking = new ObjectTracking(true, "GREEN");
 //        centerTracker = new CenterTracker();
+
+        // Initialize Python and load the module
+        python = Python.getInstance();
+        PlaneHandlerClass = python.getModule("PlaneHandler");
+        getOutputFunc = PlaneHandlerClass.get("start_detect");
     }
 
     private void updateLog(ControlCommand control, int numEdges, Point[] chosenEdge, double dy) {
@@ -426,6 +433,7 @@ public class ControllerImageDetection {
         }
 
         // Set the new current image
+        current_frame = frame;
         current_image = newCurrentImg;
         current_image_pos = pos;
     }
@@ -690,14 +698,6 @@ public class ControllerImageDetection {
             Python.start(new AndroidPlatform(context)); // 'this' is the Context here
         }
 
-        python = Python.getInstance();
-
-
-//        depthMapClass = python.getModule("DepthMap_");
-//        getOutputFunc = depthMapClass.get("computeDepthMapSGBM");
-        depthMapClass = python.getModule("PlaneHandler");
-        getOutputFunc = depthMapClass.get("start_detect");
-
         new Thread(() -> {
             try {
 
@@ -705,13 +705,8 @@ public class ControllerImageDetection {
 
                     if (getOutputFunc != null && !activate) {
 
-                        if (current_image == null) {
-                            Log.d(TAG, "current_image is null");
-                            return;
-                        }
-
-                        if (previous_image == null) {
-                            Log.d(TAG, "previous_image is null");
+                        boolean validImages = validateImages();
+                        if (!validImages) {
                             return;
                         }
 
@@ -723,20 +718,23 @@ public class ControllerImageDetection {
                         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
                         double baseLine = calculateBaseline(previous_image_pos, current_image_pos);
                         Log.i("baseLine", "" + baseLine);
+
                         try {
                             // Call Python function with the byte arrays
                             PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
-                            List<Object> javaList = new ArrayList<>();
 
                             PyObject imageBytesObj = result.asList().get(0);
                             PyObject positionsObj = result.asList().get(1);
 
                             String imageBytesBase64 = imageBytesObj.toString();
-                            List<PyObject> positionsPyList = positionsObj.asList();
+                            Bitmap bitmap = convertBase64ToBitmap(imageBytesBase64);
 
+                            List<PyObject> positionsPyList = positionsObj.asList();
+                            List<Object> javaList = new ArrayList<>();
                             for (PyObject item : positionsPyList) {
                                 javaList.add(item.toJava(Object.class));  // Convert each Python object to a Java object
                             }
+
                             Log.i("EdgeDetect:", javaList.toString());
                             if (javaList.size() == 2) {
                                 this.pitch = (double) javaList.get(1);
@@ -746,12 +744,6 @@ public class ControllerImageDetection {
                                 this.dt = dt;
                             }
 //                            javaList.get(0);
-                            // Decode Base64 to byte array
-                            byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
-
-                            // Convert byte array to Bitmap
-                            Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-                            Log.d(TAG, "Convert byte array to Bitmap: " + bitmap.toString());
 
                             handler.post(() -> {
                                 imageView.setImageBitmap(bitmap);  // Update the ImageView with the new frame
@@ -778,18 +770,25 @@ public class ControllerImageDetection {
         Log.d(TAG, "ended startDepthMapVideo");
     }
 
-    // Method to stop video playback
-    public void stopDepthMapVideo() {
+    public void stopPlanarVideo() {
         isPlaying = false;
+        ReleasePythonResources();
+    }
 
-        // Release Python resources
-        if (depthMapClass != null) {
+    // TODO : Use this function after the drone has landed
+    public void stopPlaneDetectionAlgo() {
+        isDetectingPlane = false;
+        ReleasePythonResources();
+    }
+
+    private void ReleasePythonResources() {
+        if (PlaneHandlerClass != null) {
             try {
-                depthMapClass.close();
+                PlaneHandlerClass.close();
             } catch (Exception e) {
                 Log.e(TAG, "Error closing Python module", e);
             }
-            depthMapClass = null;
+            PlaneHandlerClass = null;
         }
 
         if (getOutputFunc != null) {
@@ -813,4 +812,105 @@ public class ControllerImageDetection {
         return matOfByte.toArray();
     }
 
+    private Bitmap convertBase64ToBitmap(String imageBytesBase64) {
+        // Decode Base64 to byte array
+        byte[] imageBytes = Base64.decode(imageBytesBase64, Base64.DEFAULT);
+
+        // Convert byte array to Bitmap
+        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+        Log.d(TAG, "Convert byte array to Bitmap: " + bitmap.toString());
+
+        return bitmap;
+    }
+
+    public void startPlaneDetectionAlgo() {
+        Log.d(TAG, "entered startPlaneDetectionAlgo");
+
+        isDetectingPlane = true;
+
+        if (!Python.isStarted()) {
+            Python.start(new AndroidPlatform(context));
+        }
+
+        new Thread(() -> {
+            try {
+
+                while (isDetectingPlane) {
+
+                    if (getOutputFunc != null) {
+
+                        boolean validImages = validateImages();
+                        if (!validImages) {
+                            return;
+                        }
+
+                        byte[] previousImageBytes = matToBytes(previous_image);
+                        byte[] currentImageBytes = matToBytes(current_image);
+                        double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
+                        double baseLine = calculateBaseline(previous_image_pos, current_image_pos);
+
+                        try {
+                            // Call Python function with the byte arrays
+                            PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
+
+                            if (result != null) {
+                                // Decode the returned bitmap
+                                String bitmapBase64 = result.asList().get(0).toString();
+                                Bitmap bitmap = convertBase64ToBitmap(bitmapBase64);
+
+                                // Get the dx and dy values for movement
+                                PyObject movement = result.asList().get(1);
+                                float dx = movement.asList().get(0).toFloat();
+                                float dy = movement.asList().get(1).toFloat();
+
+                                Log.d("PlaneDetection", "Bitmap received. Movement instructions: dx=" + dx + ", dy=" + dy);
+
+                                // update the UI with the bitmap
+                                imageView.setImageBitmap(bitmap);
+
+                                // Control the drone movement
+                                moveDrone(dx, dy);
+
+                            } else {
+                                Log.e("PlaneDetection", "No result returned from Python function 'start_detect'.");
+                            }
+
+                        } catch (ClassCastException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    try {
+                        Thread.sleep(1000 / 30);  // Control frame rate (30 FPS)
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+
+            }
+        }).start();
+
+        Log.d(TAG, "ended startPlaneDetectionAlgo");
+
+    }
+
+    private void moveDrone(float dx, float dy) {
+        // TODO
+        // Move the drone towards the landing spot
+    }
+
+    private boolean validateImages() {
+        if (current_image == null) {
+            Log.d(TAG, "current_image is null");
+            return false;
+        }
+
+        if (previous_image == null) {
+            Log.d(TAG, "previous_image is null");
+            return false;
+        }
+
+        return true;
+    }
 }
