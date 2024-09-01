@@ -311,16 +311,16 @@
         android:layout_above="@+id/land_btn"
         android:layout_marginBottom="0dp"
         android:layout_marginStart="10dp"
-        android:text="p" />
+        android:text="G" />
 
     <Button
         android:id="@+id/start_algo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toEndOf="@id/gimbal_pitch_update"
-        android:layout_above="@+id/land_btn"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
-        android:layout_marginStart="10dp"
+        android:layout_toEndOf="@+id/EdgeDetect"
         android:text="Start Algo" />
     <!--    <Button-->
     <!--        android:id="@+id/g_plus_side_update"-->
@@ -350,16 +350,16 @@
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
         android:text="Land" />
-    <Button
-        android:id="@+id/GoTo_FMM_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+<!--    <Button-->
+<!--        android:id="@+id/GoTo_FMM_btn"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
 
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="0dp"
-        android:layout_marginBottom="0dp"
-        android:layout_toEndOf="@+id/land_btn"
-        android:text="GoTo with FMM" />
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_marginStart="0dp"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_toEndOf="@+id/land_btn"-->
+<!--        android:text="GoTo with FMM" />-->
 
     <Button
         android:id="@+id/stop_btn"
@@ -368,7 +368,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
-        android:layout_toEndOf="@+id/GoTo_FMM_btn"
+        android:layout_toEndOf="@+id/land_btn"
         android:background="@color/red"
         android:text="Stop" />
 
@@ -382,59 +382,59 @@
         android:layout_alignParentBottom="true"
         android:text="Edge Detect" />
 
-    <Button
-        android:id="@+id/Follow_phone_FMM_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="0dp"
-        android:layout_marginBottom="0dp"
-        android:layout_toEndOf="@+id/EdgeDetect"
-        android:text="Follow phone FMM" />
+<!--    <Button-->
+<!--        android:id="@+id/Follow_phone_FMM_btn"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_marginStart="0dp"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_toEndOf="@+id/EdgeDetect"-->
+<!--        android:text="Follow phone FMM" />-->
 
-    <TextView
-        android:id="@+id/lonText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/Follow_phone_FMM_btn"
-        android:layout_marginBottom="0dp"
-        android:layout_alignParentBottom="true"
+<!--    <TextView-->
+<!--        android:id="@+id/lonText"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_toEndOf="@+id/Follow_phone_FMM_btn"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_alignParentBottom="true"-->
 
-        android:text="lon:"
-        android:textSize="18sp" />
+<!--        android:text="lon:"-->
+<!--        android:textSize="18sp" />-->
 
-    <EditText
-        android:id="@+id/lonEditText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="0dp"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/lonText"
-        android:text="35.209521"
-        android:textSize="18sp"
-        />
-    <TextView
+<!--    <EditText-->
+<!--        android:id="@+id/lonEditText"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_toEndOf="@+id/lonText"-->
+<!--        android:text="35.209521"-->
+<!--        android:textSize="18sp"-->
+<!--        />-->
+<!--    <TextView-->
 
-        android:id="@+id/latText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="0dp"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/lonEditText"
-        android:text="lat:"
-        android:textSize="18sp"
-        />
+<!--        android:id="@+id/latText"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_toEndOf="@+id/lonEditText"-->
+<!--        android:text="lat:"-->
+<!--        android:textSize="18sp"-->
+<!--        />-->
 
-    <EditText
+<!--    <EditText-->
 
-        android:id="@+id/latEditText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="0dp"
-        android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/latText"
-        android:text="32.1027972"
-        android:textSize="18sp"
-        />
+<!--        android:id="@+id/latEditText"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_toEndOf="@+id/latText"-->
+<!--        android:text="32.1027972"-->
+<!--        android:textSize="18sp"-->
+<!--        />-->
 
 </RelativeLayout>

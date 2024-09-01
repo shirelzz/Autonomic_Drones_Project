@@ -58,8 +58,8 @@ public class ALRemoteControllerView extends RelativeLayout
     protected TextView dataLog;
     protected TextView dist;
     protected EditText gimbal;
-    protected EditText lat;
-    protected EditText lon;
+//    protected EditText lat;
+//    protected EditText lon;
     protected PresentMap presentMap;
     private Context ctx;
     private Button goToFMM_btn, followPhone_btn, stopButton, edgeDetect, goTo_btn, land_btn, recordBtn;
@@ -110,7 +110,11 @@ public class ALRemoteControllerView extends RelativeLayout
         goToUsingVS = new GoToUsingVS(dataFromDrone);
         flightControlMethods = new FlightControlMethods();
         droneFeatures = new DroneFeatures(flightControlMethods);
-        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon, this::goToFMM_BTN, this::stopBtnFunc, this::followPhone, this::goToFunc
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon
+//                , this::goToFMM_BTN
+                , this::stopBtnFunc, this::stopBtnFunc, this::stopBtnFunc,
+//                this::followPhone,
+                this::goToFunc
                 , this::accurateLanding
         );
 //        recordingVideo = new RecordingVideo(context);
@@ -136,8 +140,8 @@ public class ALRemoteControllerView extends RelativeLayout
 
 
         imgView = findViewById(R.id.imgView);
-        goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
-        followPhone_btn = findViewById(R.id.Follow_phone_FMM_btn);
+//        goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
+//        followPhone_btn = findViewById(R.id.Follow_phone_FMM_btn);
         stopButton = findViewById(R.id.stop_btn);
         edgeDetect = findViewById(R.id.EdgeDetect);
 //        goTo_btn = findViewById(R.id.goTo_btn);
@@ -145,8 +149,8 @@ public class ALRemoteControllerView extends RelativeLayout
         audioIcon = findViewById(R.id.audioIcon);
 //        recordBtn = findViewById(R.id.recordBtn);
 
-        lat = findViewById(R.id.latEditText);
-        lon = findViewById(R.id.lonEditText);
+//        lat = findViewById(R.id.latEditText);
+//        lon = findViewById(R.id.lonEditText);
 //        alt = findViewById(R.id.altEditText);
 
         y_minus_btn = findViewById(R.id.y_minus_btn);
@@ -171,8 +175,8 @@ public class ALRemoteControllerView extends RelativeLayout
             mVideoSurface.setSurfaceTextureListener(this);
         }
 //        recordBtn.setOnClickListener(this);
-        goToFMM_btn.setOnClickListener(this);
-        followPhone_btn.setOnClickListener(this);
+//        goToFMM_btn.setOnClickListener(this);
+//        followPhone_btn.setOnClickListener(this);
         stopButton.setOnClickListener(this);
         edgeDetect.setOnClickListener(this);
 //        goTo_btn.setOnClickListener(this);
@@ -284,7 +288,7 @@ public class ALRemoteControllerView extends RelativeLayout
         if (onGoToMode) {
 //            goTo_btn.setBackgroundColor(Color.GREEN);
 //            button3.setBackgroundColor(Color.WHITE);
-            goToFMM_btn.setBackgroundColor(Color.WHITE);
+//            goToFMM_btn.setBackgroundColor(Color.WHITE);
             stopButton.setBackgroundColor(Color.RED);
             GPSLocation gpsLocation = goToUsingVS.getDestGpsLocation();
 
@@ -317,47 +321,50 @@ public class ALRemoteControllerView extends RelativeLayout
         //rotateGimbalToDegree(command.getGimbalPitch());
     }
 
-    private void goToFMM_BTN() {
-        onGoToFMMMode = !onGoToFMMMode;
-        onGoToMode = false;
+//    private void goToFMM_BTN() {
+//        onGoToFMMMode = !onGoToFMMMode;
+//        onGoToMode = false;
+//
+//        if (!onGoToFMMMode) {
+//            goToFMM_btn.setBackgroundColor(Color.WHITE);
+////                    mVideoSurface.setVisibility(View.VISIBLE);
+//            imgView.setVisibility(View.VISIBLE);
+//            presentMap.MapVisibility(false);
+//            return;
+//        }
+////        double lat_ = Double.parseDouble(lat.getText().toString());
+////        double lon_ = Double.parseDouble(lon.getText().toString());
+//        double lat_ = Double.parseDouble("32.1027972");
+//        double lon_ = Double.parseDouble("32.1027972");
+//
+////                float alt_ = Double.parseDouble(alt.getText().toString());
+//        float alt_ = (float) dataFromDrone.getGPS().getAltitude();
+//
+//        LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_); // need to be in degrees
+////        MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
+////                alt_ + 1.0F,
+////                flightControlMethods.getFlightController(), dataFromDrone, dist);
+//        missionControlWrapper.setTargetLocation(targetLoc);
+//        missionControlWrapper.setAltitude(alt_ + 1.0F);
+//        missionControlWrapper.startGoToMission();
+////                ToastUtils.showToast("active go-to mission");
+//        goToFMM_btn.setBackgroundColor(Color.GREEN);
+//        stopButton.setBackgroundColor(Color.RED);
+////        goTo_btn.setBackgroundColor(Color.WHITE);
+//
+//    }
 
-        if (!onGoToFMMMode) {
-            goToFMM_btn.setBackgroundColor(Color.WHITE);
-//                    mVideoSurface.setVisibility(View.VISIBLE);
-            imgView.setVisibility(View.VISIBLE);
-            presentMap.MapVisibility(false);
-            return;
-        }
-        double lat_ = Double.parseDouble(lat.getText().toString());
-        double lon_ = Double.parseDouble(lon.getText().toString());
-//                float alt_ = Double.parseDouble(alt.getText().toString());
-        float alt_ = (float) dataFromDrone.getGPS().getAltitude();
-
-        LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_); // need to be in degrees
-//        MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
-//                alt_ + 1.0F,
-//                flightControlMethods.getFlightController(), dataFromDrone, dist);
-        missionControlWrapper.setTargetLocation(targetLoc);
-        missionControlWrapper.setAltitude(alt_ + 1.0F);
-        missionControlWrapper.startGoToMission();
-//                ToastUtils.showToast("active go-to mission");
-        goToFMM_btn.setBackgroundColor(Color.GREEN);
-        stopButton.setBackgroundColor(Color.RED);
-//        goTo_btn.setBackgroundColor(Color.WHITE);
-
-    }
-
-    private void followPhone() {
-        onFollowPhoneMode = !onFollowPhoneMode;
-        onGoToFMMMode = false;
-        onGoToMode = false;
-
-        if (onFollowPhoneMode) {
-            startFollowingPhone();
-        } else {
-            stopFollowingPhone();
-        }
-    }
+//    private void followPhone() {
+//        onFollowPhoneMode = !onFollowPhoneMode;
+//        onGoToFMMMode = false;
+//        onGoToMode = false;
+//
+//        if (onFollowPhoneMode) {
+//            startFollowingPhone();
+//        } else {
+//            stopFollowingPhone();
+//        }
+//    }
 
     private void startFollowingPhone() {
         // Set initial target location
@@ -410,13 +417,13 @@ public class ALRemoteControllerView extends RelativeLayout
 //                flightControlMethods.goPitch(0.5f) ;
                 accurateLanding();
                 break;
-            case R.id.Follow_phone_FMM_btn:
-                followPhone();
-                break;
+//            case R.id.Follow_phone_FMM_btn:
+//                followPhone();
+//                break;
 
-            case R.id.GoTo_FMM_btn:
-                this.goToFMM_BTN();
-                break;
+//            case R.id.GoTo_FMM_btn:
+//                this.goToFMM_BTN();
+//                break;
             case R.id.stop_btn:
                 stopBtnFunc();
                 break;
