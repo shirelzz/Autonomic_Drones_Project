@@ -58,7 +58,8 @@ public class ALRemoteControllerView extends RelativeLayout
     protected EditText lon;
     protected PresentMap presentMap;
     private Context ctx;
-    private Button goToFMM_btn, followPhone_btn, startPlaneDetectionAlgo_btn, startObjectDetectionAlgo_btn,  stopButton, edgeDetect, goTo_btn, land_btn, recordBtn;
+    private Button startPlaneDetectionAlgo_btn, startObjectDetectionAlgo_btn, edgeDetect, combinedLandingAlgo_btn;
+    private Button goToFMM_btn, followPhone_btn , stopButton, goTo_btn, land_btn, recordBtn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
     private Button g_minus_btn_up;
     private Bitmap droneIMG;
@@ -137,6 +138,7 @@ public class ALRemoteControllerView extends RelativeLayout
         stopButton = findViewById(R.id.stop_btn);
         startPlaneDetectionAlgo_btn = findViewById(R.id.start_plane_detection);
         startObjectDetectionAlgo_btn = findViewById(R.id.start_yolo);
+        combinedLandingAlgo_btn = findViewById(R.id.startLandingAlgo);
         edgeDetect = findViewById(R.id.EdgeDetect);
 //        goTo_btn = findViewById(R.id.goTo_btn);
         land_btn = findViewById(R.id.land_btn);
@@ -173,6 +175,7 @@ public class ALRemoteControllerView extends RelativeLayout
         stopButton.setOnClickListener(this);
         startPlaneDetectionAlgo_btn.setOnClickListener(this);
         startObjectDetectionAlgo_btn.setOnClickListener(this);
+        combinedLandingAlgo_btn.setOnClickListener(this);
         edgeDetect.setOnClickListener(this);
 //        goTo_btn.setOnClickListener(this);
         land_btn.setOnClickListener(this);
@@ -504,6 +507,10 @@ public class ALRemoteControllerView extends RelativeLayout
                 startObjectDetectionAlgo();
                 break;
 
+            case R.id.startLandingAlgo:
+                startLandingAlgo();
+                break;
+
             case R.id.gimbal_pitch_update:
 //                ToastUtils.setResultToToast(String.valueOf(Float.parseFloat(gimbal.getText().toString())));
                 gimbalController.rotateGimbalToDegree(Float.parseFloat(gimbal.getText().toString()));
@@ -521,6 +528,10 @@ public class ALRemoteControllerView extends RelativeLayout
         }
 
 
+    }
+
+    private void startLandingAlgo() {
+        controllerImageDetection.startLandingAlgo();
     }
 
     private void startObjectDetectionAlgo() {
