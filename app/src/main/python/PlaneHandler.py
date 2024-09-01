@@ -102,7 +102,6 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
         # Plot the results with red borders
     # plot_white_areas(mirrored_img, [white_area])  # only one area
 #     plot_white_areas_plane(mirrored_img, [white_areas])  # multiple areas
-
     dx, dy = calculate_movement_to_landing_spot(mirrored_img, best_landing_spot, pixel_width_m, pixel_height_m )
 
 #     dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas[0])

@@ -314,7 +314,7 @@
         android:text="G" />
 
     <Button
-        android:id="@+id/start_algo"
+        android:id="@+id/start_plane_detection"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -322,6 +322,27 @@
         android:layout_marginBottom="0dp"
         android:layout_toEndOf="@+id/EdgeDetect"
         android:text="Plane Detection" />
+
+    <Button
+        android:id="@+id/start_yolo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/start_plane_detection"
+        android:layout_above="@+id/land_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="10dp"
+        android:text="Object Detection" />
+
+    <Button
+        android:id="@+id/startLandingAlgo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/start_yolo"
+        android:layout_above="@+id/land_btn"
+        android:layout_marginBottom="0dp"
+        android:layout_marginStart="10dp"
+        android:text="Start Landing Algo (combined)" />
+
     <!--    <Button-->
     <!--        android:id="@+id/g_plus_side_update"-->
     <!--        android:layout_width="50dp"-->
