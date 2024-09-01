@@ -6,6 +6,8 @@ import org.opencv.dnn.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 import android.content.Context;
+import android.util.Log;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -97,19 +99,23 @@ public class YoloDetector {
             }
         }
 
-        // Apply non-maximum suppression to eliminate redundant overlapping boxes
-        MatOfFloat matConfidences = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
-        MatOfRect2d matBoxes = new MatOfRect2d(boxes.toArray(new Rect2d[0]));
-        MatOfInt indices = new MatOfInt();
-        Dnn.NMSBoxes(matBoxes, matConfidences, confThreshold, nmsThreshold, indices);
+        // Apply non-maximum suppression only if there are any detections
+        if (!confidences.isEmpty()) {
+            MatOfFloat matConfidences = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
+            MatOfRect2d matBoxes = new MatOfRect2d(boxes.toArray(new Rect2d[0]));
+            MatOfInt indices = new MatOfInt();
+            Dnn.NMSBoxes(matBoxes, matConfidences, confThreshold, nmsThreshold, indices);
 
-        // Filter the detections to include only the target classes (e.g., persons and trees)
-        for (int idx : indices.toArray()) {
-            int classId = classIds.get(idx);
-            String className = getClassLabel(classId);
-            if (targetClasses.contains(className)) {
-                detectedObjects.add(boxes.get(idx));
+            // Filter the detections to include only the target classes (e.g., persons and trees)
+            for (int idx : indices.toArray()) {
+                int classId = classIds.get(idx);
+                String className = getClassLabel(classId);
+                if (targetClasses.contains(className)) {
+                    detectedObjects.add(boxes.get(idx));
+                }
             }
+        } else {
+            Log.d("YOLO", "No objects detected with confidence greater than threshold.");
         }
 
         return detectedObjects;
