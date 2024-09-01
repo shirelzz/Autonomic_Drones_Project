@@ -874,11 +874,15 @@ public class ControllerImageDetection {
                         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
                         double baseLine = calculateBaseline(previous_image_pos, current_image_pos);
 
+                        long currTime = System.currentTimeMillis();
+                        double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
+                        prevTime = currTime;
+
                         try {
                             // Call Python function with the byte arrays
                             PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
 
-                            if (result != null) {
+                            if (result != null && !activate) {
                                 // Decode the returned bitmap
                                 String bitmapBase64 = result.asList().get(0).toString();
                                 Bitmap bitmap = convertBase64ToBitmap(bitmapBase64);
@@ -897,7 +901,8 @@ public class ControllerImageDetection {
                                     // Check if movement values are non-zero
                                     if (dx != 0 || dy != 0) {
                                         // Control the drone movement
-                                        moveDrone(dx, dy);
+
+                                        moveDrone(dx, dy, dt);
 
                                         Log.d(TAG, "Drone moved with dx: " + dx + ", dy: " + dy);
 
