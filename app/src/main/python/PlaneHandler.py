@@ -125,7 +125,7 @@ def start_detect(imgLeft, imgRight, altitude, baseLine):
     detected_planes_tensor = process_point_cloud(points)
 
     if detected_planes_tensor is None:
-        return -2
+        return None
     print("altitude:", altitude)
     if altitude == 0 or not altitude:
        altitude = 0.1

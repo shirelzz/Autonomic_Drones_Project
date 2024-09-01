@@ -1,16 +1,15 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.setResultToToast;
-import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.Objects;
-
-import dji.common.flightcontroller.FlightControllerState;
 
 import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
@@ -34,6 +33,7 @@ public class FlightControlMethods {
     private final FlightController flightController;
     Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
     private float descentRate = 0;
+    private Handler handler = new Handler(Looper.getMainLooper());
     private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); //
     private VLD_PID pitch_pid = new VLD_PID(PP, II, DD, MAX_I);
     private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I); // בקר על הגז - למעלה למטה
@@ -287,32 +287,42 @@ public class FlightControlMethods {
         if (flightController != null) {
 
             // If virtual stick is enabled, send the command, otherwise turn it on
-            if (virtualStickEnabled) {
+            if (!virtualStickEnabled) {
+                // If virtual stick is not enabled, enable
+                flightController.setVirtualStickModeEnabled(true, djiError -> {
+                    if (djiError != null) {
+                        setResultToToast(djiError.getDescription());
+                    } else {
+                        virtualStickEnabled = true;
+                        sendVirtualStickCommands(command, pZ);
+                    }
+                });
+            }
 
-                flightController.setRollPitchControlMode(command.getPitchMode());
+            flightController.setRollPitchControlMode(command.getPitchMode());
 
-                FlightControlData flightControlData = new FlightControlData(0, 0, 0, 0);
+            FlightControlData flightControlData = new FlightControlData(0, 0, 0, 0);
 //              flightControlData.setPitch(command.getPitch());
 //              flightControlData.setRoll(command.getRoll());
 
-                //pitch and roll are opposite !!!! we still don't know why
+            //pitch and roll are opposite !!!! we still don't know why
 
-                // Sets the aircraft's velocity (m/s) along the y-axis or angle value (in degrees) for pitch
-                if (command.getPitchMode() == RollPitchControlMode.VELOCITY) {
-                    flightControlData.setPitch(command.getRoll());
-                    flightControlData.setRoll(command.getPitch());
-                } else {
-                    flightControlData.setPitch(command.getPitch());
-                    // Sets the aircraft's velocity (m/s) along the x-axis or angle value (in degrees) for roll
-                    flightControlData.setRoll(command.getRoll());
-                }
+            // Sets the aircraft's velocity (m/s) along the y-axis or angle value (in degrees) for pitch
+            if (command.getPitchMode() == RollPitchControlMode.VELOCITY) {
+                flightControlData.setPitch(command.getRoll());
+                flightControlData.setRoll(command.getPitch());
+            } else {
+                flightControlData.setPitch(command.getPitch());
+                // Sets the aircraft's velocity (m/s) along the x-axis or angle value (in degrees) for roll
+                flightControlData.setRoll(command.getRoll());
+            }
 
-                // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
-                flightControlData.setYaw((float) pZ * yawJoyControlMaxSpeed);
-                // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
+            // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
+            flightControlData.setYaw((float) pZ * yawJoyControlMaxSpeed);
+            // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
 
-                flightControlData.setVerticalThrottle(command.getVerticalThrottle());
-                Log.i("command:  ", flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
+            flightControlData.setVerticalThrottle(command.getVerticalThrottle());
+            Log.i("command:  ", flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
 
 //                if (command.getControllMode() == VerticalControlMode.VELOCITY) {
 //                if(confirmLand )
@@ -330,7 +340,10 @@ public class FlightControlMethods {
 //                        }
 //                    });
 //                }
+            handler.post(() -> {
+
                 flightController.sendVirtualStickFlightControlData(flightControlData, djiError -> {
+                            Log.i("djiError", String.valueOf(djiError));
                             ToastUtils.showToast("VS:" + flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
                             movementFinished = true;
 //                            if (command.getControllMode() == VerticalControlMode.VELOCITY) {
@@ -349,19 +362,8 @@ public class FlightControlMethods {
 //                            }
                         }
                 );
-            } else {
-//                float finalPThrottle = pThrottle;
+            });
 
-                // If virtual stick is not enabled, enable
-                flightController.setVirtualStickModeEnabled(true, djiError -> {
-                    if (djiError != null) {
-                        setResultToToast(djiError.getDescription());
-                    } else {
-                        virtualStickEnabled = true;
-                        sendVirtualStickCommands(command, pZ);
-                    }
-                });
-            }
         } else {
             setResultToToast("Flight Controller Null");
         }

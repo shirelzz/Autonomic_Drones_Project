@@ -671,7 +671,7 @@ public class ControllerImageDetection {
     void buildControlCommand(double pitch, double roll, double dt, double altitude) {
         activate = true;
         Log.i("buildControlCommand", "buildControlCommand");
-        double maxSpeed = 2.0;
+        double maxSpeed = 5.0;
         double Kp = 0.02;  // Proportional gain, adjust as needed - 0.01
         error_y = pitch * Kp;
         error_x = roll * Kp;
@@ -686,8 +686,8 @@ public class ControllerImageDetection {
         ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
         flightControlMethods.sendVirtualStickCommands(ans, 0.0f);
 
-        if (altitude > 2) {
-            error_z = 2;
+        if (altitude > 4) {
+            error_z = -2;
         } else {
             error_z = 0;
         }
@@ -843,12 +843,12 @@ public class ControllerImageDetection {
     }
 
     public void startLandingAlgo() {
-        startPlaneDetectionAlgo();
-        startObjectDetectionAlgo();
+        startPlaneDetectionAlgo(true);
+//        startObjectDetectionAlgo(true);
 //        detectLending();
     }
 
-    public void startPlaneDetectionAlgo() {
+    public void startPlaneDetectionAlgo(boolean inAlgo) {
         Log.d(TAG, "entered startPlaneDetectionAlgo");
 
         isDetectingPlane = true;
@@ -874,14 +874,14 @@ public class ControllerImageDetection {
                         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
                         double baseLine = calculateBaseline(previous_image_pos, current_image_pos);
 
-                        long currTime = System.currentTimeMillis();
-                        double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
-                        prevTime = currTime;
+                        prevTime = System.currentTimeMillis();
 
                         try {
                             // Call Python function with the byte arrays
                             PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
-
+                            long currTime = System.currentTimeMillis();
+                            double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
+                            prevTime = currTime;
                             if (result != null && !activate) {
                                 // Decode the returned bitmap
                                 String bitmapBase64 = result.asList().get(0).toString();
@@ -906,10 +906,13 @@ public class ControllerImageDetection {
 
                                         Log.d(TAG, "Drone moved with dx: " + dx + ", dy: " + dy);
 
-                                        if(altitude < 4){
+                                        if (altitude < 4) {
 
                                             // Stop plane detection
                                             stopPlaneDetectionAlgo();
+                                            if (inAlgo) {
+                                                startObjectDetectionAlgo(inAlgo);
+                                            }
                                         }
 
                                         Log.d(TAG, "Plane detection algorithm stopped.");
@@ -932,7 +935,8 @@ public class ControllerImageDetection {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-
+//                stopPlaneDetectionAlgo();
+//                startPlaneDetectionAlgo();
             }
         }).start();
 
@@ -945,10 +949,12 @@ public class ControllerImageDetection {
         // Move the drone towards the landing spot
         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
 
-        buildControlCommand(dy, dx, dt, altitude);
+        handler.post(() ->
+                buildControlCommand(dy, dx, dt, altitude));
+
     }
 
-    public void startObjectDetectionAlgo() {
+    public void startObjectDetectionAlgo(boolean inAlgo) {
         Log.d(TAG, "entered startObjectDetectionAlgo");
 
         isObjectDetecting = true;
@@ -972,6 +978,9 @@ public class ControllerImageDetection {
                         System.out.println("No hazards detected. Safe to land.");
                         runOnUiThread(() -> showToast("No hazards detected. Safe to land."));
                         stopObjectDetectionAlgo();
+                        if (inAlgo) {
+                            setEdgeDetectionMode(true);
+                        }
                     }
 
                 }

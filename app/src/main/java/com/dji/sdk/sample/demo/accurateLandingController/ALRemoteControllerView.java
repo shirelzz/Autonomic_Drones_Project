@@ -406,9 +406,15 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private void accurateLanding() {
         boolean isEdgeDetect = !controllerImageDetection.isEdgeDetectionMode();
+
         if (isEdgeDetect) {
+            edgeDetect.setBackgroundColor(Color.GREEN);
+//        stopButton.setBackgroundColor(Color.RED);
+////        goTo_btn.setBackgroundColor(Color.WHITE);
             gimbalController.rotateGimbalToDegree(-45);
         } else {
+            edgeDetect.setBackgroundColor(Color.WHITE);
+
             gimbalController.rotateGimbalToDegree(-90);
         }
 //        if () {
@@ -510,6 +516,8 @@ public class ALRemoteControllerView extends RelativeLayout
 //                setRecIconVisibility();
 //                break;
             case R.id.start_plane_detection:
+                startPlaneDetectionAlgo_btn.setBackgroundColor(Color.GREEN);
+
                 gimbalController.rotateGimbalToDegree(-90);
                 controllerImageDetection.DepthBool();
                 startPlaneDetectionAlgo();
@@ -542,7 +550,7 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     private void startPlaneDetectionAlgo() {
-        controllerImageDetection.startPlaneDetectionAlgo();
+        controllerImageDetection.startPlaneDetectionAlgo(false);
     }
 
     private void startLandingAlgo() {
@@ -550,7 +558,7 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     private void startObjectDetectionAlgo() {
-        controllerImageDetection.startObjectDetectionAlgo();
+        controllerImageDetection.startObjectDetectionAlgo(false);
     }
 
     @Override
