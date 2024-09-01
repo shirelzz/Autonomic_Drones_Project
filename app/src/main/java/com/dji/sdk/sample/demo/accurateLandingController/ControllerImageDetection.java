@@ -950,7 +950,7 @@ public class ControllerImageDetection {
         isObjectDetecting = true;
 
         // Initialize YOLO detector and hazard detection system
-        YoloDetector yoloDetector = new YoloDetector("yolov3.cfg", "yolov3.weights");
+        YoloDetector yoloDetector = new YoloDetector(context, "yolov3-tiny.cfg", "yolov3-tiny.weights");
         DroneSafety droneSafety = new DroneSafety(yoloDetector);
 
         new Thread(() -> {
@@ -968,7 +968,6 @@ public class ControllerImageDetection {
                         System.out.println("No hazards detected. Safe to land.");
                         showToast("No hazards detected. Safe to land.");
                         stopObjectDetectionAlgo();
-                        // TODO : Proceed to edge detction and landing
                     }
 
                 }

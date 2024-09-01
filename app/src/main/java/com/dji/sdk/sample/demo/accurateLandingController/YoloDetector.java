@@ -1,21 +1,52 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import android.content.Context;
 import org.opencv.core.*;
 import org.opencv.dnn.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
-
+import android.content.Context;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.*;
 
 public class YoloDetector {
 
     private Net yoloNet;
+    private Context context;
 
-    public YoloDetector(String modelConfig, String modelWeights) {
+    public YoloDetector(Context context, String modelConfig, String modelWeights) {
+        this.context = context;
+
         // Load the network
-        yoloNet = Dnn.readNetFromDarknet(modelConfig, modelWeights);
+        String cfgFilePath = null;
+        String weightsFilePath = null;
+        try {
+            cfgFilePath = copyAssetToFile(modelConfig);
+            weightsFilePath = copyAssetToFile(modelWeights);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        yoloNet = Dnn.readNetFromDarknet(cfgFilePath, weightsFilePath);
         yoloNet.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
         yoloNet.setPreferableTarget(Dnn.DNN_TARGET_CPU);  // or DNN_TARGET_GPU if you want to use GPU
+    }
+
+    private String copyAssetToFile(String assetFileName) throws IOException {
+        File file = new File(context.getFilesDir(), assetFileName);
+        try (InputStream inputStream = context.getAssets().open(assetFileName);
+             OutputStream outputStream = new FileOutputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+        }
+        return file.getAbsolutePath();
     }
 
     public List<Rect2d> detectObjects(Mat image, List<String> targetClasses, float confThreshold, float nmsThreshold) {
