@@ -52,6 +52,13 @@ public class YoloDetector {
     public List<Rect2d> detectObjects(Mat image, List<String> targetClasses, float confThreshold, float nmsThreshold) {
         List<Rect2d> detectedObjects = new ArrayList<>();
 
+        // Convert image to 3 channels (RGB) if it has 4 channels (RGBA)
+        if (image.channels() == 4) {
+            Imgproc.cvtColor(image, image, Imgproc.COLOR_RGBA2RGB);
+        } else if (image.channels() == 1) {
+            Imgproc.cvtColor(image, image, Imgproc.COLOR_GRAY2RGB);
+        }
+
         // Prepare the blob from the image
         Mat blob = Dnn.blobFromImage(image, 1 / 255.0, new Size(416, 416), new Scalar(0, 0, 0), true, false);
 
