@@ -39,6 +39,7 @@ public class FlightControlMethods {
     private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I); // בקר על הגז - למעלה למטה
     private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I);
     private boolean virtualStickEnabled = false;
+    private boolean movementFinished = false;
 
     private long startTime; // Record the start time
 
@@ -278,6 +279,7 @@ public class FlightControlMethods {
      */
     public void sendVirtualStickCommands(ControlCommand command, float pZ) {
         Log.d("log:  ", "in sendVirtualStickCommands");
+        movementFinished = false;
         if (Objects.isNull(startTime)) {
             startTime = System.currentTimeMillis();
         }
@@ -330,6 +332,7 @@ public class FlightControlMethods {
 //                }
                 flightController.sendVirtualStickFlightControlData(flightControlData, djiError -> {
                             ToastUtils.showToast("VS:" + flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
+                            movementFinished = true;
 //                            if (command.getControllMode() == VerticalControlMode.VELOCITY) {
 //                                flightController.confirmLanding((CommonCallbacks.CompletionCallback) this);
 //                            }

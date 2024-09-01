@@ -80,15 +80,15 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
         size = kernel.shape[0]
     else:
         size = kernel.shape[1]
-    white_area = find_white_areas(mirrored_img, size)
+    best_landing_spot = find_white_areas(mirrored_img, size)
     # white_area = find_white_areas(mirrored_img, kernel)
     dx, dy = 0, 0
     # Check if any white areas are found
-    if not white_area:
+    if not best_landing_spot:
         # if not white_areas:
         print("No white areas found.")
     else:
-        print(f"Found {len(white_area)} white areas.")
+        print(f"Found {len(best_landing_spot)} white areas.")
 #     print(f"Found {len(white_areas)} white areas.")
 
 #     for area in white_areas:
@@ -103,7 +103,7 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
     # plot_white_areas(mirrored_img, [white_area])  # only one area
 #     plot_white_areas_plane(mirrored_img, [white_areas])  # multiple areas
 
-    dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_area, pixel_width_m, pixel_height_m )
+    dx, dy = calculate_movement_to_landing_spot(mirrored_img, best_landing_spot, pixel_width_m, pixel_height_m )
 
 #     dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas[0])
     # Encode the image to bitmap format
@@ -132,9 +132,9 @@ def start_detect(imgLeft, imgRight, altitude, baseLine):
        altitude = 0.1
 
     # Visualize the first detected plane and return it as a bitmap
-    bitmap = visualize_plane_as_bitmap(detected_planes_tensor, altitude)
+    bitmap, movement = visualize_plane_as_bitmap(detected_planes_tensor, altitude)
 
-    return bitmap
+    return bitmap, movement
 
 
 # if __name__ == "__main__":

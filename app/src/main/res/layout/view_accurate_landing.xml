@@ -321,7 +321,7 @@
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
         android:layout_toEndOf="@+id/EdgeDetect"
-        android:text="Start Algo" />
+        android:text="Plane Detection" />
     <!--    <Button-->
     <!--        android:id="@+id/g_plus_side_update"-->
     <!--        android:layout_width="50dp"-->

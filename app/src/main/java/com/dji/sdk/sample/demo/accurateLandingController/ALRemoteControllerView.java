@@ -62,7 +62,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //    protected EditText lon;
     protected PresentMap presentMap;
     private Context ctx;
-    private Button goToFMM_btn, followPhone_btn, stopButton, edgeDetect, goTo_btn, land_btn, recordBtn;
+    private Button goToFMM_btn, followPhone_btn, startAlgo_btn, stopButton, edgeDetect, goTo_btn, land_btn, recordBtn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
     private Button g_minus_btn_up, start_algo;
     private Bitmap droneIMG;
@@ -143,6 +143,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //        goToFMM_btn = findViewById(R.id.GoTo_FMM_btn);
 //        followPhone_btn = findViewById(R.id.Follow_phone_FMM_btn);
         stopButton = findViewById(R.id.stop_btn);
+        startAlgo_btn = findViewById(R.id.start_algo);
         edgeDetect = findViewById(R.id.EdgeDetect);
 //        goTo_btn = findViewById(R.id.goTo_btn);
         land_btn = findViewById(R.id.land_btn);
@@ -162,7 +163,6 @@ public class ALRemoteControllerView extends RelativeLayout
         t_minus_btn = findViewById(R.id.t_minus_btn);
         t_plus_btn = findViewById(R.id.t_plus_btn);
         g_minus_btn_up = findViewById(R.id.gimbal_pitch_update);
-        start_algo = findViewById(R.id.start_algo);
 //        recIcon = findViewById(R.id.recIcon);
 
 //        g_plus_btn_up = findViewById(R.id.g_plus_up_update);
@@ -191,8 +191,8 @@ public class ALRemoteControllerView extends RelativeLayout
         t_plus_btn.setOnClickListener(this);
 
         g_minus_btn_up.setOnClickListener(this);
-        start_algo.setOnClickListener(this);
-//        g_plus_btn_up.setOnClickListener(this);
+        startAlgo_btn.setOnClickListener(this);
+        //        g_plus_btn_up.setOnClickListener(this);
 //        g_minus_btn_side.setOnClickListener(this);
 //        g_plus_btn_side.setOnClickListener(this);
 
@@ -233,7 +233,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
         }
         accuracyLog.closeLog();
-        controllerImageDetection.stopDepthMapVideo();
+        controllerImageDetection.stopPlanarVideo();
         return false;
     }
 
@@ -248,14 +248,14 @@ public class ALRemoteControllerView extends RelativeLayout
         double[] currentPos = dataFromDrone.getCurrentPosition();
         controllerImageDetection.setCurrentImage(droneIMG, currentPos);
 
-        if (!videoNotStarted) {
-            controllerImageDetection.startDepthMapVideo();
-//                videoNotStarted = false;
-        }
+//        if (!videoNotStarted) {
+//            controllerImageDetection.startDepthMapVideo();
+////                videoNotStarted = false;
+//        }
         videoNotStarted = false;
 
 //        }
-        controllerImageDetection.buildControlCommand();
+//        controllerImageDetection.buildControlCommand();
 
         if (controllerImageDetection.isEdgeDetectionMode() && gimbalController.isFinishRotate()) {
             controllerImageDetection.setBitmapFrame(droneIMG);
@@ -502,6 +502,7 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.start_algo:
                 gimbalController.rotateGimbalToDegree(-90);
                 controllerImageDetection.DepthBool();
+                startPlaneDetectionAlgo();
                 break;
             case R.id.gimbal_pitch_update:
 //                ToastUtils.setResultToToast(String.valueOf(Float.parseFloat(gimbal.getText().toString())));
@@ -519,8 +520,10 @@ public class ALRemoteControllerView extends RelativeLayout
             default:
                 break;
         }
+    }
 
-
+    private void startPlaneDetectionAlgo() {
+        controllerImageDetection.startPlaneDetectionAlgo();
     }
 
     @Override
