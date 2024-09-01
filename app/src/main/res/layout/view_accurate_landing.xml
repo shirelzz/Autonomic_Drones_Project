@@ -328,9 +328,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toEndOf="@id/start_plane_detection"
-        android:layout_above="@+id/land_btn"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
-        android:layout_marginStart="10dp"
         android:text="Object Detection" />
 
     <Button
@@ -338,9 +338,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toEndOf="@id/start_yolo"
-        android:layout_above="@+id/land_btn"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"
-        android:layout_marginStart="10dp"
         android:text="Start Landing Algo (combined)" />
 
     <!--    <Button-->

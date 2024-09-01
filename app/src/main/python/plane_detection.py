@@ -36,35 +36,37 @@ class PlaneDetection:
         points = point_cloud
         print("Iterative RANSAC...")
         plane_counter = 0
-        # print("points", points)
+        print("points", points)
+        try:
+            while True:
+                best_eq, best_inliers = self.geometry.fit(points, self.thresh)
 
-        while True:
-            best_eq, best_inliers = self.geometry.fit(points, self.thresh)
+                if len(best_inliers) < self.plane_size:
+                    break
 
-            if len(best_inliers) < self.plane_size:
-                break
+                plane_counter += 1
+                self.eqs.append(best_eq)
 
-            plane_counter += 1
-            self.eqs.append(best_eq)
+                # Remove the best inliers from the overall point cloud
+                self.pcd_out = np.delete(points, best_inliers, axis=0)
+                plane = points[best_inliers]
+                self.planes.append(plane)
+                points = self.pcd_out
 
-            # Remove the best inliers from the overall point cloud
-            self.pcd_out = np.delete(points, best_inliers, axis=0)
-            plane = points[best_inliers]
-            self.planes.append(plane)
-            points = self.pcd_out
+            if not self.planes:
+                print("self.planes")
+                return None
 
-        if not self.planes:
-            print("self.planes")
-            return None
+            # Get the axis-aligned bounding box
+            min_bound = np.min(self.planes[0], axis=0)
+            max_bound = np.max(self.planes[0], axis=0)
 
-        # Get the axis-aligned bounding box
-        min_bound = np.min(self.planes[0], axis=0)
-        max_bound = np.max(self.planes[0], axis=0)
+            width = max_bound[0] - min_bound[0]
+            height = max_bound[1] - min_bound[1]
 
-        width = max_bound[0] - min_bound[0]
-        height = max_bound[1] - min_bound[1]
+            print(f"Width: {width:.2f} units")
+            print(f"Height: {height:.2f} units")
 
-        print(f"Width: {width:.2f} units")
-        print(f"Height: {height:.2f} units")
-
-        return self.planes
+            return self.planes
+        except (TypeError, ValueError) as e:
+            print("1111: ", e)

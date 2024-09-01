@@ -313,6 +313,8 @@ public class ALRemoteControllerView extends RelativeLayout
     public void stopBtnFunc() {
         controllerImageDetection.stopEdgeDetection();
         gimbalController.rotateGimbalToDegree(-90);
+        controllerImageDetection.stopPlaneDetectionAlgo();
+        controllerImageDetection.stopObjectDetectionAlgo();
 //        Objects.requireNonNull(flightControlMethods.getFlightController().getFlightAssistant()).setLandingProtectionEnabled(true, djiError -> {
 //            if (djiError != null) showToast("" + djiError);
 //            else showToast("Landing protection DISABLED!");

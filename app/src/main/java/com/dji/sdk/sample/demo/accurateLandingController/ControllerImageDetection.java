@@ -906,8 +906,12 @@ public class ControllerImageDetection {
 
                                         Log.d(TAG, "Drone moved with dx: " + dx + ", dy: " + dy);
 
-                                        // Stop plane detection
-                                        stopPlaneDetectionAlgo();
+                                        if(altitude < 4){
+
+                                            // Stop plane detection
+                                            stopPlaneDetectionAlgo();
+                                        }
+
                                         Log.d(TAG, "Plane detection algorithm stopped.");
                                     }
                                 });
