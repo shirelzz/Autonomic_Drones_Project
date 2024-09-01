@@ -697,10 +697,6 @@ public class ControllerImageDetection {
 
         isPlaying = true;
 
-        if (!Python.isStarted()) {
-            Python.start(new AndroidPlatform(context)); // 'this' is the Context here
-        }
-
         new Thread(() -> {
             try {
 
@@ -784,6 +780,11 @@ public class ControllerImageDetection {
 //        releasePythonResources();
     }
 
+    public void stopObjectDetectionAlgo() {
+        isObjectDetecting = false;
+//        releasePythonResources();
+    }
+
     private void releasePythonResources() {
         if (PlaneHandlerClass != null) {
             try {
@@ -828,9 +829,7 @@ public class ControllerImageDetection {
 
     public void startLandingAlgo() {
         startPlaneDetectionAlgo();
-        isDetectingPlane = false;
         startObjectDetectionAlgo();
-        isObjectDetecting = false;
 //        detectLending();
     }
 
@@ -880,9 +879,17 @@ public class ControllerImageDetection {
                                     // Update the ImageView with the new frame
                                     imageView.setImageBitmap(bitmap);
 
-                                    // Control the drone movement
-                                    moveDrone(dx, dy);
-                                    Log.d(TAG, "imageView updated");
+                                    // Check if movement values are non-zero
+                                    if (dx != 0 || dy != 0) {
+                                        // Control the drone movement
+                                        moveDrone(dx, dy);
+
+                                        Log.d(TAG, "Drone moved with dx: " + dx + ", dy: " + dy);
+
+                                        // Stop plane detection
+                                        stopPlaneDetectionAlgo();
+                                        Log.d(TAG, "Plane detection algorithm stopped.");
+                                    }
                                 });
 
                             } else {
@@ -936,7 +943,8 @@ public class ControllerImageDetection {
                         findOtherLandingSpot();
                     } else {
                         System.out.println("No hazards detected. Safe to land.");
-                        showToast("Landing aborted due to hazards.");
+                        showToast("No hazards detected. Safe to land.");
+                        stopObjectDetectionAlgo();
                         // TODO : Proceed to edge detction and landing
                     }
 
