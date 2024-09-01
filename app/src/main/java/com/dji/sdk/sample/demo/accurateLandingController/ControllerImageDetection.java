@@ -50,7 +50,8 @@ public class ControllerImageDetection {
     Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
     private ImageView imageView;  // ImageView to display the frames
     private boolean isPlaying = false;  // To control the video playback
-    private boolean isDetectingPlane = false;  // To control the video playback
+    private boolean isDetectingPlane = false;
+    private boolean isObjectDetecting = false;
     private Handler handler = new Handler(Looper.getMainLooper());  // For updating the UI
     private Python python;
     private double focal_length = 4.8; // Field of View in mm
@@ -495,6 +496,7 @@ public class ControllerImageDetection {
 
         if ((isUltrasonicBeingUsed && droneRelativeHeight <= 0.2) || droneHeight <= 0.2) {
             showToast("Land!!!!");
+            releasePythonResources();
             ControlCommand ans = new ControlCommand(0, 0, -3);
             ans.setErr(1000, error_x, error_y, dataFromDrone.getAltitudeBelow());
             ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
@@ -513,6 +515,7 @@ public class ControllerImageDetection {
             not_found++;
             if (not_found > 5) {
                 if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
+                    releasePythonResources();
                     showToast("Land2!!!!");
                     return flightControlMethods.land();
                 } else {
@@ -772,16 +775,16 @@ public class ControllerImageDetection {
 
     public void stopPlanarVideo() {
         isPlaying = false;
-        ReleasePythonResources();
+//        releasePythonResources();
     }
 
     // TODO : Use this function after the drone has landed
     public void stopPlaneDetectionAlgo() {
         isDetectingPlane = false;
-        ReleasePythonResources();
+//        releasePythonResources();
     }
 
-    private void ReleasePythonResources() {
+    private void releasePythonResources() {
         if (PlaneHandlerClass != null) {
             try {
                 PlaneHandlerClass.close();
@@ -821,6 +824,14 @@ public class ControllerImageDetection {
         Log.d(TAG, "Convert byte array to Bitmap: " + bitmap.toString());
 
         return bitmap;
+    }
+
+    public void startLandingAlgo() {
+        startPlaneDetectionAlgo();
+        isDetectingPlane = false;
+        startObjectDetectionAlgo();
+        isObjectDetecting = false;
+//        detectLending();
     }
 
     public void startPlaneDetectionAlgo() {
@@ -865,11 +876,14 @@ public class ControllerImageDetection {
 
                                 Log.d("PlaneDetection", "Bitmap received. Movement instructions: dx=" + dx + ", dy=" + dy);
 
-                                // update the UI with the bitmap
-                                imageView.setImageBitmap(bitmap);
+                                handler.post(() -> {
+                                    // Update the ImageView with the new frame
+                                    imageView.setImageBitmap(bitmap);
 
-                                // Control the drone movement
-                                moveDrone(dx, dy);
+                                    // Control the drone movement
+                                    moveDrone(dx, dy);
+                                    Log.d(TAG, "imageView updated");
+                                });
 
                             } else {
                                 Log.e("PlaneDetection", "No result returned from Python function 'start_detect'.");
@@ -899,6 +913,48 @@ public class ControllerImageDetection {
         // TODO
         // Move the drone towards the landing spot
     }
+
+    public void startObjectDetectionAlgo() {
+        Log.d(TAG, "entered startObjectDetectionAlgo");
+
+        isObjectDetecting = true;
+
+        // Initialize YOLO detector and hazard detection system
+        YoloDetector yoloDetector = new YoloDetector("yolov3.cfg", "yolov3.weights");
+        DroneSafety droneSafety = new DroneSafety(yoloDetector);
+
+        new Thread(() -> {
+            try {
+
+                while (isObjectDetecting) {
+                    // Check for hazards before attempting to land
+                    boolean isHazardous = droneSafety.checkForHazards(current_image);
+
+                    if (isHazardous) {
+                        System.out.println("Landing aborted due to hazards.");
+                        showToast("Landing aborted due to hazards.");
+                        findOtherLandingSpot();
+                    } else {
+                        System.out.println("No hazards detected. Safe to land.");
+                        showToast("Landing aborted due to hazards.");
+                        // TODO : Proceed to edge detction and landing
+                    }
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+
+            }
+        }).start();
+
+        Log.d(TAG, "ended startPlaneDetectionAlgo");
+
+    }
+
+    private void findOtherLandingSpot() {
+        // TODO
+    }
+
 
     private boolean validateImages() {
         if (current_image == null) {
