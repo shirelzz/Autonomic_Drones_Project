@@ -8,7 +8,7 @@ import base64
 import time
 
 from ConvertPLY2PNG import find_fixed_size_white_areas, remove_overlapping_areas, plot_white_areas_plane, \
-    calculate_movement_to_landing_spot, find_white_areas, plot_white_areas
+    calculate_movement_to_landing_spot, find_white_areas, find_largest_white_area, plot_white_areas
 from photogrammetry import get_window
 
 
@@ -74,8 +74,12 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
     print("w:", w)
     kernel, pixel_width_m, pixel_height_m = get_window(altitude, w, h)
     # Find white areas of size ?
-    white_areas = find_fixed_size_white_areas(mirrored_img, kernel.shape)
-    white_areas = remove_overlapping_areas(white_areas, overlap_threshold=0.5)
+    # white_areas = find_fixed_size_white_areas(mirrored_img, kernel.shape)
+    # white_areas = remove_overlapping_areas(white_areas, overlap_threshold=0.5)
+
+    white_areas = find_white_areas(mirrored_img)
+    largest_white_area, area = find_largest_white_area(white_areas)
+
     if kernel.shape[0] > kernel.shape[1]:
         size = kernel.shape[0]
     else:
@@ -104,7 +108,7 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
 #     plot_white_areas_plane(mirrored_img, [white_areas])  # multiple areas
 #     dx, dy = calculate_movement_to_landing_spot(mirrored_img, best_landing_spot, pixel_width_m, pixel_height_m )
 
-    dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas[0], pixel_width_m, pixel_height_m )
+    dx, dy = calculate_movement_to_landing_spot(mirrored_img, largest_white_area, pixel_width_m, pixel_height_m )
     # Encode the image to bitmap format
     is_success, img_encoded = cv.imencode('.bmp', mirrored_img)
 
