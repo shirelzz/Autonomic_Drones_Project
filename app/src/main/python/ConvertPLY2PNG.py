@@ -148,6 +148,7 @@ def find_fixed_size_white_areas(image_array, fixed_size):
     :return: List of detected white areas, each with 'bbox' and 'area'.
     """
 
+
     if len(image_array.shape) == 3:
         # Convert to grayscale if the image is in color
         image_array = cv.cvtColor(image_array, cv.COLOR_BGR2GRAY)
@@ -165,6 +166,10 @@ def find_fixed_size_white_areas(image_array, fixed_size):
     fixed_height, fixed_width = fixed_size
     print("fixed_height: ", fixed_height)
     print("fixed_width: ", fixed_width)
+    if fixed_height < 15:
+        fixed_height = 15
+    if fixed_width < 15:
+        fixed_width = 15
     white_areas = []
 
     # Slide a fixed-size window over the image
