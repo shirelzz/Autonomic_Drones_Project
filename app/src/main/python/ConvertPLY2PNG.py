@@ -141,10 +141,10 @@ def remove_overlapping_areas(areas, overlap_threshold=0.5):
 
 def find_fixed_size_white_areas(image_array, fixed_size):
     """
-    Detects fixed-size white areas in the image with no black pixels.
+    Detects white areas in the image that are at least the fixed size and have no black pixels.
 
     :param image_array: Input image array (grayscale).
-    :param fixed_size: Tuple (height, width) specifying the fixed size of the white areas to detect.
+    :param fixed_size: Tuple (height, width) specifying the minimum size of the white areas to detect.
     :return: List of detected white areas, each with 'bbox' and 'area'.
     """
 
@@ -157,24 +157,28 @@ def find_fixed_size_white_areas(image_array, fixed_size):
 
     # Apply morphological operations to clean the image
     cleaned_image = closing(binary_image, square(3))
-    # Optionally apply dilation and erosion for better results
     cleaned_image = cv.dilate(cleaned_image, None, iterations=1)
     cleaned_image = cv.erode(cleaned_image, None, iterations=1)
 
-    # Get dimensions of the fixed size
     fixed_height, fixed_width = fixed_size
-    print("fixed_height: ", fixed_height)
-    print("fixed_width: ", fixed_width)
     white_areas = []
 
-    # Slide a fixed-size window over the image
-    for y in range(0, cleaned_image.shape[0] - fixed_height + 1):
-        for x in range(0, cleaned_image.shape[1] - fixed_width + 1):
-            region = cleaned_image[y:y + fixed_height, x:x + fixed_width]
-            if np.all(region == 255):  # Check if all pixels in the region are white
+    # Find all contours in the binary image
+    contours, _ = cv.findContours(cleaned_image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours:
+        # Get the bounding box of the contour
+        x, y, w, h = cv.boundingRect(contour)
+
+        # Check if the bounding box is at least the size of the fixed_size
+        if w >= fixed_width and h >= fixed_height:
+            region = cleaned_image[y:y + h, x:x + w]
+
+            # Ensure the region has no black pixels
+            if np.all(region == 255):
                 white_areas.append({
-                    'bbox': (y, x, y + fixed_height, x + fixed_width),
-                    'area': fixed_height * fixed_width
+                    'bbox': (y, x, y + h, x + w),
+                    'area': w * h
                 })
 
     return white_areas
@@ -193,7 +197,7 @@ def find_fixed_size_white_areas(image_array, fixed_size):
 """
 
 
-def find_white_areas(image_array, min_size):
+def find_white_areas_of_min_size(image_array, min_size):
 
     # Find connected components in the image
     labeled_image, num_labels = label(image_array == 255, connectivity=2, return_num=True)
@@ -244,6 +248,40 @@ def find_white_areas(image_array, min_size):
 
     return best_landing_spot
 
+def find_white_areas(image_array):
+    # Step 1: Binarize the image (assuming white is 255 and black is 0)
+    binary_image = image_array > 128  # Threshold the image to get binary values
+
+    # Step 2: Label connected regions in the binary image
+    labeled_image = label(binary_image)
+
+    # Step 3: Extract properties of labeled regions
+    regions = regionprops(labeled_image)
+
+    # Step 4: Create a list to hold the bounding boxes of white areas
+    white_areas = []
+
+    # Iterate through the regions and extract bounding boxes
+    for region in regions:
+        minr, minc, maxr, maxc = region.bbox
+        white_areas.append(((minr, minc), (maxr, maxc)))
+
+    return white_areas
+
+def find_largest_white_area(white_areas):
+    max_area = 0
+    largest_area_bbox = None
+
+    for (minr, minc), (maxr, maxc) in white_areas:
+        width = maxc - minc
+        height = maxr - minr
+        area = width * height
+
+        if area > max_area:
+            max_area = area
+            largest_area_bbox = ((minr, minc), (maxr, maxc))
+
+    return largest_area_bbox, max_area
 
 def calculate_movement_to_landing_spot(image_array, best_landing_spot, pixel_width_m, pixel_height_m ):
     # Get the dimensions of the image
