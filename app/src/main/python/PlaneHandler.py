@@ -74,22 +74,22 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
     print("w:", w)
     kernel, pixel_width_m, pixel_height_m = get_window(altitude, w, h)
     # Find white areas of size ?
-    # white_areas = find_fixed_size_white_areas(mirrored_img, kernel.shape)
-    # white_areas = remove_overlapping_areas(white_areas, overlap_threshold=0.5)
+    white_areas = find_fixed_size_white_areas(mirrored_img, kernel.shape)
+    white_areas = remove_overlapping_areas(white_areas, overlap_threshold=0.5)
     if kernel.shape[0] > kernel.shape[1]:
         size = kernel.shape[0]
     else:
         size = kernel.shape[1]
-    best_landing_spot = find_white_areas(mirrored_img, size)
+    # best_landing_spot = find_white_areas(mirrored_img, size)
     # white_area = find_white_areas(mirrored_img, kernel)
     dx, dy = 0, 0
     # Check if any white areas are found
-    if not best_landing_spot:
-        # if not white_areas:
-        print("No white areas found.")
-    else:
-        print(f"Found {len(best_landing_spot)} white areas.")
-#     print(f"Found {len(white_areas)} white areas.")
+    # if not best_landing_spot:
+    #     # if not white_areas:
+    #     print("No white areas found.")
+    # else:
+    #     print(f"Found {len(best_landing_spot)} white areas.")
+    print(f"Found {len(white_areas)} white areas.")
 
 #     for area in white_areas:
 #         print(f"Type of area: {type(area)}")  # This will help identify the actual type
@@ -102,9 +102,9 @@ def visualize_plane_as_bitmap(detected_planes_tensor, altitude):
         # Plot the results with red borders
     # plot_white_areas(mirrored_img, [white_area])  # only one area
 #     plot_white_areas_plane(mirrored_img, [white_areas])  # multiple areas
-    dx, dy = calculate_movement_to_landing_spot(mirrored_img, best_landing_spot, pixel_width_m, pixel_height_m )
+#     dx, dy = calculate_movement_to_landing_spot(mirrored_img, best_landing_spot, pixel_width_m, pixel_height_m )
 
-#     dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas[0])
+    dx, dy = calculate_movement_to_landing_spot(mirrored_img, white_areas[0], pixel_width_m, pixel_height_m )
     # Encode the image to bitmap format
     is_success, img_encoded = cv.imencode('.bmp', mirrored_img)
 

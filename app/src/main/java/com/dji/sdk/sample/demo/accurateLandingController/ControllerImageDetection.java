@@ -668,13 +668,17 @@ public class ControllerImageDetection {
         return ans;
     }
 
-    void buildControlCommand(double pitch, double roll, double dt, double altitude) {
-        activate = true;
+    void buildControlCommand() {
+//        activate = true;
+        if(!activate){
+            return;
+        }
+        activate = false;
         Log.i("buildControlCommand", "buildControlCommand");
         double maxSpeed = 5.0;
         double Kp = 0.02;  // Proportional gain, adjust as needed - 0.01
-        error_y = pitch * Kp;
-        error_x = roll * Kp;
+        error_y = this.pitch * Kp;
+        error_x = this.roll * Kp;
 
         p = (float) pitch_pid.update(error_y, dt, maxSpeed);
         r = (float) roll_pid.update(error_x, dt, maxSpeed);
@@ -686,7 +690,7 @@ public class ControllerImageDetection {
         ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
         flightControlMethods.sendVirtualStickCommands(ans, 0.0f);
 
-        if (altitude > 4) {
+        if (this.alt > 4) {
             error_z = -2;
         } else {
             error_z = 0;
@@ -853,9 +857,12 @@ public class ControllerImageDetection {
 
         isDetectingPlane = true;
 
-        if (!Python.isStarted()) {
-            Python.start(new AndroidPlatform(context));
-        }
+//        if (!Python.isStarted()) {
+//            Python.start(new AndroidPlatform(context));
+//        }
+        pitch_pid.reset();
+        roll_pid.reset();
+        throttle_pid.reset();
 
         new Thread(() -> {
             try {
@@ -876,12 +883,16 @@ public class ControllerImageDetection {
 
                         prevTime = System.currentTimeMillis();
 
+
                         try {
                             // Call Python function with the byte arrays
                             PyObject result = getOutputFunc.call(PyObject.fromJava(previousImageBytes), PyObject.fromJava(currentImageBytes), altitude, baseLine);
                             long currTime = System.currentTimeMillis();
                             double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
                             prevTime = currTime;
+                            showToast(String.valueOf(result));
+//                            showToast(String.valueOf(result));
+
                             if (result != null && !activate) {
                                 // Decode the returned bitmap
                                 String bitmapBase64 = result.asList().get(0).toString();
@@ -895,6 +906,7 @@ public class ControllerImageDetection {
                                 Log.d("PlaneDetection", "Bitmap received. Movement instructions: dx=" + dx + ", dy=" + dy);
 
                                 handler.post(() -> {
+                                    showToast("HandlePost");
                                     // Update the ImageView with the new frame
                                     imageView.setImageBitmap(bitmap);
 
@@ -906,14 +918,14 @@ public class ControllerImageDetection {
 
                                         Log.d(TAG, "Drone moved with dx: " + dx + ", dy: " + dy);
 
-                                        if (altitude < 4) {
+//                                        if (altitude < 4) {
 
                                             // Stop plane detection
                                             stopPlaneDetectionAlgo();
                                             if (inAlgo) {
                                                 startObjectDetectionAlgo(inAlgo);
                                             }
-                                        }
+//                                        }
 
                                         Log.d(TAG, "Plane detection algorithm stopped.");
                                     }
@@ -950,7 +962,14 @@ public class ControllerImageDetection {
         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
 
         handler.post(() ->
-                buildControlCommand(dy, dx, dt, altitude));
+                {
+                    this.pitch = dy;
+                    this.roll = dx;
+                    this.alt = altitude;
+                    this.dt = dt;
+                    this.activate = true;
+                });
+//                buildControlCommand(dy, dx, dt, altitude));
 
     }
 
