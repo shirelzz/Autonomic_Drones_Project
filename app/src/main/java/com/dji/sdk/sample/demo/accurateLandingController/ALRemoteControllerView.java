@@ -551,7 +551,6 @@ public class ALRemoteControllerView extends RelativeLayout
                 break;
 
             case R.id.guardian:
-                guard_btn.setBackgroundColor(Color.GREEN);
                 toggleMovementDetection();
                 break;
 
@@ -582,14 +581,14 @@ public class ALRemoteControllerView extends RelativeLayout
             // Stop movement detection
             isMovementDetectionRunning = false;
             movementDetectionHandler.removeCallbacks(movementDetectionRunnable);
-            startObjectDetectionAlgo_btn.setBackgroundColor(Color.RED);  // Indicate it's stopped
+            guard_btn.setBackgroundColor(Color.RED);  // Indicate it's stopped
             showToast("Movement detection stopped");
         } else {
             // Start movement detection
             isMovementDetectionRunning = true;
             movementDetector.setOriginalImage(convertBitmapToMat(droneIMG));  // Set the initial frame
             movementDetectionHandler.post(movementDetectionRunnable);  // Start periodic checking
-            startObjectDetectionAlgo_btn.setBackgroundColor(Color.GREEN);  // Indicate it's running
+            guard_btn.setBackgroundColor(Color.GREEN);  // Indicate it's running
             showToast("Movement detection started");
         }
     }
