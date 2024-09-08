@@ -1,21 +1,26 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
 import static com.dji.sdk.sample.internal.utils.ToastUtils.setResultToToast;
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
+import com.dji.sdk.sample.internal.utils.DialogUtils;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.Objects;
 
+import dji.common.error.DJIError;
 import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 import dji.common.flightcontroller.virtualstick.YawControlMode;
+import dji.common.util.CommonCallbacks;
 import dji.sdk.flightcontroller.FlightController;
 
 /**
@@ -193,7 +198,8 @@ public class FlightControlMethods {
         //  מאפס את כל הערכים לאפס - מתייצב
 //        roll_pid.reset();
 //        pitch_pid.reset();
-        float t = -4;
+//        while()
+        float t = -2;
         float r = 0;
         float p = 0;
 //        y = 0;
@@ -201,8 +207,9 @@ public class FlightControlMethods {
         //        ans.setErr(1000, 0, 0, 0);
 //        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
 //        ans.setImageDistance(-1);
+        ControlCommand cmd = new ControlCommand(p, r, t);
 
-        return new ControlCommand(p, r, t);
+        return null;
     }
 
     /**
@@ -246,6 +253,15 @@ public class FlightControlMethods {
         ControlCommand command = new ControlCommand(0, roll, 0);
         // Send virtual stick commands to the drone
         sendVirtualStickCommands(command, 0);
+    }
+
+    public void takeOff(){
+        flightController.startTakeoff(new CommonCallbacks.CompletionCallback() {
+            @Override
+            public void onResult(DJIError djiError) {
+                showToast( djiError.getDescription());
+            }
+        });
     }
 
 

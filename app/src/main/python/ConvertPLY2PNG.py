@@ -270,8 +270,17 @@ def find_white_areas(image_array):
 
     # Iterate through the regions and extract bounding boxes
     for region in regions:
-        minr, minc, maxr, maxc = region.bbox
-        white_areas.append(((minr, minc), (maxr, maxc)))
+        if len(region.bbox) == 4:
+            minr, minc, maxr, maxc = region.bbox
+        elif len(region.bbox) > 4:
+            minr, minc, _, maxr, maxc, _ = region.bbox  # Ignore extra dimensions if present
+        else:
+            continue  # Skip if the bounding box is not in the expected format
+#         minr, minc, maxr, maxc = region.bbox
+        white_areas.append({
+                                'bbox': (minr, minc, maxr, maxc)
+                                # 'area': area
+                            })
 
     return white_areas
 
@@ -297,7 +306,7 @@ def calculate_movement_to_landing_spot(image_array, best_landing_spot, pixel_wid
     # Calculate the center of the image
     center_image_x = width / 2
     center_image_y = height / 2
-
+    print(best_landing_spot)
     # Get the bounding box of the best landing spot
     minr, minc, maxr, maxc = best_landing_spot['bbox']
 

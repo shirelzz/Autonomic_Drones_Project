@@ -261,7 +261,7 @@ public class ALRemoteControllerView extends RelativeLayout
 
 //        }
 
-        controllerImageDetection.buildControlCommand();
+//        controllerImageDetection.buildControlCommand();
 
         if (controllerImageDetection.isEdgeDetectionMode() && gimbalController.isFinishRotate()) {
             controllerImageDetection.setBitmapFrame(droneIMG);

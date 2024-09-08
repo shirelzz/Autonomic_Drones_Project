@@ -1,5 +1,6 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.demo.accurateLandingController.EdgeDetection.isIn_blur;
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 import static org.opencv.android.Utils.matToBitmap;
 
@@ -135,18 +136,27 @@ public class ControllerImageDetection {
 //        this.objectTracking = new ObjectTracking(true, "GREEN");
 //        centerTracker = new CenterTracker();
 
-        // Initialize Python and load the module
-        try {
-            if (!Python.isStarted()) {
-                Python.start(new AndroidPlatform(context)); // 'this' is the Context here
-            }
 
-            python = Python.getInstance();
-            PlaneHandlerClass = python.getModule("PlaneHandler");
-            getOutputFunc = PlaneHandlerClass.get("start_detect");
-        } catch (Exception err) {
-            err.printStackTrace();
+    }
+
+    // Method to calculate intersection point of two lines given by points (p1, p2) and (p3, p4)
+    private static Point calculateIntersection(Point p1, Point p2, Point p3, Point p4) {
+        double a1 = p2.y - p1.y;
+        double b1 = p1.x - p2.x;
+        double c1 = a1 * p1.x + b1 * p1.y;
+
+        double a2 = p4.y - p3.y;
+        double b2 = p3.x - p4.x;
+        double c2 = a2 * p3.x + b2 * p3.y;
+
+        double delta = a1 * b2 - a2 * b1;
+        if (delta == 0) {
+            return new Point(-1, -1); // Lines are parallel
         }
+
+        double x = (b2 * c1 - b1 * c2) / delta;
+        double y = (a1 * c2 - a2 * c1) / delta;
+        return new Point(x, y);
     }
 
     private void updateLog(ControlCommand control, int numEdges, Point[] chosenEdge, double dy) {
@@ -187,15 +197,15 @@ public class ControllerImageDetection {
         controlStatus.put("AutonomousMode", (double) (autonomous_mode ? 1 : 0));
 
     }
-
-    public Map<String, Double> getControlStatus() {
-        return controlStatus;
-    }
     //    private double calculateVerticalFOV(double FOV, double aspectRatio) {
 //        double halfHorizontalFOV = Math.toRadians(FOV / 2);
 //        double verticalFOV = 2 * Math.atan(Math.tan(halfHorizontalFOV) / aspectRatio);
 //        return Math.toDegrees(verticalFOV);
 //    }
+
+    public Map<String, Double> getControlStatus() {
+        return controlStatus;
+    }
 
     public void DepthBool() {
         this.check_depth = true;
@@ -205,6 +215,8 @@ public class ControllerImageDetection {
         return check_depth;
     }
 
+    // Method to run the Python script asynchronously
+
     public void setDescentRate(float descentRate) {
         if (descentRate > 0) {
             descentRate = -descentRate;
@@ -212,8 +224,6 @@ public class ControllerImageDetection {
 
         this.descentRate = descentRate;
     }
-
-    // Method to run the Python script asynchronously
 
     public void initPIDs(double p, double i, double d, double max_i, String type) {
 
@@ -253,24 +263,6 @@ public class ControllerImageDetection {
 //            throttle_pid.setPID(p, i, d, max_i);
 //        }
     }
-
-    public void saveImage(Bitmap bitmap, String filename) {
-        File pictureFile = getOutputMediaFile();
-        if (pictureFile == null) {
-            Log.d(TAG,
-                    "Error creating media file, check storage permissions: ");// e.getMessage());
-            return;
-        }
-        try {
-            FileOutputStream fos = new FileOutputStream(pictureFile);
-            bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
-            fos.close();
-        } catch (FileNotFoundException e) {
-            Log.d(TAG, "File not found: " + e.getMessage());
-        } catch (IOException e) {
-            Log.d(TAG, "Error accessing file: " + e.getMessage());
-        }
-    }
 //        BufferedWriter logFile;
 //        File externalStorage = context.getExternalFilesDir(null);
 //        String fileName = externalStorage.getAbsolutePath() + filename + System.currentTimeMillis() + ".png";
@@ -300,6 +292,24 @@ public class ControllerImageDetection {
 ////            text.setText(e.getMessage());
 //
 //        }
+
+    public void saveImage(Bitmap bitmap, String filename) {
+        File pictureFile = getOutputMediaFile();
+        if (pictureFile == null) {
+            Log.d(TAG,
+                    "Error creating media file, check storage permissions: ");// e.getMessage());
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            Log.d(TAG, "File not found: " + e.getMessage());
+        } catch (IOException e) {
+            Log.d(TAG, "Error accessing file: " + e.getMessage());
+        }
+    }
 
     //        // Create the image file
 //        File imageFile = new File(Environment.getExternalStorageDirectory(), filename + ".png");
@@ -494,27 +504,94 @@ public class ControllerImageDetection {
         return ans;
     }
 
-    public ControlCommand detectLending(Mat imgToProcess, double droneHeight) throws Exception {
+//    public ControlCommand detectLending(Mat imgToProcess, double droneHeight) throws Exception {
+//
+//        long currTime = System.currentTimeMillis();
+//        double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
+//        prevTime = currTime;
+//        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
+//        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
+////        if ((isUltrasonicBeingUsed && droneRelativeHeight <= 0.0) || droneHeight <= 0) {
+////            setEdgeDetectionMode(false);
+////            return null;
+////        }
+////        if ((isUltrasonicBeingUsed && droneRelativeHeight <= 0.2) || droneHeight <= 0.2) {
+////            showToast("Land!!!!");
+////            releasePythonResources();
+////            ControlCommand ans = new ControlCommand(0, 0, -3);
+////            ans.setErr(1000, error_x, error_y, dataFromDrone.getAltitudeBelow());
+////            ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+////
+////            return ans;
+////
+////        }
+//        // Initialize variables for edge detection and pitch/roll adjustment
+////        List<List<Object[]>> pointArr = EdgeDetection.detectLines(imgToProcess);
+////        if (pointArr.size() < 2) {
+////            return null;
+////        }
+////        List<Object[]> horizontalLines = pointArr.get(0);
+////        List<Object[]> verticalLines = pointArr.get(1);
+//        List<Object[]> pointArr = EdgeDetection.detectLines(imgToProcess);
+////        int size = horizontalLines.size() + verticalLines.size();
+//        int size = pointArr.size();
+////        showToast(String.valueOf(horizontalLines.size()));
+//        if (size > 0) {
+//            first_detect = false;
+//            not_found = 0;
+//        } else if (!first_detect) {
+//            ControlCommand stay = stayOnPlace();
+//            flightControlMethods.sendVirtualStickCommands(stay, 0.0f);
+//            not_found++;
+//            if (not_found > 5) {
+//                if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.3) {
+//                    releasePythonResources();
+//                    showToast("Land2!!!!");
+//                    return flightControlMethods.land();
+//                } else {
+//                    throw new Exception("Error in detection mode, edge disappear");
+//                }
+//            }
+//            return null;
+//        } else {
+//            return null;
+//        }
+//        Point[] bestLine;
+//        if (isIn_blur()) {
+//            bestLine = selectMiddleBestLine(pointArr, imgToProcess);
+//        } else {
+//            bestLine = selectBestLine(pointArr, imgToProcess);
+//        }
+////        Point[] bestLine = selectBestLine(horizontalLines, verticalLines, imgToProcess);
+//
+//        if (bestLine != null) {
+//            if (isIn_blur()) {
+//                Imgproc.line(imgToProcess, bestLine[0], bestLine[1], new Scalar(255, 0, 255), 3, Imgproc.LINE_AA, 0);
+//
+//            } else {
+//                Imgproc.line(imgToProcess, bestLine[0], bestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
+//            }
+//            double dyRealPitch = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight);
+//            ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
+//            updateLog(command, pointArr.size(), bestLine, dyRealPitch);
+//
+//            return command;
+//
+//        } else {
+//            return null; // No line detected or valid
+//        }
+//    }
 
+
+    private ControlCommand detectLending(Mat imgToProcess, double droneHeight) throws Exception {
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
         prevTime = currTime;
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
-
-        if ((isUltrasonicBeingUsed && droneRelativeHeight <= 0.2) || droneHeight <= 0.2) {
-            showToast("Land!!!!");
-            releasePythonResources();
-            ControlCommand ans = new ControlCommand(0, 0, -3);
-            ans.setErr(1000, error_x, error_y, dataFromDrone.getAltitudeBelow());
-            ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
-            return ans;
-
-        }
-        // Initialize variables for edge detection and pitch/roll adjustment
         List<Object[]> pointArr = EdgeDetection.detectLines(imgToProcess);
-
-        if (pointArr.size() > 0) {
+        int size = pointArr.size();
+        if (size > 0) {
             first_detect = false;
             not_found = 0;
         } else if (!first_detect) {
@@ -534,22 +611,33 @@ public class ControllerImageDetection {
         } else {
             return null;
         }
+        Point[] bestLine;
+        Point[][] bestLines = isIn_blur() ? selectMiddleBestLines(pointArr, imgToProcess) : selectBestLines(pointArr, imgToProcess);
 
-        Point[] bestLine = selectBestLine(pointArr, imgToProcess);
+        Point[] bestHorizontalLine = bestLines[0];
+        Point[] bestVerticalLine = bestLines[1];
 
-        if (bestLine != null) {
-            Imgproc.line(imgToProcess, bestLine[0], bestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-            double dyRealPitch = adjustDronePosition(bestLine, imgToProcess.height(), droneRelativeHeight);
-            ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
-            updateLog(command, pointArr.size(), bestLine, dyRealPitch);
+        if (bestHorizontalLine != null && bestVerticalLine != null) {
+            // Draw both lines
+            Imgproc.line(imgToProcess, bestHorizontalLine[0], bestHorizontalLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
+            Imgproc.line(imgToProcess, bestVerticalLine[0], bestVerticalLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
+
+            double dyRealPitch = adjustDronePosition(bestHorizontalLine, imgToProcess.height(), droneRelativeHeight);
+            double dxRealRoll = adjustDronePosition(bestVerticalLine, imgToProcess.width(), droneRelativeHeight);
+
+            // Build control command for both pitch and roll
+            ControlCommand command = buildControlCommandEdge(dxRealRoll, dyRealPitch, dt, imgToProcess);
+            updateLog(command, pointArr.size(), bestHorizontalLine
+//                    , bestVerticalLine
+                    , dyRealPitch
+//                    , dxRealRoll
+            );
 
             return command;
-
         } else {
-            return null; // No line detected or valid
+            return null; // No valid lines detected
         }
     }
-
     // Function to calculate the Euclidean distance (baseline)
     private double calculateBaseline(double[] pos1, double[] pos2) {
 
@@ -567,29 +655,6 @@ public class ControllerImageDetection {
             Log.d(TAG, "Failed to calculate the distance between the two positions.");
             return -2;
         }
-
-//        double lat1 = Math.toRadians(pos1.getLatitude());
-//        double lon1 = Math.toRadians(pos1.getLongitude());
-//        double alt1 = pos1.getAltitude();
-//
-//        double lat2 = Math.toRadians(pos2.getLatitude());
-//        double lon2 = Math.toRadians(pos2.getLongitude());
-//        double alt2 = pos2.getAltitude();
-//
-//        // Earth radius in meters
-//        final double R = 6371000;
-//
-//        // Haversine formula
-//        double dLat = lat2 - lat1;
-//        double dLon = lon2 - lon1;
-//        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-//                Math.cos(lat1) * Math.cos(lat2) *
-//                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-//        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-//        double horizontalDistance = R * c;
-//
-//        // Total baseline distance (Euclidean)
-//        return Math.sqrt(horizontalDistance * horizontalDistance + Math.pow((alt2 - alt1), 2));
     }
 
     private Point[] selectBestLine(List<Object[]> pointArr, Mat imgToProcess) {
@@ -625,6 +690,286 @@ public class ControllerImageDetection {
         }
 
         return bestHorizontalLine != null ? bestHorizontalLine : bestLine;
+    }
+
+    private Point[] selectMiddleBestLine(List<Object[]> pointArr, Mat imgToProcess) {
+        Point[] bestHorizontalLine = null;
+        Point[] bestLine = null;
+        double dy_best_horizontal = Double.MAX_VALUE;
+        double dy_best = Double.MAX_VALUE;
+
+        double proximityThreshold = 10.0;
+        List<List<Point[]>> horizontalGroups = new ArrayList<>();
+
+        Log.i("EdgeDetection", "" + pointArr.size());
+        for (Object[] entry : pointArr) {
+            Point[] point = (Point[]) entry[0];
+
+            if (point != null && point[0] != null && point[1] != null) {
+
+                // Access the horizontal flag (cast to Boolean)
+                boolean isHorizontal = (Boolean) entry[1];
+
+                double c_y = (point[0].y + point[1].y) / 2.0;
+                double dy = imgToProcess.height() / 2.0 - c_y;
+//                Imgproc.putText(imgToProcess, String.valueOf(slope), new Point((point[0].x + point[1].x) / 2.0 - 20, (point[0].y + point[1].y) / 2.0 - 20) , 5, 1, new Scalar(255, 255, 0));
+
+//                Log.d("EdgeDetection", Arrays.toString(point) + " : " + slope);
+                if (isHorizontal) {
+                    boolean addedToGroup = false;
+                    // Check if this line is close to any existing group
+                    for (List<Point[]> group : horizontalGroups) {
+                        double groupCenterY = (group.get(0)[0].y + group.get(0)[1].y) / 2.0;
+                        if (Math.abs(c_y - groupCenterY) < proximityThreshold) {
+                            group.add(point);
+                            addedToGroup = true;
+                            break;
+                        }
+                    }
+                    // If no group was close enough, create a new group
+                    if (!addedToGroup) {
+                        List<Point[]> newGroup = new ArrayList<>();
+                        newGroup.add(point);
+                        horizontalGroups.add(newGroup);
+                    }
+//                    if (Math.abs(dy) < dy_best_horizontal) {
+//                        bestHorizontalLine = point;
+//                        dy_best_horizontal = Math.abs(dy);
+//                    }
+                } else if (Math.abs(dy) < dy_best) {
+                    bestLine = point;
+                    dy_best = Math.abs(dy);
+                }
+            }
+        }
+
+        // Find the best line within the largest group of horizontal lines
+        for (List<Point[]> group : horizontalGroups) {
+            if (group.size() > 1) { // Only consider groups with multiple lines
+                // Find the line closest to the center of this group
+                double groupCenterY = 0;
+                for (Point[] line : group) {
+                    groupCenterY += (line[0].y + line[1].y) / 2.0;
+                }
+                groupCenterY /= group.size();
+
+                for (Point[] line : group) {
+                    double c_y = (line[0].y + line[1].y) / 2.0;
+                    double dy = Math.abs(c_y - groupCenterY);
+                    if (dy < dy_best_horizontal) {
+                        bestHorizontalLine = line;
+                        dy_best_horizontal = dy;
+                    }
+                }
+            }
+        }
+        // In case no group is found, fallback to the closest general line
+        for (Object[] entry : pointArr) {
+            Point[] point = (Point[]) entry[0];
+            if (point != null && point[0] != null && point[1] != null) {
+                boolean isHorizontal = (Boolean) entry[1];
+                double c_y = (point[0].y + point[1].y) / 2.0;
+                double dy = imgToProcess.height() / 2.0 - c_y;
+
+                if (!isHorizontal && Math.abs(dy) < dy_best) {
+                    bestLine = point;
+                    dy_best = Math.abs(dy);
+                }
+            }
+        }
+
+
+        return bestHorizontalLine != null ? bestHorizontalLine : bestLine;
+    }
+
+    private Point[][] selectBestLines(List<Object[]> pointArr, Mat imgToProcess) {
+        Point[] bestHorizontalLine = null;
+        Point[] bestVerticalLine = null;
+        double dy_best_horizontal = Double.MAX_VALUE;
+        double dx_best_vertical = Double.MAX_VALUE;
+
+        Log.i("EdgeDetection", "" + pointArr.size());
+        for (Object[] entry : pointArr) {
+            Point[] point = (Point[]) entry[0];
+
+            if (point != null && point[0] != null && point[1] != null) {
+
+                // Access the horizontal flag (cast to Boolean)
+                boolean isHorizontal = (Boolean) entry[1];
+
+                // Calculate vertical distance to the center for horizontal lines
+                if (isHorizontal) {
+                    double c_y = (point[0].y + point[1].y) / 2.0;
+                    double dy = imgToProcess.height() / 2.0 - c_y;
+
+                    if (Math.abs(dy) < dy_best_horizontal) {
+                        bestHorizontalLine = point;
+                        dy_best_horizontal = Math.abs(dy);
+                    }
+                }
+                // Calculate horizontal distance to the center for vertical lines
+                else {
+                    double c_x = (point[0].x + point[1].x) / 2.0;
+                    double dx = imgToProcess.width() / 2.0 - c_x;
+
+                    if (Math.abs(dx) < dx_best_vertical) {
+                        bestVerticalLine = point;
+                        dx_best_vertical = Math.abs(dx);
+                    }
+                }
+            }
+        }
+
+        // Return both best horizontal and vertical lines as an array
+        return new Point[][] {bestHorizontalLine, bestVerticalLine};
+    }
+
+    private Point[][] selectMiddleBestLines(List<Object[]> pointArr, Mat imgToProcess) {
+        Point[] bestHorizontalLine = null;
+        Point[] bestVerticalLine = null;
+        double dy_best_horizontal = Double.MAX_VALUE;
+        double dx_best_vertical = Double.MAX_VALUE;
+
+        double proximityThreshold = 10.0;
+        List<List<Point[]>> horizontalGroups = new ArrayList<>();
+        List<List<Point[]>> verticalGroups = new ArrayList<>();
+
+        Log.i("EdgeDetection", "" + pointArr.size());
+        for (Object[] entry : pointArr) {
+            Point[] point = (Point[]) entry[0];
+
+            if (point != null && point[0] != null && point[1] != null) {
+
+                // Access the horizontal flag (cast to Boolean)
+                boolean isHorizontal = (Boolean) entry[1];
+
+                // Handle horizontal lines grouping
+                if (isHorizontal) {
+                    double c_y = (point[0].y + point[1].y) / 2.0;
+                    boolean addedToGroup = false;
+
+                    // Check if the line is close to an existing group
+                    for (List<Point[]> group : horizontalGroups) {
+                        double groupCenterY = (group.get(0)[0].y + group.get(0)[1].y) / 2.0;
+                        if (Math.abs(c_y - groupCenterY) < proximityThreshold) {
+                            group.add(point);
+                            addedToGroup = true;
+                            break;
+                        }
+                    }
+
+                    // Create a new group if no match was found
+                    if (!addedToGroup) {
+                        List<Point[]> newGroup = new ArrayList<>();
+                        newGroup.add(point);
+                        horizontalGroups.add(newGroup);
+                    }
+                }
+                // Handle vertical lines grouping
+                else {
+                    double c_x = (point[0].x + point[1].x) / 2.0;
+                    boolean addedToGroup = false;
+
+                    for (List<Point[]> group : verticalGroups) {
+                        double groupCenterX = (group.get(0)[0].x + group.get(0)[1].x) / 2.0;
+                        if (Math.abs(c_x - groupCenterX) < proximityThreshold) {
+                            group.add(point);
+                            addedToGroup = true;
+                            break;
+                        }
+                    }
+
+                    if (!addedToGroup) {
+                        List<Point[]> newGroup = new ArrayList<>();
+                        newGroup.add(point);
+                        verticalGroups.add(newGroup);
+                    }
+                }
+            }
+        }
+
+        // Find the best line in the largest group of horizontal lines
+        for (List<Point[]> group : horizontalGroups) {
+            if (group.size() > 1) {
+                double groupCenterY = 0;
+                for (Point[] line : group) {
+                    groupCenterY += (line[0].y + line[1].y) / 2.0;
+                }
+                groupCenterY /= group.size();
+
+                for (Point[] line : group) {
+                    double c_y = (line[0].y + line[1].y) / 2.0;
+                    double dy = Math.abs(c_y - groupCenterY);
+                    if (dy < dy_best_horizontal) {
+                        bestHorizontalLine = line;
+                        dy_best_horizontal = dy;
+                    }
+                }
+            }
+        }
+
+        // Find the best vertical line similarly
+        for (List<Point[]> group : verticalGroups) {
+            if (group.size() > 1) {
+                double groupCenterX = 0;
+                for (Point[] line : group) {
+                    groupCenterX += (line[0].x + line[1].x) / 2.0;
+                }
+                groupCenterX /= group.size();
+
+                for (Point[] line : group) {
+                    double c_x = (line[0].x + line[1].x) / 2.0;
+                    double dx = Math.abs(c_x - groupCenterX);
+                    if (dx < dx_best_vertical) {
+                        bestVerticalLine = line;
+                        dx_best_vertical = dx;
+                    }
+                }
+            }
+        }
+
+        return new Point[][] {bestHorizontalLine, bestVerticalLine};
+    }
+
+
+    private Point[] selectBestLine(List<Object[]> horizontalLines, List<Object[]> verticalLines, Mat imgToProcess) {
+        Point[] bestLine = null;
+
+        Log.i("EdgeDetection", "" + horizontalLines.size());
+        // Find the best pair of lines
+        Point center = new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0);
+        Object[] bestHorizontalLine = null;
+        Object[] bestVerticalLine = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (Object[] hLine : horizontalLines) {
+            for (Object[] vLine : verticalLines) {
+                Point[] hPoints = (Point[]) hLine[0];
+                Point[] vPoints = (Point[]) vLine[0];
+
+                // Calculate the intersection point
+                Point intersection = calculateIntersection(hPoints[0], hPoints[1], vPoints[0], vPoints[1]);
+
+                // Calculate the distance from the intersection to the center
+                double distance = Math.hypot(center.x - intersection.x, center.y - intersection.y);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    bestHorizontalLine = hLine;
+                    bestVerticalLine = vLine;
+                }
+            }
+        }
+
+        // Draw the best lines
+        if (bestHorizontalLine != null) {
+            Point[] hPoints = (Point[]) bestHorizontalLine[0];
+            Point[] vPoints = (Point[]) bestVerticalLine[0];
+            Imgproc.line(imgToProcess, hPoints[0], hPoints[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
+            Imgproc.line(imgToProcess, vPoints[0], vPoints[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
+        }
+
+        return bestHorizontalLine != null ? (Point[]) bestHorizontalLine : bestLine;
     }
 
     /**
@@ -668,9 +1013,38 @@ public class ControllerImageDetection {
         return ans;
     }
 
+    private ControlCommand buildControlCommandEdge(double dyReal, double dxReal, double dt, Mat imgToProcess) {
+        double maxSpeed = 2.0;
+        double Kp = 0.02;  // Proportional gain, adjust as needed - 0.01
+        error_y = dyReal * Kp;
+        error_x = dxReal * Kp;
+
+        if (0 <= error_y && error_y <= 0.001 && 0 <= error_x && error_x <= 0.001) {
+            showToast("Landing!!");
+
+            t = -0.05f;
+            error_y = 0.05f;
+            error_x = 0.05f;
+
+        } else {
+            t = 0;
+        }
+        p = (float) pitch_pid.update(error_y, dt, maxSpeed);
+        r = (float) roll_pid.update(error_x, dt, maxSpeed);
+        t = (float) throttle_pid.update(t, dt, maxSpeed);
+        Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
+        showToast("p: " + p);
+
+        ControlCommand ans = new ControlCommand(p, r, t);
+        ans.setErr(1000, error_x, error_y, dataFromDrone.getAltitudeBelow());
+        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+
+        return ans;
+    }
+
     void buildControlCommand() {
 //        activate = true;
-        if(!activate){
+        if (!activate) {
             return;
         }
         activate = false;
@@ -857,9 +1231,19 @@ public class ControllerImageDetection {
 
         isDetectingPlane = true;
 
-//        if (!Python.isStarted()) {
-//            Python.start(new AndroidPlatform(context));
-//        }
+// Initialize Python and load the module
+        try {
+            if (!Python.isStarted()) {
+                Python.start(new AndroidPlatform(context)); // 'this' is the Context here
+            }
+
+            python = Python.getInstance();
+            PlaneHandlerClass = python.getModule("PlaneHandler");
+            getOutputFunc = PlaneHandlerClass.get("start_detect");
+        } catch (Exception err) {
+            err.printStackTrace();
+        }
+
         pitch_pid.reset();
         roll_pid.reset();
         throttle_pid.reset();
@@ -920,11 +1304,11 @@ public class ControllerImageDetection {
 
 //                                        if (altitude < 4) {
 
-                                            // Stop plane detection
-                                            stopPlaneDetectionAlgo();
-                                            if (inAlgo) {
-                                                startObjectDetectionAlgo(inAlgo);
-                                            }
+                                        // Stop plane detection
+                                        stopPlaneDetectionAlgo();
+                                        if (inAlgo) {
+                                            startObjectDetectionAlgo(inAlgo);
+                                        }
 //                                        }
 
                                         Log.d(TAG, "Plane detection algorithm stopped.");
@@ -962,13 +1346,13 @@ public class ControllerImageDetection {
         double altitude = dataFromDrone.isUltrasonicBeingUsed() ? dataFromDrone.getAltitudeBelow() : dataFromDrone.getGPS().getAltitude();
 
         handler.post(() ->
-                {
-                    this.pitch = dy;
-                    this.roll = dx;
-                    this.alt = altitude;
-                    this.dt = dt;
-                    this.activate = true;
-                });
+        {
+            this.pitch = dy;
+            this.roll = dx;
+            this.alt = altitude;
+            this.dt = dt;
+            this.activate = true;
+        });
 //                buildControlCommand(dy, dx, dt, altitude));
 
     }
