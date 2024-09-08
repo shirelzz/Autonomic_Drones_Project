@@ -523,7 +523,9 @@ public class ALRemoteControllerView extends RelativeLayout
                 break;
 
             case R.id.start_yolo:
-                gimbalController.rotateGimbalToDegree(-90);
+                startObjectDetectionAlgo_btn.setBackgroundColor(Color.GREEN);
+
+                gimbalController.rotateGimbalToDegree(-45);
                 startObjectDetectionAlgo();
                 break;
 

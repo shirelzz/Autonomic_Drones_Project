@@ -121,6 +121,74 @@ public class YoloDetector {
         return detectedObjects;
     }
 
+    public List<DetectedObject> detectObjectsWithClass(Mat image, List<String> targetClasses, float confThreshold, float nmsThreshold) {
+        List<DetectedObject> detectedObjects = new ArrayList<>();
+
+        // Convert image to 3 channels (RGB) if it has 4 channels (RGBA)
+        if (image.channels() == 4) {
+            Imgproc.cvtColor(image, image, Imgproc.COLOR_RGBA2RGB);
+        } else if (image.channels() == 1) {
+            Imgproc.cvtColor(image, image, Imgproc.COLOR_GRAY2RGB);
+        }
+
+        // Prepare the blob from the image
+        Mat blob = Dnn.blobFromImage(image, 1 / 255.0, new Size(416, 416), new Scalar(0, 0, 0), true, false);
+
+        // Set the input to the network
+        yoloNet.setInput(blob);
+
+        // Forward pass through the network to get the output
+        List<Mat> outs = new ArrayList<>();
+        List<String> outBlobNames = getOutputsNames(yoloNet);
+        yoloNet.forward(outs, outBlobNames);
+
+        // Process the network output
+        List<Integer> classIds = new ArrayList<>();
+        List<Float> confidences = new ArrayList<>();
+        List<Rect2d> boxes = new ArrayList<>();
+
+        for (Mat out : outs) {
+            for (int i = 0; i < out.rows(); i++) {
+                Mat row = out.row(i);
+                Mat scores = row.colRange(5, out.cols());
+                Core.MinMaxLocResult result = Core.minMaxLoc(scores);
+                float confidence = (float) result.maxVal;
+                Point classIdPoint = result.maxLoc;
+                if (confidence > confThreshold) {
+                    int centerX = (int) (row.get(0, 0)[0] * image.cols());
+                    int centerY = (int) (row.get(0, 1)[0] * image.rows());
+                    int width = (int) (row.get(0, 2)[0] * image.cols());
+                    int height = (int) (row.get(0, 3)[0] * image.rows());
+                    int left = centerX - width / 2;
+                    int top = centerY - height / 2;
+
+                    classIds.add((int) classIdPoint.x);
+                    confidences.add(confidence);
+                    boxes.add(new Rect2d(left, top, width, height));
+                }
+            }
+        }
+
+        // Apply non-maximum suppression only if there are any detections
+        if (!confidences.isEmpty()) {
+            MatOfFloat matConfidences = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
+            MatOfRect2d matBoxes = new MatOfRect2d(boxes.toArray(new Rect2d[0]));
+            MatOfInt indices = new MatOfInt();
+            Dnn.NMSBoxes(matBoxes, matConfidences, confThreshold, nmsThreshold, indices);
+
+            // Filter the detections to include only the target classes and return the class names and boxes
+            for (int idx : indices.toArray()) {
+                int classId = classIds.get(idx);
+                String className = getClassLabel(classId);
+                if (targetClasses.contains(className)) {
+                    detectedObjects.add(new DetectedObject(boxes.get(idx), className));
+                }
+            }
+        }
+
+        return detectedObjects;
+    }
+
     private List<String> getOutputsNames(Net net) {
         List<String> names = new ArrayList<>();
         List<Integer> outLayers = net.getUnconnectedOutLayers().toList();
