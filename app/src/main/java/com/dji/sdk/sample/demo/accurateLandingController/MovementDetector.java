@@ -1,29 +1,29 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
+
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect2d;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
-
-import android.graphics.Bitmap;
-
-import org.opencv.core.Mat;
-import org.opencv.core.Rect2d;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+
+import android.speech.tts.TextToSpeech;
+
 
 public class MovementDetector {
 
     private YoloDetector yoloDetector;
     private Mat previousImage;
+    private TextToSpeech textToSpeech;
 
-    public MovementDetector(YoloDetector yoloDetector) {
+
+    public MovementDetector(YoloDetector yoloDetector, TextToSpeech tts) {
         this.yoloDetector = yoloDetector;
+        this.textToSpeech = tts;
     }
 
     public void setOriginalImage(Mat image) {
@@ -65,6 +65,9 @@ public class MovementDetector {
 
             // Show toast with detected movement details
             showToast(alertMessage.toString());
+
+            // Speak the alert message
+            speakAlertMessage(alertMessage.toString());
         }
 
         // Update previous image with the current image for future comparisons
@@ -82,6 +85,12 @@ public class MovementDetector {
         double areaIntersection = r1.area() + r2.area() - r1.area() * r2.area();
         double areaUnion = r1.area() + r2.area();
         return (areaIntersection / areaUnion) > threshold;
+    }
+
+    private void speakAlertMessage(String alertMessage) {
+        if (textToSpeech != null) {
+            textToSpeech.speak(alertMessage, TextToSpeech.QUEUE_FLUSH, null, null);
+        }
     }
 }
 

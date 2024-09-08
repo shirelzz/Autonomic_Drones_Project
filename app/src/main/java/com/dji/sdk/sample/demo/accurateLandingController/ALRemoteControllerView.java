@@ -19,6 +19,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.speech.tts.TextToSpeech;
 
 import androidx.annotation.NonNull;
 
@@ -31,6 +32,7 @@ import org.opencv.core.Core;
 import org.opencv.core.Mat;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 import dji.common.model.LocationCoordinate2D;
 import dji.sdk.codec.DJICodecManager;
@@ -97,6 +99,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private boolean isMovementDetectionRunning = false;
     private Handler movementDetectionHandler = new Handler();
     private static final int MOVEMENT_DETECTION_INTERVAL = 1000;  // Check for movement every 1 second
+    private TextToSpeech textToSpeech;
 
 
     public ALRemoteControllerView(Context context) {
@@ -111,6 +114,8 @@ public class ALRemoteControllerView extends RelativeLayout
         LayoutInflater layoutInflater = (LayoutInflater) context.getSystemService(Service.LAYOUT_INFLATER_SERVICE);
         layoutInflater.inflate(R.layout.view_accurate_landing, this, true);
         initUI();
+        initTextToSpeech(context);
+        initYoloDetector(context);
 
 //        accuracyLog = new AccuracyLog(dataLog, dist, this.getContext());
         accuracyLog = new AccuracyLog(dist, this.getContext());
@@ -129,17 +134,37 @@ public class ALRemoteControllerView extends RelativeLayout
 //        recordingVideo = new RecordingVideo(context);
 
         gimbalController = new GimbalController(flightControlMethods);
-//        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx
-////                , recordingVideo
-//        );
         controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController, yoloDetector);
+        movementDetector = new MovementDetector(yoloDetector, textToSpeech);
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
 
-        initYoloDetector(context);
+    }
 
-//        controllerImageDetection.startDepthMapVideo();
+    private void initTextToSpeech(Context context) {
+        textToSpeech = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    textToSpeech.setLanguage(Locale.US);  // Set language to US English
+                    Log.d("TTS", "TextToSpeech initialized successfully");
+                } else {
+                    Log.e("TTS", "TextToSpeech initialization failed");
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+
+        // Stop TTS when the view is destroyed
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+        }
     }
 
     private void initYoloDetector(Context context){
