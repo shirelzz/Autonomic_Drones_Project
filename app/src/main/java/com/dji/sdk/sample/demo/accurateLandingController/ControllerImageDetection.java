@@ -102,13 +102,17 @@ public class ControllerImageDetection {
     private double pitch = 0.0, roll = 0.0, alt = 0.0, dt = 0.0;
     private boolean activate = false;
 
+    private YoloDetector yoloDetector;
+
 
     //    private RecordingVideo recordingVideo = null;
     //constructor
     public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context, ImageView imageView
-            , GimbalController gimbalController
+            , GimbalController gimbalController, YoloDetector yoloDetector
 //            , RecordingVideo recordingVideo
     ) {
+
+        this.yoloDetector = yoloDetector;
         this.context = context;
 //        this.mainView = mainView;
         this.dataFromDrone = dataFromDrone;
@@ -121,6 +125,8 @@ public class ControllerImageDetection {
         //Do we need it
         this.frameWidth = 640;
         this.frameHeight = 480;
+
+
 
 //        p = Float.parseFloat(textP.getText().toString());
 //        i = Float.parseFloat(textI.getText().toString());
@@ -978,8 +984,6 @@ public class ControllerImageDetection {
 
         isObjectDetecting = true;
 
-        // Initialize YOLO detector and hazard detection system
-        YoloDetector yoloDetector = new YoloDetector(context, "yolov3-tiny.cfg", "yolov3-tiny.weights");
         DroneSafety droneSafety = new DroneSafety(yoloDetector);
 
         new Thread(() -> {

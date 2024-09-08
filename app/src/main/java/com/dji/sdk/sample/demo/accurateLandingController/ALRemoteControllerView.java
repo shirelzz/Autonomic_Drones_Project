@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.TextureView;
@@ -25,7 +26,9 @@ import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.internal.view.PresentableView;
 
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
+import org.opencv.core.Mat;
 
 import java.util.Arrays;
 
@@ -58,7 +61,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //    protected EditText lon;
     protected PresentMap presentMap;
     private Context ctx;
-    private Button startPlaneDetectionAlgo_btn, startObjectDetectionAlgo_btn, edgeDetect, combinedLandingAlgo_btn;
+    private Button startPlaneDetectionAlgo_btn, startObjectDetectionAlgo_btn, edgeDetect, combinedLandingAlgo_btn, guard_btn;
 
     private Button goToFMM_btn, followPhone_btn, startAlgo_btn, stopButton, goTo_btn, land_btn, recordBtn;
     private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
@@ -79,6 +82,9 @@ public class ALRemoteControllerView extends RelativeLayout
     private FlightCommands flightCommands;
     private GimbalController gimbalController;
     private ControllerImageDetection controllerImageDetection;
+
+    private MovementDetector movementDetector;
+
     private float pitch = 0.2f, yaw = 0.5f, roll = 0.2f, throttle = 0.2f;
 
 
@@ -86,6 +92,11 @@ public class ALRemoteControllerView extends RelativeLayout
     private ImageView imageView;
 
     private boolean videoNotStarted = true;
+
+    private YoloDetector yoloDetector;
+    private boolean isMovementDetectionRunning = false;
+    private Handler movementDetectionHandler = new Handler();
+    private static final int MOVEMENT_DETECTION_INTERVAL = 1000;  // Check for movement every 1 second
 
 
     public ALRemoteControllerView(Context context) {
@@ -121,13 +132,21 @@ public class ALRemoteControllerView extends RelativeLayout
 //        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx
 ////                , recordingVideo
 //        );
-        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController);
+        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController, yoloDetector);
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
 
+        initYoloDetector(context);
+
 //        controllerImageDetection.startDepthMapVideo();
     }
+
+    private void initYoloDetector(Context context){
+        YoloDetector yoloDetector = new YoloDetector(context, "yolov3-tiny.cfg", "yolov3-tiny.weights");
+        this.yoloDetector = yoloDetector;
+    }
+
 
     private void initUI() {
         mVideoSurface = findViewById(R.id.video_previewer_surface);
@@ -144,6 +163,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //        startAlgo_btn = findViewById(R.id.start_algo);
         startPlaneDetectionAlgo_btn = findViewById(R.id.start_plane_detection);
         startObjectDetectionAlgo_btn = findViewById(R.id.start_yolo);
+        guard_btn = findViewById(R.id.guardian);
         combinedLandingAlgo_btn = findViewById(R.id.startLandingAlgo);
         edgeDetect = findViewById(R.id.EdgeDetect);
 //        goTo_btn = findViewById(R.id.goTo_btn);
@@ -181,6 +201,7 @@ public class ALRemoteControllerView extends RelativeLayout
         stopButton.setOnClickListener(this);
         startPlaneDetectionAlgo_btn.setOnClickListener(this);
         startObjectDetectionAlgo_btn.setOnClickListener(this);
+        guard_btn.setOnClickListener(this);
         combinedLandingAlgo_btn.setOnClickListener(this);
         edgeDetect.setOnClickListener(this);
 //        goTo_btn.setOnClickListener(this);
@@ -529,6 +550,11 @@ public class ALRemoteControllerView extends RelativeLayout
                 startObjectDetectionAlgo();
                 break;
 
+            case R.id.guardian:
+                guard_btn.setBackgroundColor(Color.GREEN);
+                toggleMovementDetection();
+                break;
+
             case R.id.startLandingAlgo:
                 startLandingAlgo();
                 break;
@@ -548,6 +574,44 @@ public class ALRemoteControllerView extends RelativeLayout
             default:
                 break;
         }
+    }
+
+    // Toggle the movement detection process
+    private void toggleMovementDetection() {
+        if (isMovementDetectionRunning) {
+            // Stop movement detection
+            isMovementDetectionRunning = false;
+            movementDetectionHandler.removeCallbacks(movementDetectionRunnable);
+            startObjectDetectionAlgo_btn.setBackgroundColor(Color.RED);  // Indicate it's stopped
+            showToast("Movement detection stopped");
+        } else {
+            // Start movement detection
+            isMovementDetectionRunning = true;
+            movementDetector.setOriginalImage(convertBitmapToMat(droneIMG));  // Set the initial frame
+            movementDetectionHandler.post(movementDetectionRunnable);  // Start periodic checking
+            startObjectDetectionAlgo_btn.setBackgroundColor(Color.GREEN);  // Indicate it's running
+            showToast("Movement detection started");
+        }
+    }
+
+    // Runnable to check for movement periodically
+    private Runnable movementDetectionRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (droneIMG != null && isMovementDetectionRunning) {
+                // Run movement detection on the current image/frame
+                movementDetector.detectMovement(convertBitmapToMat(droneIMG));
+
+                // Schedule the next movement detection check after the specified interval
+                movementDetectionHandler.postDelayed(this, MOVEMENT_DETECTION_INTERVAL);
+            }
+        }
+    };
+
+    private Mat convertBitmapToMat(Bitmap frame){
+        Mat newCurrentImg = new Mat();
+        Utils.bitmapToMat(frame, newCurrentImg);
+        return newCurrentImg;
     }
 
     private void startPlaneDetectionAlgo() {
