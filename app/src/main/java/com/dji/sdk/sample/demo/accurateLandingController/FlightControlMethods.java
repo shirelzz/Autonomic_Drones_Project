@@ -3,7 +3,6 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 import static com.dji.sdk.sample.internal.utils.ToastUtils.setResultToToast;
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
-import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -41,11 +40,10 @@ public class FlightControlMethods {
     private Handler handler = new Handler(Looper.getMainLooper());
     private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); //
     private VLD_PID pitch_pid = new VLD_PID(PP, II, DD, MAX_I);
-    private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I); // בקר על הגז - למעלה למטה
+    private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I);
     private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I);
     private boolean virtualStickEnabled = false;
-    private boolean movementFinished = false;
-
+//    private boolean inLandingMode = false;
     private long startTime; // Record the start time
 
 
@@ -99,8 +97,8 @@ public class FlightControlMethods {
         value will be interpreted as an angle in the Ground Coordinate System.
         Please make sure that you select the right coordinate system.
          */
-        flightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
-//        flightController.setYawControlMode(YawControlMode.ANGLE); // Asaf
+//        flightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+        flightController.setYawControlMode(YawControlMode.ANGLE); // Asaf
 
 
         /*
@@ -194,22 +192,33 @@ public class FlightControlMethods {
         return ans;
     }
 
-    public ControlCommand land() {
-        //  מאפס את כל הערכים לאפס - מתייצב
-//        roll_pid.reset();
-//        pitch_pid.reset();
-//        while()
-        float t = -2;
-        float r = 0;
-        float p = 0;
-//        y = 0;
-//        need to set another gp
-        //        ans.setErr(1000, 0, 0, 0);
-//        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
-//        ans.setImageDistance(-1);
-        ControlCommand cmd = new ControlCommand(p, r, t);
+    public void land() {
+//        //  מאפס את כל הערכים לאפס - מתייצב
+////        roll_pid.reset();
+////        pitch_pid.reset();
+////        while()
+//        float t = -2;
+//        float r = 0;
+//        float p = 0;
+////        y = 0;
+////        need to set another gp
+//        //        ans.setErr(1000, 0, 0, 0);
+////        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+////        ans.setImageDistance(-1);
+//        ControlCommand cmd = new ControlCommand(p, r, t);
+//        inLandingMode = true;
 
-        return null;
+        flightController.startLanding(djiError -> {
+            if (djiError != null)
+                showToast(djiError.getDescription());
+        });
+        flightController.confirmLanding(djiError -> {
+            if (djiError != null)
+                showToast(djiError.getDescription());
+        });
+//        inLandingMode = false;
+//        return;
+//        return null;
     }
 
     /**
@@ -255,11 +264,10 @@ public class FlightControlMethods {
         sendVirtualStickCommands(command, 0);
     }
 
-    public void takeOff(){
-        flightController.startTakeoff(new CommonCallbacks.CompletionCallback() {
-            @Override
-            public void onResult(DJIError djiError) {
-                showToast( djiError.getDescription());
+    public void takeOff() {
+        flightController.startTakeoff(djiError -> {
+            if (djiError != null) {
+                showToast(djiError.getDescription());
             }
         });
     }
@@ -295,11 +303,9 @@ public class FlightControlMethods {
      */
     public void sendVirtualStickCommands(ControlCommand command, float pZ) {
         Log.d("log:  ", "in sendVirtualStickCommands");
-        movementFinished = false;
         if (Objects.isNull(startTime)) {
             startTime = System.currentTimeMillis();
         }
-
         if (flightController != null) {
 
             // If virtual stick is enabled, send the command, otherwise turn it on
@@ -310,7 +316,7 @@ public class FlightControlMethods {
                         setResultToToast(djiError.getDescription());
                     } else {
                         virtualStickEnabled = true;
-                        sendVirtualStickCommands(command, pZ);
+//                        sendVirtualStickCommands(command, pZ);
                     }
                 });
             }
@@ -318,10 +324,8 @@ public class FlightControlMethods {
             flightController.setRollPitchControlMode(command.getPitchMode());
 
             FlightControlData flightControlData = new FlightControlData(0, 0, 0, 0);
-//              flightControlData.setPitch(command.getPitch());
-//              flightControlData.setRoll(command.getRoll());
 
-            //pitch and roll are opposite !!!! we still don't know why
+            //pitch and roll are opposite
 
             // Sets the aircraft's velocity (m/s) along the y-axis or angle value (in degrees) for pitch
             if (command.getPitchMode() == RollPitchControlMode.VELOCITY) {
@@ -334,7 +338,8 @@ public class FlightControlMethods {
             }
 
             // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
-            flightControlData.setYaw((float) pZ * yawJoyControlMaxSpeed);
+//            flightControlData.setYaw((float) pZ * yawJoyControlMaxSpeed);
+            flightControlData.setYaw(0.0f);
             // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
 
             flightControlData.setVerticalThrottle(command.getVerticalThrottle());
@@ -356,17 +361,17 @@ public class FlightControlMethods {
 //                        }
 //                    });
 //                }
-            handler.post(() -> {
 
-                flightController.sendVirtualStickFlightControlData(flightControlData, djiError -> {
-                            Log.i("djiError", String.valueOf(djiError));
-                            ToastUtils.showToast("VS:" + flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
-                            movementFinished = true;
+            flightController.sendVirtualStickFlightControlData(flightControlData, djiError -> {
+                        Log.i("djiError", String.valueOf(djiError));
+                        ToastUtils.showToast("VS:" + flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
+//                        movementFinished = true;
 //                            if (command.getControllMode() == VerticalControlMode.VELOCITY) {
-//                                flightController.confirmLanding((CommonCallbacks.CompletionCallback) this);
-//                            }
-//                            if (djiError != null) {
 //
+//                            }
+//                flightController.confirmLanding((CommonCallbacks.CompletionCallback) this);
+//                            if (djiError != null &&inLandingMode &&) {
+
 //                                long currentTime = System.currentTimeMillis();
 //                                long elapsedTime = currentTime - startTime;
 //                                if (elapsedTime < CONTROL_DURATION) {
@@ -376,10 +381,8 @@ public class FlightControlMethods {
 ////
 //                                }
 //                            }
-                        }
-                );
-            });
-
+                    }
+            );
         } else {
             setResultToToast("Flight Controller Null");
         }

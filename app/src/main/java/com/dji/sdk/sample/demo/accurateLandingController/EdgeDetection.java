@@ -3,6 +3,7 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -14,18 +15,17 @@ import java.util.List;
 public class EdgeDetection {
 
     private static final int edgeThreshold = 150;
-    private static final int threshold1 = 200; //170;
-    private static final int threshold2 = 300; //280;
+    private static final int threshold1 = 170; //200;//170;
+    private static final int threshold2 = 280; //300;//280;
     private static final int apertureSize = 3;
-
-    private static boolean in_blur = false;
     // adjust the maximum number of found lines in the image
     private static final int maxLines = 5;
     private static final double minLineLength = 100;  // Minimum length of the detected line
     private static final double maxLineGap = 20;      // Maximum gap between line segments
+    private static boolean in_blur = false;
 
     // Check if it works = return an array with edges
-    public static List<Object[]> detectLines(Mat input) {
+    public static List<Object[]> detectLines(Mat input, double droneHeight) {
         in_blur = false;
         // Declare the output variables
         Mat dst = new Mat(), cdst = new Mat();
@@ -62,19 +62,28 @@ public class EdgeDetection {
             pointList.add(new Object[]{new Point[]{pt1, pt2}, isHorizontal});
             Imgproc.line(input, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
         }
-        if(pointList.size() == 0){
-            pointList = detectBlurLines(input);
 
+        if (pointList.size() == 0 && droneHeight <= 0.2) {
+            pointList = detectBlurLines(input, true);
         }
 
-        return pointList;
+        return pointList.subList(0, Math.min(50, pointList.size()));
     }
 
-    public static List<Object[]> detectBlurLines(Mat input){
+    public static List<Object[]> detectBlurLines(Mat input, boolean detectLowerHalf) {
         in_blur = true;
         Mat imgSrcRgb = new Mat();
-
         Imgproc.cvtColor(input, imgSrcRgb, Imgproc.COLOR_BGR2RGB);
+
+        // Optionally crop the image to the lower half
+        if (detectLowerHalf) {
+            int height = input.rows();
+            int width = input.cols();
+            // Define the region of interest (ROI) as the lower half of the image
+            Rect roi = new Rect(0, height / 2, width, height / 2);
+            imgSrcRgb = new Mat(imgSrcRgb, roi); // Crop the image
+        }
+
 
         // Create an inpainting mask with "red-enough" pixels
         Mat mask = new Mat();
@@ -102,7 +111,7 @@ public class EdgeDetection {
         List<Object[]> pointList = new ArrayList<>();
 
         // Draw the lines on the image
-        for (int i = 0; i < lines.rows(); i++) {
+        for (int i = 0; i < lines.rows() && i < 50; i++) {
             double[] line = lines.get(i, 0);
             double rho = line[0];
             double theta = line[1];
@@ -119,7 +128,10 @@ public class EdgeDetection {
 
             Point pt1 = new Point(Math.round(x0 + 10000 * (-b)), Math.round(y0 + 10000 * (a)));
             Point pt2 = new Point(Math.round(x0 - 10000 * (-b)), Math.round(y0 - 10000 * (a)));
-
+            if (detectLowerHalf) {
+                pt1.y += input.rows() / 2.0; // Adjust y-coordinates back to full image scale
+                pt2.y += input.rows() / 2.0;
+            }
             pointList.add(new Object[]{new Point[]{pt1, pt2}, isHorizontal});
 
             Imgproc.line(input, pt1, pt2, new Scalar(0, 255, 0), 3, Imgproc.LINE_AA, 0);
@@ -127,7 +139,7 @@ public class EdgeDetection {
 
         // Save the result image
 //        Imgcodecs.imwrite("linesDetected.jpg", imgDst);
-        return pointList;
+        return pointList.subList(0, Math.min(50, pointList.size()));
     }
 
     // Implement autoCanny function in Java
