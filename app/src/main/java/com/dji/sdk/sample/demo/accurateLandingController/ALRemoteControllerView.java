@@ -145,7 +145,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //        recordingVideo = new RecordingVideo(context);
 
         gimbalController = new GimbalController(flightControlMethods);
-        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController, yoloDetector);
+        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController, yoloDetector, this::toggleMovementDetection);
         movementDetector = new MovementDetector(yoloDetector, textToSpeech);
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
@@ -530,7 +530,7 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     public void landBtnFunc() {
-        flightControlMethods.land();
+        flightControlMethods.land(null);
     }
 
     @SuppressLint("NonConstantResourceId")

@@ -8,18 +8,15 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
-import com.dji.sdk.sample.internal.utils.DialogUtils;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
 import java.util.Objects;
 
-import dji.common.error.DJIError;
 import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
 import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 import dji.common.flightcontroller.virtualstick.YawControlMode;
-import dji.common.util.CommonCallbacks;
 import dji.sdk.flightcontroller.FlightController;
 
 /**
@@ -43,7 +40,7 @@ public class FlightControlMethods {
     private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I);
     private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I);
     private boolean virtualStickEnabled = false;
-//    private boolean inLandingMode = false;
+    //    private boolean inLandingMode = false;
     private long startTime; // Record the start time
 
 
@@ -97,8 +94,8 @@ public class FlightControlMethods {
         value will be interpreted as an angle in the Ground Coordinate System.
         Please make sure that you select the right coordinate system.
          */
-//        flightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
-        flightController.setYawControlMode(YawControlMode.ANGLE); // Asaf
+        flightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+//        flightController.setYawControlMode(YawControlMode.ANGLE); // Asaf
 
 
         /*
@@ -192,7 +189,7 @@ public class FlightControlMethods {
         return ans;
     }
 
-    public void land() {
+    public void land(Runnable function) {
 //        //  מאפס את כל הערכים לאפס - מתייצב
 ////        roll_pid.reset();
 ////        pitch_pid.reset();
@@ -213,8 +210,11 @@ public class FlightControlMethods {
                 showToast(djiError.getDescription());
         });
         flightController.confirmLanding(djiError -> {
-            if (djiError != null)
+            if (djiError != null) {
                 showToast(djiError.getDescription());
+                if (function != null)
+                    function.run();
+            }
         });
 //        inLandingMode = false;
 //        return;

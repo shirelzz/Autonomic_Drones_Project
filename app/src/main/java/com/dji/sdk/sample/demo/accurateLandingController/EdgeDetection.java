@@ -15,8 +15,8 @@ import java.util.List;
 public class EdgeDetection {
 
     private static final int edgeThreshold = 150;
-    private static final int threshold1 = 170; //200;//170;
-    private static final int threshold2 = 280; //300;//280;
+    private static final int threshold1 = 200;//170;
+    private static final int threshold2 = 300;//280;
     private static final int apertureSize = 3;
     // adjust the maximum number of found lines in the image
     private static final int maxLines = 5;

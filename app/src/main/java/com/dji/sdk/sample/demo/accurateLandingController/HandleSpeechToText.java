@@ -45,10 +45,10 @@ public class HandleSpeechToText {
             this.goToFunc.run();
         } else if (text.contains("track me") || text.contains("talk me")) {
             showToast("track me");
-        } else if (text.contains("up") || text.contains("app")) { //todo: check more words
+        } else if (text.contains("move up") || text.contains("up") || text.contains("app")) {
             showToast("Up");
             this.upButton.run();
-        } else if (text.contains("down")) { //todo: check more words
+        } else if (text.contains("move down") ||text.contains("down") ||text.contains("done")) {
             showToast("down");
             this.downButton.run();
         } else if (text.contains("stop") || text.contains("scope") || text.contains("dope") ||

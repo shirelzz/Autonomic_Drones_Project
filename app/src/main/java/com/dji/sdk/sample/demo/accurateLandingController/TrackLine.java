@@ -128,7 +128,10 @@ public class TrackLine {
         double vy = lineParams.get(1, 0)[0];
         double x0 = lineParams.get(2, 0)[0];
         double y0 = lineParams.get(3, 0)[0];
-
+        if(Math.abs(vy) > Math.abs(vx)){
+            vy = 0;
+            vx = 1;
+        }
         // Create a start and end point based on the direction (vx, vy) and a point on the line (x0, y0)
         Point startPoint = new Point(x0 - 1000 * vx, y0 - 1000 * vy); // Extend the line backward
         Point endPoint = new Point(x0 + 1000 * vx, y0 + 1000 * vy);   // Extend the line forward

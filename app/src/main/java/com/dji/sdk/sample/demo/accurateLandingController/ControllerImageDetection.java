@@ -28,6 +28,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,12 +102,14 @@ public class ControllerImageDetection {
     private boolean activate = false;
     private TrackLine trackLine;
     private YoloDetector yoloDetector;
+    private Runnable toggleMovementDetection;
 
     //constructor
-    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context, ImageView imageView, GimbalController gimbalController, YoloDetector yoloDetector) {
+    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context, ImageView imageView, GimbalController gimbalController, YoloDetector yoloDetector, Runnable toggleMovementDetection) {
 
         this.yoloDetector = yoloDetector;
         this.context = context;
+        this.toggleMovementDetection = toggleMovementDetection;
 //        this.mainView = mainView;
         this.dataFromDrone = dataFromDrone;
         this.flightControlMethods = flightControlMethods;
@@ -429,17 +432,28 @@ public class ControllerImageDetection {
             return null;
         }
         Point[] currentLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+        showToast(Arrays.toString(currentLine));
+
+        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
+        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
+
         if (currentLine == null) {
+            if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.15) {
+                showToast("Land2!!!!");
+                flightControlMethods.land(toggleMovementDetection);
+                stopEdgeDetection();
+                return null;
+            } else {
+                return stayOnPlace();
+            }
             //TODO: Maybe add a scenario when the line is disappearing from the image
-            return null;
+//            return null;
         }
+
         selectedLine = currentLine;
         Imgproc.line(imgToProcess, selectedLine[0], selectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
-        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
-//        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
         double dyRealPitch = adjustDronePosition(selectedLine, imgToProcess.height(), droneRelativeHeight, 0);
-        // Build control command for both pitch and roll
         ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
         updateLog(command, 1, selectedLine, dyRealPitch);
         return command;
@@ -523,7 +537,7 @@ public class ControllerImageDetection {
                 if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.15) {
                     releasePythonResources();
                     showToast("Land2!!!!");
-                    flightControlMethods.land();
+                    flightControlMethods.land(this::stopEdgeDetection);
                     return null;
                 } else {
                     throw new Exception("Error in detection mode, edge disappear");
@@ -1054,15 +1068,14 @@ public class ControllerImageDetection {
 
         if (0 <= error_y && error_y <= 0.001) {
             showToast("Landing!!");
-
-            t = -0.05f;
-            error_y = 0.05f;
+            t = -0.02f;
+            error_y = 0.02f;
 
         } else {
             t = 0;
         }
         p = (float) pitch_pid.update(error_y, dt, maxSpeed);
-        r = (float) roll_pid.update(0, dt, maxSpeed);
+//        r = (float) roll_pid.update(0, dt, maxSpeed);
         t = (float) throttle_pid.update(t, dt, maxSpeed);
         Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
         showToast("p: " + p);
