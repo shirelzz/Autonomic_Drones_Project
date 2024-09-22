@@ -88,7 +88,7 @@ public class ALRemoteControllerView extends RelativeLayout
     private GimbalController gimbalController;
     private ControllerImageDetection controllerImageDetection;
     private MovementDetector movementDetector;
-    private float pitch = 0.2f, yaw = 0.5f, roll = 0.2f, throttle = 2f; //0.2f;
+    private float pitch = 0.2f, yaw = 0.5f, roll = 0.2f, throttle = 0.2f; //0.2f;
     // depthmap.py video display
     private ImageView imageView;
     private boolean videoNotStarted = true;
@@ -233,9 +233,9 @@ public class ALRemoteControllerView extends RelativeLayout
 //        startAlgo_btn = findViewById(R.id.start_algo);
 //        startPlaneDetectionAlgo_btn = findViewById(R.id.start_plane_detection);
         startObjectDetectionAlgo_btn = findViewById(R.id.start_yolo);
-        leftOrRightButton = findViewById(R.id.left_or_right_corner);
+//        leftOrRightButton = findViewById(R.id.left_or_right_corner);
         guard_btn = findViewById(R.id.guardian);
-        combinedLandingAlgo_btn = findViewById(R.id.startLandingAlgo);
+//        combinedLandingAlgo_btn = findViewById(R.id.startLandingAlgo);
         edgeDetect = findViewById(R.id.EdgeDetect);
 //        goTo_btn = findViewById(R.id.goTo_btn);
         land_btn = findViewById(R.id.land_btn);
@@ -273,8 +273,8 @@ public class ALRemoteControllerView extends RelativeLayout
 //        startPlaneDetectionAlgo_btn.setOnClickListener(this);
         startObjectDetectionAlgo_btn.setOnClickListener(this);
         guard_btn.setOnClickListener(this);
-        leftOrRightButton.setOnClickListener(this);
-        combinedLandingAlgo_btn.setOnClickListener(this);
+//        leftOrRightButton.setOnClickListener(this);
+//        combinedLandingAlgo_btn.setOnClickListener(this);
         edgeDetect.setOnClickListener(this);
 //        goTo_btn.setOnClickListener(this);
         land_btn.setOnClickListener(this);
@@ -530,7 +530,7 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     public void landBtnFunc() {
-        flightControlMethods.land(null);
+        flightControlMethods.land(null, null);
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -604,18 +604,18 @@ public class ALRemoteControllerView extends RelativeLayout
                     showToast("not float");
                 }
                 break;
-            case R.id.left_or_right_corner:
-                if (leftOrRightButton.getText() == "No Corner") {
-                    leftOrRightButton.setText("Left Corner");
-                    controllerImageDetection.setLandingMode(1);
-                } else if (leftOrRightButton.getText() == "Left Corner") {
-                    leftOrRightButton.setText("Right Corner");
-                    controllerImageDetection.setLandingMode(2);
-                } else {
-                    leftOrRightButton.setText("No Corner");
-                    controllerImageDetection.setLandingMode(0);
-                }
-                break;
+//            case R.id.left_or_right_corner:
+//                if (leftOrRightButton.getText() == "No Corner") {
+//                    leftOrRightButton.setText("Left Corner");
+//                    controllerImageDetection.setLandingMode(1);
+//                } else if (leftOrRightButton.getText() == "Left Corner") {
+//                    leftOrRightButton.setText("Right Corner");
+//                    controllerImageDetection.setLandingMode(2);
+//                } else {
+//                    leftOrRightButton.setText("No Corner");
+//                    controllerImageDetection.setLandingMode(0);
+//                }
+//                break;
             case R.id.r_plus_btn:
                 try {
                     flightControlMethods.goRoll(roll);
@@ -645,9 +645,9 @@ public class ALRemoteControllerView extends RelativeLayout
                 toggleMovementDetection();
                 break;
 
-            case R.id.startLandingAlgo:
-                startLandingAlgo();
-                break;
+//            case R.id.startLandingAlgo:
+//                startLandingAlgo();
+//                break;
 
             case R.id.gimbal_pitch_update:
 //                ToastUtils.setResultToToast(String.valueOf(Float.parseFloat(gimbal.getText().toString())));

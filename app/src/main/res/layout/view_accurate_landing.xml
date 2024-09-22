@@ -313,15 +313,15 @@
         android:layout_marginStart="10dp"
         android:text="G" />
 
-    <Button
-        android:id="@+id/left_or_right_corner"
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:layout_toEndOf="@id/gimbal_pitch_update"
-        android:layout_above="@+id/land_btn"
-        android:layout_marginBottom="0dp"
-        android:layout_marginStart="10dp"
-        android:text="No Corner" />
+<!--    <Button-->
+<!--        android:id="@+id/left_or_right_corner"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="40dp"-->
+<!--        android:layout_toEndOf="@id/gimbal_pitch_update"-->
+<!--        android:layout_above="@+id/land_btn"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:layout_marginStart="10dp"-->
+<!--        android:text="No Corner" />-->
 
 <!--    <Button-->
 <!--        android:id="@+id/start_plane_detection"-->
@@ -343,21 +343,21 @@
         android:layout_marginBottom="0dp"
         android:text="Object Detection" />
 
-    <Button
-        android:id="@+id/startLandingAlgo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@id/start_yolo"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="0dp"
-        android:layout_marginBottom="0dp"
-        android:text="Combined" />
+<!--    <Button-->
+<!--        android:id="@+id/startLandingAlgo"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_toEndOf="@id/start_yolo"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_marginStart="0dp"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:text="Combined" />-->
 
     <Button
         android:id="@+id/guardian"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toEndOf="@id/startLandingAlgo"
+        android:layout_toEndOf="@id/start_yolo"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"

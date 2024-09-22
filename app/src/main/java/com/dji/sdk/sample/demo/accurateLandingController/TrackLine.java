@@ -112,7 +112,7 @@ public class TrackLine {
 
         Mat lineParams = new Mat();
         Imgproc.fitLine(points, lineParams, Imgproc.DIST_L2, 0, 0.01, 0.01);
-        Log.i("EdgeDetect", "MAt: " + lineParams.toString());
+//        Log.i("EdgeDetect", "MAt: " + lineParams.toString());
 //        // Check if lineParams contains the correct number of elements
 //        double[] v = lineParams.get(0, 0);
 //        double[] p = lineParams.get(2, 0);

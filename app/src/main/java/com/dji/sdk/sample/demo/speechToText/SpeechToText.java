@@ -1,18 +1,23 @@
 package com.dji.sdk.sample.demo.speechToText;
 
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
+
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
-import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.util.Consumer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Locale;
 
 public class SpeechToText implements RecognitionListener {
 
@@ -105,7 +110,7 @@ public class SpeechToText implements RecognitionListener {
     public void onResults(Bundle results) {
         ArrayList<String> matches = results
                 .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-//        Log.i(LOG_TAG, "onResults" + matches);
+        showToast(String.valueOf(results));
 
         StringBuilder text = new StringBuilder();
         assert matches != null;

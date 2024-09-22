@@ -189,7 +189,7 @@ public class FlightControlMethods {
         return ans;
     }
 
-    public void land(Runnable function) {
+    public void land(Runnable function1, Runnable function2) {
 //        //  מאפס את כל הערכים לאפס - מתייצב
 ////        roll_pid.reset();
 ////        pitch_pid.reset();
@@ -212,8 +212,12 @@ public class FlightControlMethods {
         flightController.confirmLanding(djiError -> {
             if (djiError != null) {
                 showToast(djiError.getDescription());
-                if (function != null)
-                    function.run();
+            } else {
+                showToast("land correctly");
+                if (function1 != null)
+                    function1.run();
+                if (function2 != null)
+                    function2.run();
             }
         });
 //        inLandingMode = false;

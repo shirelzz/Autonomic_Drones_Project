@@ -380,6 +380,7 @@ public class ControllerImageDetection {
     }
 
     public void stopEdgeDetection() {
+        showToast("Edge Detection Stopped");
         ControlCommand stay = stayOnPlace();
         flightControlMethods.sendVirtualStickCommands(stay, 0.0f);
 
@@ -438,10 +439,11 @@ public class ControllerImageDetection {
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
 
         if (currentLine == null) {
-            if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.15) {
+            Log.i("EdgeDetect", isUltrasonicBeingUsed+": rh: "+droneRelativeHeight+", h:"+dataFromDrone.getGPS().getAltitude());
+            if (droneRelativeHeight <= 0.2f || dataFromDrone.getGPS().getAltitude() <= 0.2f) {
                 showToast("Land2!!!!");
-                flightControlMethods.land(toggleMovementDetection);
-                stopEdgeDetection();
+                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+//                stopEdgeDetection();
                 return null;
             } else {
                 return stayOnPlace();
@@ -458,6 +460,13 @@ public class ControllerImageDetection {
         updateLog(command, 1, selectedLine, dyRealPitch);
         return command;
     }
+
+    public void finishLanding(){
+        toggleMovementDetection.run();
+        stopEdgeDetection();
+    }
+
+
 
     public void processImage(Bitmap frame, double droneHeight) {
         // Added python function but it causes an error in loading
@@ -537,7 +546,7 @@ public class ControllerImageDetection {
                 if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.15) {
                     releasePythonResources();
                     showToast("Land2!!!!");
-                    flightControlMethods.land(this::stopEdgeDetection);
+                    flightControlMethods.land(this::stopEdgeDetection, null);
                     return null;
                 } else {
                     throw new Exception("Error in detection mode, edge disappear");
@@ -1068,8 +1077,8 @@ public class ControllerImageDetection {
 
         if (0 <= error_y && error_y <= 0.001) {
             showToast("Landing!!");
-            t = -0.02f;
-            error_y = 0.02f;
+            t = -0.05f;
+            error_y = 0.05f;
 
         } else {
             t = 0;
