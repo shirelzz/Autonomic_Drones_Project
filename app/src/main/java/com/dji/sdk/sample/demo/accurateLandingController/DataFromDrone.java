@@ -14,7 +14,6 @@ import java.util.Objects;
 
 import dji.common.airlink.SignalQualityCallback;
 import dji.common.battery.BatteryState;
-import dji.common.flightcontroller.FlightControllerState;
 import dji.common.flightcontroller.GPSSignalLevel;
 import dji.common.flightcontroller.LocationCoordinate3D;
 import dji.common.flightcontroller.adsb.AirSenseSystemInformation;
@@ -44,11 +43,12 @@ public class DataFromDrone {
     private GPSSignalLevel gpsSignalLevel;
     private int signalQuality = 0;
     private FlightController flightController;
+    private LocationCoordinate3D currentLocation;
 
     public DataFromDrone() {
-        initStateListeners();
         initFlightController();
-        setupStateCallback();
+        initStateListeners();
+//        setupStateCallback();
     }
 
     public GPSLocation getGPS() {
@@ -106,8 +106,6 @@ public class DataFromDrone {
     public boolean isUltrasonicBeingUsed() {
         return isUltrasonicBeingUsed;
     }
-    private LocationCoordinate3D currentLocation;
-
 
     // Initialize the flight controller
     private void initFlightController() {
@@ -119,12 +117,13 @@ public class DataFromDrone {
 
     private void initStateListeners() {
         if (ModuleVerificationUtil.isFlightControllerAvailable()) {
-            Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().setStateCallback(flightControllerState -> {
-
+            flightController.setStateCallback(flightControllerState -> {
+                // Retrieve the current location
+                currentLocation = flightControllerState.getAircraftLocation();
                 gpsSignalLevel = flightControllerState.getGPSSignalLevel();
-                isUltrasonicBeingUsed = flightControllerState.isUltrasonicBeingUsed();
-                if (isUltrasonicBeingUsed)
-                    altitudeBelow = flightControllerState.getUltrasonicHeightInMeters();
+                isUltrasonicBeingUsed = flightControllerState.isVisionPositioningSensorBeingUsed();
+//                if (isUltrasonicBeingUsed)
+                altitudeBelow = flightControllerState.getUltrasonicHeightInMeters();
 
                 // Retrieve drone's GPS location
                 LocationCoordinate3D aircraftLocation = flightControllerState.getAircraftLocation();
@@ -226,17 +225,17 @@ public class DataFromDrone {
 //    }
 
     // Set up the state callback to get the drone's location
-    private void setupStateCallback() {
-        if (flightController != null) {
-            flightController.setStateCallback(new FlightControllerState.Callback() {
-                @Override
-                public void onUpdate(FlightControllerState state) {
-                    // Retrieve the current location
-                    currentLocation = state.getAircraftLocation();
-                }
-            });
-        }
-    }
+//    private void setupStateCallback() {
+//        if (flightController != null) {
+//            flightController.setStateCallback(new FlightControllerState.Callback() {
+//                @Override
+//                public void onUpdate(FlightControllerState state) {
+//                    // Retrieve the current location
+//                    currentLocation = state.getAircraftLocation();
+//                }
+//            });
+//        }
+//    }
 
     // Function to get the current position
     public double[] getCurrentPosition() {

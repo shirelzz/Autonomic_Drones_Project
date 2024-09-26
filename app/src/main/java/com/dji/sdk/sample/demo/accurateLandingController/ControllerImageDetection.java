@@ -7,10 +7,12 @@ import static org.opencv.android.Utils.matToBitmap;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Base64;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.ImageView;
 
 import com.chaquo.python.PyObject;
@@ -44,7 +46,7 @@ public class ControllerImageDetection {
     private final int displayFps = 0;
     private final DataFromDrone dataFromDrone;
     //    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
-    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
+    Double PP = 0.1, II = 0.02, DD = 0.02, MAX_I = 0.5;
     private ImageView imageView;  // ImageView to display the frames
     private boolean isPlaying = false;  // To control the video playback
     private boolean isDetectingPlane = false;
@@ -103,9 +105,13 @@ public class ControllerImageDetection {
     private TrackLine trackLine;
     private YoloDetector yoloDetector;
     private Runnable toggleMovementDetection;
+    private Button edgeDetect;
+    private double initialDistance = 0;  // Store the original distance when the movement starts
+    private double velocity = 0.01;      // Start with an initial velocity of 0.01
+    private double accelerationRate = 0.01;  // Fixed rate of velocity increase/decrease
 
     //constructor
-    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context, ImageView imageView, GimbalController gimbalController, YoloDetector yoloDetector, Runnable toggleMovementDetection) {
+    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context, ImageView imageView, GimbalController gimbalController, YoloDetector yoloDetector, Runnable toggleMovementDetection, Button edgeDetect) {
 
         this.yoloDetector = yoloDetector;
         this.context = context;
@@ -113,6 +119,8 @@ public class ControllerImageDetection {
 //        this.mainView = mainView;
         this.dataFromDrone = dataFromDrone;
         this.flightControlMethods = flightControlMethods;
+
+        this.edgeDetect = edgeDetect;
 
 //        this.recordingVideo = recordingVideo;
         this.gimbalController = gimbalController;
@@ -129,165 +137,9 @@ public class ControllerImageDetection {
         setDescentRate(t);
     }
 
-    // Method to calculate intersection point of two lines given by points (p1, p2) and (p3, p4)
-    private static Point calculateIntersection(Point p1, Point p2, Point p3, Point p4) {
-        if (p1 == null || p2 == null || p3 == null || p4 == null) {
-            return null;
-        }
-        double a1 = p2.y - p1.y;
-        double b1 = p1.x - p2.x;
-        double c1 = a1 * p1.x + b1 * p1.y;
-
-        double a2 = p4.y - p3.y;
-        double b2 = p3.x - p4.x;
-        double c2 = a2 * p3.x + b2 * p3.y;
-
-        double delta = a1 * b2 - a2 * b1;
-        if (delta == 0) {
-            return new Point(-1, -1); // Lines are parallel
-        }
-
-        double x = (b2 * c1 - b1 * c2) / delta;
-        double y = (a1 * c2 - a2 * c1) / delta;
-        return new Point(x, y);
-    }
-
-    // Function to calculate the angle of the line in degrees
-    public static double calculateLineAngle(Point p1, Point p2) {
-        // Calculate the differences in x and y coordinates
-        double deltaX = p2.x - p1.x;
-        double deltaY = p2.y - p1.y;
-
-        // Calculate the angle in radians using atan2
-        double angleRad = Math.atan2(deltaY, deltaX);
-
-        // Convert the angle from radians to degrees
-        double angleDeg = Math.toDegrees(angleRad);
-
-        // Ensure the angle is in the range [0, 360)
-        if (angleDeg < 0) {
-            angleDeg += 360;
-        }
-        if (angleDeg >= 360) {
-            angleDeg = angleDeg - 360;
-        }
-
-        return angleDeg;
-    }
-
-    // Function to determine the largest section
-    private static int determineLargestSection(Point intersection, Point imgCenter) {
-        boolean isAbove = intersection.y < imgCenter.y;
-        boolean isLeft = intersection.x < imgCenter.x;
-
-        // Return 1 for top-left, 2 for top-right, 3 for bottom-left, 4 for bottom-right
-        if (isAbove) {
-            if (isLeft) {
-                return 1; // Top-left section
-            } else {
-                return 2; // Top-right section
-            }
-
-        } else {
-            if (isLeft) {
-                return 3; // Bottom-left section
-            } else {
-                return 4; // Bottom-right section
-            }
-        }
-    }
-
-    // Adjust bisector angle based on the largest section
-    private static double adjustAngleForSection(double bisectorAngle, int section) {
-        switch (section) {
-            case 1: // Top-left
-                bisectorAngle += 90; // Adjust bisector toward top-left
-                break;
-            case 2: // Top-right
-                bisectorAngle -= 90; // Adjust bisector toward top-right
-                break;
-            case 3: // Bottom-left
-                bisectorAngle += 180; // Adjust bisector toward bottom-left
-                break;
-            case 4: // Bottom-right
-                bisectorAngle -= 180; // Adjust bisector toward bottom-right
-                break;
-        }
-        return bisectorAngle;
-    }
-
     public void setClickedPoint(Point clickedPoint) {
         this.clickedPoint = clickedPoint;
         this.lineSelected = false;
-    }
-
-    public int getLandingMode() {
-        return landingMode;
-    }
-
-    public void setLandingMode(int landingMode) {
-        this.landingMode = landingMode;
-    }
-
-    // Function to calculate the point on the bisector line
-    public Point calculateBisectorLine(Point intersection, Point[] line1, Point[] line2, double length) {
-        // Calculate the angles of both lines
-        double angle1 = calculateLineAngle(line1[0], line1[1]);
-        Log.i("EdgeDetect", "line1:" + line1[0] + " , " + line1[1]);
-//angle1 = 360 -angle1;
-        Log.i("EdgeDetect", "angle line1:" + angle1);
-        double angle2 = calculateLineAngle(line2[0], line2[1]);
-        Log.i("EdgeDetect", "line2:" + line2[0] + " , " + line2[1]);
-
-        Log.i("EdgeDetect", "angle line2:" + angle2);
-
-        // Handle angular wrap-around: If the difference between the angles is greater than 180,
-        // shift one of the angles by 360 degrees to bring them closer together.
-//        if (Math.abs(angle1 - angle2) > 180) {
-//            if (angle1 > angle2) {
-//                angle2 += 360;
-//            } else {
-//                angle1 += 360;
-//            }
-//        }
-//        Log.i("EdgeDetect", "after: angle line1:" + angle1);
-//        Log.i("EdgeDetect", "after: angle line2:" + angle2);
-
-        // Calculate the average angle (bisector angle)
-        double bisectorAngle = (angle1 + angle2) / 2;
-
-        // Ensure the bisector line points downward toward the bottom of the image
-        // Adjust based on the known corner direction
-        if (landingMode == 1) {
-            if (bisectorAngle < 270 || bisectorAngle > 360) {
-                bisectorAngle += 180; // Adjust to ensure it's in the right quadrant
-            }
-        } else {
-            if (bisectorAngle < 180 || bisectorAngle > 270) {
-                bisectorAngle += 180; // Adjust to ensure it's in the correct quadrant
-            }
-        }
-
-        // After adjusting, ensure the angle is within 0-360 degrees range
-        if (bisectorAngle > 360) {
-            bisectorAngle -= 360;
-        } else if (bisectorAngle < 0) {
-            bisectorAngle += 360;
-        }
-        Log.i("EdgeDetect", "bisectorAngle:" + bisectorAngle);
-//
-//        else {
-//            bisectorAngle += 180;
-//        }
-
-        // Convert the angle to radians
-        double bisectorAngleRad = Math.toRadians(bisectorAngle);
-
-        // Compute the end point of the bisector line using the length and angle
-        double xEnd = intersection.x + length * Math.cos(bisectorAngleRad);
-        double yEnd = intersection.y + length * Math.sin(bisectorAngleRad);
-
-        return new Point(xEnd, yEnd);
     }
 
     private void updateLog(ControlCommand control, int numEdges, Point[] chosenEdge, double dy) {
@@ -381,9 +233,12 @@ public class ControllerImageDetection {
 
     public void stopEdgeDetection() {
         showToast("Edge Detection Stopped");
-        ControlCommand stay = stayOnPlace();
-        flightControlMethods.sendVirtualStickCommands(stay, 0.0f);
-
+//        ControlCommand stay = stayOnPlace();
+//        flightControlMethods.sendVirtualStickCommands(stay, 0.0f);
+        edgeDetect.setBackgroundColor(Color.WHITE);
+        selectedLine = null; // The Line class represents a detected line in the image
+        lineSelected = false;
+        clickedPoint = null;
         setEdgeDetectionMode(false);
         first_detect = true;
     }
@@ -439,11 +294,14 @@ public class ControllerImageDetection {
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
 
         if (currentLine == null) {
-            Log.i("EdgeDetect", isUltrasonicBeingUsed+": rh: "+droneRelativeHeight+", h:"+dataFromDrone.getGPS().getAltitude());
-            if (droneRelativeHeight <= 0.2f || dataFromDrone.getGPS().getAltitude() <= 0.2f) {
+            Log.i("EdgeDetect", isUltrasonicBeingUsed + ": rh: " + droneRelativeHeight + ", h:" + dataFromDrone.getGPS().getAltitude());
+            if (droneRelativeHeight <= 0.2f
+                //|| dataFromDrone.getGPS().getAltitude() <= 0.2f
+            ) {
                 showToast("Land2!!!!");
+                throttle_pid.reset();
+                pitch_pid.reset();
                 flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
-//                stopEdgeDetection();
                 return null;
             } else {
                 return stayOnPlace();
@@ -454,19 +312,14 @@ public class ControllerImageDetection {
 
         selectedLine = currentLine;
         Imgproc.line(imgToProcess, selectedLine[0], selectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-
+        showToast("droneRelativeHeight: " + droneRelativeHeight);
         double dyRealPitch = adjustDronePosition(selectedLine, imgToProcess.height(), droneRelativeHeight, 0);
         ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
+//        ControlCommand command = buildControlCommandEdgeFixedVelocity(dyRealPitch, dt, imgToProcess);
+
         updateLog(command, 1, selectedLine, dyRealPitch);
         return command;
     }
-
-    public void finishLanding(){
-        toggleMovementDetection.run();
-        stopEdgeDetection();
-    }
-
-
 
     public void processImage(Bitmap frame, double droneHeight) {
         // Added python function but it causes an error in loading
@@ -491,7 +344,18 @@ public class ControllerImageDetection {
         } catch (Exception e) {
             Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
             showToast(Objects.requireNonNull(e.getMessage()));
-            stopEdgeDetection();
+            double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
+            if (droneRelativeHeight <= 0.2f
+                //|| dataFromDrone.getGPS().getAltitude() <= 0.2f
+            ) {
+                showToast("LandError!!!!");
+                throttle_pid.reset();
+                pitch_pid.reset();
+                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+
+            } else {
+                stopEdgeDetection();
+            }
             matToBitmap(imgToProcess, frame);
             throw new RuntimeException(e);
         }
@@ -526,217 +390,6 @@ public class ControllerImageDetection {
         return ans;
     }
 
-    private ControlCommand detectLending(Mat imgToProcess, double droneHeight) throws Exception {
-        long currTime = System.currentTimeMillis();
-        double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
-        prevTime = currTime;
-        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
-        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
-        List<Object[]> pointArr = EdgeDetection.detectLines(imgToProcess, droneRelativeHeight);
-        int size = pointArr.size();
-        showToast("size:  " + size);
-        if (size > 0) {
-            first_detect = false;
-            not_found = 0;
-        } else if (!first_detect) {
-            ControlCommand stay = stayOnPlace();
-            flightControlMethods.sendVirtualStickCommands(stay, 0.0f);
-            not_found++;
-            if (not_found > 5) {
-                if (isUltrasonicBeingUsed && droneRelativeHeight <= 0.15) {
-                    releasePythonResources();
-                    showToast("Land2!!!!");
-                    flightControlMethods.land(this::stopEdgeDetection, null);
-                    return null;
-                } else {
-                    throw new Exception("Error in detection mode, edge disappear");
-                }
-            }
-            return null;
-        } else {
-            return null;
-        }
-        showToast("isIn_blur() " + isIn_blur());
-//        Point[] bestLine;
-        Point[][] bestLines = selectMiddleBestLines(pointArr, imgToProcess);
-//        Point[][] bestLines = isIn_blur() ? selectMiddleBestLines(pointArr, imgToProcess) : selectBest90DegreeLines(pointArr, imgToProcess);
-
-        assert bestLines != null;
-        Point[] bestHorizontalLine = bestLines[0];
-        Point[] bestVerticalLine = bestLines[1];
-        if (bestHorizontalLine != null && bestVerticalLine != null && landingMode != 0) {
-            showToast("cornerDetection");
-//            Point intersection = calculateIntersection(bestHorizontalLine[0], bestHorizontalLine[1], bestVerticalLine[0], bestVerticalLine[1]);
-//            Log.i("intersection:  ", intersection.toString());
-
-//            Point endLine = calculateBisectorLine(intersection, bestHorizontalLine, bestVerticalLine, 500.0);
-
-            // Draw both lines
-            Imgproc.line(imgToProcess, bestHorizontalLine[0], bestHorizontalLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-            Imgproc.line(imgToProcess, bestVerticalLine[0], bestVerticalLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-//            Imgproc.line(imgToProcess, intersection, endLine, new Scalar(255, 255, 255), 3, Imgproc.LINE_AA, 0);
-            //Level 1
-//            double dy = imgToProcess.height() / 2.0 - (bestHorizontalLine[0].y + bestHorizontalLine[1].y) / 2.0;
-//            double dx = imgToProcess.width() / 2.0 - (bestHorizontalLine[0].x + bestHorizontalLine[1].x) / 2.0;
-//            if (dy < dx) {
-//                dy = dx - dy;
-//                double GSD = (sensor_width * droneRelativeHeight * 100) / (focal_length * imgToProcess.height());
-//
-//                // Build control command for both pitch and roll
-//                ControlCommand command = buildControlCommandEdge(GSD * dy, 0, dt, imgToProcess);
-//                updateLog(command, pointArr.size(), bestHorizontalLine, GSD * dy);
-//                return command;
-//            } else if (dx < dy) {
-//                dx = dy - dx;
-//                double GSD = (sensor_width * droneRelativeHeight * 100) / (focal_length * imgToProcess.width());
-//
-//                // Build control command for both pitch and roll
-//                ControlCommand command = buildControlCommandEdge(0, GSD * dx, dt, imgToProcess);
-//                updateLog(command, pointArr.size(), bestHorizontalLine, GSD * dx);
-//                return command;
-//            }
-            double dyRealPitch = adjustDronePosition(bestHorizontalLine, imgToProcess.height(), droneRelativeHeight, 0);
-            double dxRealRoll = adjustDronePosition(bestVerticalLine, imgToProcess.width(), droneRelativeHeight, 25);
-
-            // Build control command for both pitch and roll
-            ControlCommand command = buildControlCommandEdge(dyRealPitch, dxRealRoll, dt, imgToProcess);
-            updateLog(command, pointArr.size(), bestHorizontalLine, dyRealPitch);
-
-            return command;
-        } else {
-            showToast("bestHorizontalLine");
-
-            if (bestVerticalLine != null || bestHorizontalLine == null) {
-                bestHorizontalLine = isIn_blur() ? selectMiddleBestLinePoint(pointArr, imgToProcess) : selectBestLinePoint(pointArr);
-            }
-            Imgproc.line(imgToProcess, bestHorizontalLine[0], bestHorizontalLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-
-            double dyRealPitch = adjustDronePosition(bestHorizontalLine, imgToProcess.height(), droneRelativeHeight, 0);
-            // Build control command for both pitch and roll
-            ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
-            updateLog(command, pointArr.size(), bestHorizontalLine, dyRealPitch);
-            return command;
-        }
-    }
-
-    private Point[][] selectMiddleBestLines(List<Object[]> pointArr, Mat imgToProcess) {
-        Point[] bestLine1 = null;
-        Point[] bestLine2 = null;
-        double bestAngleDiff = Double.MAX_VALUE;
-        Point imgCenter = new Point(imgToProcess.width() / 2.0, imgToProcess.height() / 2.0);
-        double bestDistanceToCenter = Double.MAX_VALUE;
-
-        // Loop through all possible pairs of lines
-        for (int i = 0; i < pointArr.size(); i++) {
-            for (int j = i + 1; j < pointArr.size(); j++) {
-                Point[] line1 = (Point[]) pointArr.get(i)[0];
-                Point[] line2 = (Point[]) pointArr.get(j)[0];
-
-                if (line1 != null && line2 != null && line1[0] != null && line1[1] != null && line2[0] != null && line2[1] != null) {
-                    // Calculate angle between the two lines
-                    double angle = calculateAngleBetweenLines(line1, line2);
-
-                    // Find the intersection point of the lines
-                    Point intersection = calculateIntersection(line1[0], line1[1], line2[0], line2[1]);
-//                    Log.i("intersection1:  ", intersection.toString());
-
-                    // Calculate distance from intersection to center of image
-                    double distanceToCenter = Math.sqrt(Math.pow(intersection.x - imgCenter.x, 2) + Math.pow(intersection.y - imgCenter.y, 2));
-
-                    // Check if this pair of lines is closer to 90 degrees and closer to the image center
-                    if (Math.abs(angle - 90.0) < bestAngleDiff || (Math.abs(angle - 90.0) == bestAngleDiff && distanceToCenter < bestDistanceToCenter)) {
-                        bestAngleDiff = Math.abs(angle - 90.0);
-                        bestDistanceToCenter = distanceToCenter;
-                        bestLine1 = line1;
-                        bestLine2 = line2;
-                    }
-                }
-            }
-        }
-        // If we found the best two lines, assign one as horizontal and the other as vertical
-        if (bestLine1 != null && bestLine2 != null) {
-            double angle1 = calculateLineAngle(bestLine1[0], bestLine1[1]);
-            double angle2 = calculateLineAngle(bestLine2[0], bestLine2[1]);
-
-            // Swap the lines if necessary, so that bestLine1 is horizontal and bestLine2 is vertical
-            if (Math.abs(angle1 - 90.0) < Math.abs(angle2 - 90.0)) {
-                // Swap them to ensure bestLine1 is the horizontal one
-                Point[] temp = bestLine1;
-                bestLine1 = bestLine2;
-                bestLine2 = temp;
-            }
-
-            return new Point[][]{bestLine1, bestLine2};
-        }
-
-        // If no valid pair is found, just return the best single line
-        bestLine1 = isIn_blur() ? selectMiddleBestLine(pointArr, imgToProcess) : selectBestLine(pointArr, imgToProcess);
-        return new Point[][]{bestLine1, null};
-
-    }
-
-    // Helper function to calculate the angle between two lines
-    private double calculateAngleBetweenLines(Point[] line1, Point[] line2) {
-        double dx1 = line1[1].x - line1[0].x;
-        double dy1 = line1[1].y - line1[0].y;
-        double dx2 = line2[1].x - line2[0].x;
-        double dy2 = line2[1].y - line2[0].y;
-
-        double dotProduct = dx1 * dx2 + dy1 * dy2;
-        double magnitude1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-        double magnitude2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-
-        // Calculate the angle between the two lines in degrees
-        return Math.acos(dotProduct / (magnitude1 * magnitude2)) * (180.0 / Math.PI);
-    }
-
-    private Point[][] selectBest90DegreeLines(List<Object[]> pointArr, Mat imgToProcess) {
-        Point[][] bestPair = new Point[2][2]; // To store the best pair of lines
-        double centerX = imgToProcess.width() / 2.0;
-        double centerY = imgToProcess.height() / 2.0;
-        double bestScore = Double.MAX_VALUE;
-
-        // Loop through all pairs of lines
-        for (int i = 0; i < pointArr.size(); i++) {
-            Point[] line1 = (Point[]) pointArr.get(i)[0];
-            for (int j = i + 1; j < pointArr.size(); j++) {
-                Point[] line2 = (Point[]) pointArr.get(j)[0];
-
-                // Calculate the angle between the two lines
-                double[] vector1 = {line1[1].x - line1[0].x, line1[1].y - line1[0].y};
-                double[] vector2 = {line2[1].x - line2[0].x, line2[1].y - line2[0].y};
-
-                double dotProduct = vector1[0] * vector2[0] + vector1[1] * vector2[1];
-                double mag1 = Math.sqrt(vector1[0] * vector1[0] + vector1[1] * vector1[1]);
-                double mag2 = Math.sqrt(vector2[0] * vector2[0] + vector2[1] * vector2[1]);
-
-                double cosTheta = dotProduct / (mag1 * mag2);
-                double angle = Math.acos(cosTheta) * (180.0 / Math.PI);
-
-                // Check if the angle is close to 90 degrees
-                if (Math.abs(angle - 90.0) < 5.0) { // Allow a small deviation from 90 degrees
-
-                    // Calculate the intersection point (if any)
-                    Point intersection = calculateIntersection(line1[0], line1[1], line2[0], line2[1]);
-                    Log.i("intersection3:  ", intersection.toString());
-
-                    double dx = intersection.x - centerX;
-                    double dy = intersection.y - centerY;
-                    double distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
-
-                    // Minimize the distance from the center
-                    if (distanceFromCenter < bestScore) {
-                        bestScore = distanceFromCenter;
-                        bestPair[0] = line1;
-                        bestPair[1] = line2;
-                    }
-                }
-            }
-        }
-
-        return bestPair[0] != null ? bestPair : null;
-    }
-
     // Function to calculate the Euclidean distance (baseline)
     private double calculateBaseline(double[] pos1, double[] pos2) {
 
@@ -754,284 +407,6 @@ public class ControllerImageDetection {
             Log.d(TAG, "Failed to calculate the distance between the two positions.");
             return -2;
         }
-    }
-
-    private Point[] selectBestLine(List<Object[]> pointArr, Mat imgToProcess) {
-        Point[] bestHorizontalLine = null;
-        Point[] bestLine = null;
-        double dy_best_horizontal = Double.MAX_VALUE;
-        double dy_best = Double.MAX_VALUE;
-
-        Log.i("EdgeDetection", "size3: " + pointArr.size());
-        for (Object[] entry : pointArr) {
-            Point[] point = (Point[]) entry[0];
-
-            if (point != null && point[0] != null && point[1] != null) {
-
-                // Access the horizontal flag (cast to Boolean)
-                boolean isHorizontal = (Boolean) entry[1];
-
-                double c_y = (point[0].y + point[1].y) / 2.0;
-                double dy = imgToProcess.height() / 2.0 - c_y;
-//                Imgproc.putText(imgToProcess, String.valueOf(slope), new Point((point[0].x + point[1].x) / 2.0 - 20, (point[0].y + point[1].y) / 2.0 - 20) , 5, 1, new Scalar(255, 255, 0));
-
-//                Log.d("EdgeDetection", Arrays.toString(point) + " : " + slope);
-                if (isHorizontal) {
-                    if (Math.abs(dy) < dy_best_horizontal) {
-                        bestHorizontalLine = point;
-                        dy_best_horizontal = Math.abs(dy);
-                    }
-                } else if (Math.abs(dy) < dy_best) {
-                    bestLine = point;
-                    dy_best = Math.abs(dy);
-                }
-            }
-        }
-
-        return bestHorizontalLine != null ? bestHorizontalLine : bestLine;
-    }
-
-    private Point[] selectMiddleBestLine(List<Object[]> pointArr, Mat imgToProcess) {
-        Point[] bestHorizontalLine = null;
-        Point[] bestLine = null;
-        double dy_best_horizontal = Double.MAX_VALUE;
-        double dy_best = Double.MAX_VALUE;
-
-        double proximityThreshold = 10.0;
-        List<List<Point[]>> horizontalGroups = new ArrayList<>();
-
-        Log.i("EdgeDetection", "array size:" + pointArr.size());
-        for (Object[] entry : pointArr) {
-            Point[] point = (Point[]) entry[0];
-
-            if (point != null && point[0] != null && point[1] != null) {
-
-                // Access the horizontal flag (cast to Boolean)
-                boolean isHorizontal = (Boolean) entry[1];
-
-                double c_y = (point[0].y + point[1].y) / 2.0;
-                double dy = imgToProcess.height() / 2.0 - c_y;
-//                Imgproc.putText(imgToProcess, String.valueOf(slope), new Point((point[0].x + point[1].x) / 2.0 - 20, (point[0].y + point[1].y) / 2.0 - 20) , 5, 1, new Scalar(255, 255, 0));
-
-//                Log.d("EdgeDetection", Arrays.toString(point) + " : " + slope);
-                if (isHorizontal) {
-                    boolean addedToGroup = false;
-                    // Check if this line is close to any existing group
-                    for (List<Point[]> group : horizontalGroups) {
-                        double groupCenterY = (group.get(0)[0].y + group.get(0)[1].y) / 2.0;
-                        if (Math.abs(c_y - groupCenterY) < proximityThreshold) {
-                            group.add(point);
-                            addedToGroup = true;
-                            break;
-                        }
-                    }
-                    // If no group was close enough, create a new group
-                    if (!addedToGroup) {
-                        List<Point[]> newGroup = new ArrayList<>();
-                        newGroup.add(point);
-                        horizontalGroups.add(newGroup);
-                    }
-//                    if (Math.abs(dy) < dy_best_horizontal) {
-//                        bestHorizontalLine = point;
-//                        dy_best_horizontal = Math.abs(dy);
-//                    }
-                } else if (Math.abs(dy) < dy_best) {
-                    bestLine = point;
-                    dy_best = Math.abs(dy);
-                }
-            }
-        }
-
-        // Find the best line within the largest group of horizontal lines
-        for (List<Point[]> group : horizontalGroups) {
-            if (group.size() > 1) { // Only consider groups with multiple lines
-                // Find the line closest to the center of this group
-                double groupCenterY = 0;
-                for (Point[] line : group) {
-                    groupCenterY += (line[0].y + line[1].y) / 2.0;
-                }
-                groupCenterY /= group.size();
-
-                for (Point[] line : group) {
-                    double c_y = (line[0].y + line[1].y) / 2.0;
-                    double dy = Math.abs(c_y - groupCenterY);
-                    if (dy < dy_best_horizontal) {
-                        bestHorizontalLine = line;
-                        dy_best_horizontal = dy;
-                    }
-                }
-            }
-        }
-        // In case no group is found, fallback to the closest general line
-        for (Object[] entry : pointArr) {
-            Point[] point = (Point[]) entry[0];
-            if (point != null && point[0] != null && point[1] != null) {
-                boolean isHorizontal = (Boolean) entry[1];
-                double c_y = (point[0].y + point[1].y) / 2.0;
-                double dy = imgToProcess.height() / 2.0 - c_y;
-
-                if (!isHorizontal && Math.abs(dy) < dy_best) {
-                    bestLine = point;
-                    dy_best = Math.abs(dy);
-                }
-            }
-        }
-
-        return bestHorizontalLine != null ? bestHorizontalLine : bestLine;
-    }
-
-    private Point[] selectMiddleBestLinePoint(List<Object[]> pointArr, Mat imgToProcess) {
-        Point[] bestHorizontalLine = null;
-        Point[] bestLine = null;
-        double dy_best_horizontal = Double.MAX_VALUE;
-        double dy_best = Double.MAX_VALUE;
-
-        double proximityThreshold = 10.0;
-        List<List<Point[]>> horizontalGroups = new ArrayList<>();
-
-        Log.i("EdgeDetection", "array size:" + pointArr.size());
-        for (Object[] entry : pointArr) {
-            Point[] point = (Point[]) entry[0];
-
-            if (point != null && point[0] != null && point[1] != null) {
-
-                // Access the horizontal flag (cast to Boolean)
-                boolean isHorizontal = (Boolean) entry[1];
-
-                double c_y = (point[0].y + point[1].y) / 2.0;
-                double dy = imgToProcess.height() / 2.0 - c_y;
-//                Imgproc.putText(imgToProcess, String.valueOf(slope), new Point((point[0].x + point[1].x) / 2.0 - 20, (point[0].y + point[1].y) / 2.0 - 20) , 5, 1, new Scalar(255, 255, 0));
-
-//                Log.d("EdgeDetection", Arrays.toString(point) + " : " + slope);
-                if (isHorizontal) {
-                    boolean addedToGroup = false;
-                    // Check if this line is close to any existing group
-                    for (List<Point[]> group : horizontalGroups) {
-                        double groupCenterY = (group.get(0)[0].y + group.get(0)[1].y) / 2.0;
-                        if (Math.abs(c_y - groupCenterY) < proximityThreshold) {
-                            group.add(point);
-                            addedToGroup = true;
-                            break;
-                        }
-                    }
-                    // If no group was close enough, create a new group
-                    if (!addedToGroup) {
-                        List<Point[]> newGroup = new ArrayList<>();
-                        newGroup.add(point);
-                        horizontalGroups.add(newGroup);
-                    }
-//                    if (Math.abs(dy) < dy_best_horizontal) {
-//                        bestHorizontalLine = point;
-//                        dy_best_horizontal = Math.abs(dy);
-//                    }
-                } else if (Math.abs(dy) < dy_best) {
-                    bestLine = point;
-                    dy_best = Math.abs(dy);
-                }
-            }
-        }
-
-        // Find the best line within the largest group of horizontal lines
-        for (List<Point[]> group : horizontalGroups) {
-            if (group.size() > 1) { // Only consider groups with multiple lines
-                // Find the line closest to the center of this group
-                double groupCenterY = 0;
-                for (Point[] line : group) {
-                    groupCenterY += (line[0].y + line[1].y) / 2.0;
-                }
-                groupCenterY /= group.size();
-
-                for (Point[] line : group) {
-
-                    // Calculate the midpoint of the line
-                    double midX = (line[0].x + line[1].x) / 2.0;
-                    double midY = (line[0].y + line[1].y) / 2.0;
-
-                    // Calculate Euclidean distance from the clicked point to the line's midpoint
-                    double distance = Math.sqrt(Math.pow(clickedPoint.x - midX, 2) + Math.pow(clickedPoint.y - midY, 2));
-
-                    // Check if this line is closer to the clicked point than the current best
-                    if (distance < dy_best_horizontal) {
-                        bestLine = line;
-                        dy_best_horizontal = distance;
-                    }
-
-//                    if (dy < dy_best_horizontal) {
-//                        bestHorizontalLine = line;
-//                        dy_best_horizontal = dy;
-//                    }
-                }
-            }
-        }
-        // In case no group is found, fallback to the closest general line
-        for (Object[] entry : pointArr) {
-            Point[] point = (Point[]) entry[0];
-            if (point != null && point[0] != null && point[1] != null) {
-                boolean isHorizontal = (Boolean) entry[1];
-//                double c_y = (point[0].y + point[1].y) / 2.0;
-//                double dy = imgToProcess.height() / 2.0 - c_y;
-                // Calculate the midpoint of the line
-                double midX = (point[0].x + point[1].x) / 2.0;
-                double midY = (point[0].y + point[1].y) / 2.0;
-
-                // Calculate Euclidean distance from the clicked point to the line's midpoint
-                double distance = Math.sqrt(Math.pow(clickedPoint.x - midX, 2) + Math.pow(clickedPoint.y - midY, 2));
-
-                // Check if this line is closer to the clicked point than the current best
-//                if (distance < dy_best_horizontal) {
-//                    bestLine = point;
-//                    dy_best_horizontal = distance;
-//                }
-                if (!isHorizontal && Math.abs(distance) < dy_best) {
-                    bestLine = point;
-                    dy_best = Math.abs(distance);
-                }
-            }
-        }
-
-        return bestHorizontalLine != null ? bestHorizontalLine : bestLine;
-    }
-
-    private Point[][] selectBestLines(List<Object[]> pointArr, Mat imgToProcess) {
-        Point[] bestHorizontalLine = null;
-        Point[] bestVerticalLine = null;
-        double dy_best_horizontal = Double.MAX_VALUE;
-        double dx_best_vertical = Double.MAX_VALUE;
-
-        Log.i("EdgeDetection", "" + pointArr.size());
-        for (Object[] entry : pointArr) {
-            Point[] point = (Point[]) entry[0];
-
-            if (point != null && point[0] != null && point[1] != null) {
-
-                // Access the horizontal flag (cast to Boolean)
-                boolean isHorizontal = (Boolean) entry[1];
-
-                // Calculate vertical distance to the center for horizontal lines
-                if (isHorizontal) {
-                    double c_y = (point[0].y + point[1].y) / 2.0;
-                    double dy = imgToProcess.height() / 2.0 - c_y;
-
-                    if (Math.abs(dy) < dy_best_horizontal) {
-                        bestHorizontalLine = point;
-                        dy_best_horizontal = Math.abs(dy);
-                    }
-                }
-                // Calculate horizontal distance to the center for vertical lines
-                else {
-                    double c_x = (point[0].x + point[1].x) / 2.0;
-                    double dx = imgToProcess.width() / 2.0 - c_x;
-
-                    if (Math.abs(dx) < dx_best_vertical) {
-                        bestVerticalLine = point;
-                        dx_best_vertical = Math.abs(dx);
-                    }
-                }
-            }
-        }
-
-        // Return both best horizontal and vertical lines as an array
-        return new Point[][]{bestHorizontalLine, bestVerticalLine};
     }
 
     private Point[] selectBestLinePoint(List<Object[]> pointArr) {
@@ -1063,71 +438,101 @@ public class ControllerImageDetection {
     }
 
     private double adjustDronePosition(Point[] finalLine, double frameSizePx, double droneHeight, double distanceFromCenter) {
-        distanceFromCenter = distanceFromCenter * (landingMode == 1 ? 1 : -1);
-        double dy_best = (frameSizePx / 2.0 + distanceFromCenter) - (finalLine[0].y + finalLine[1].y) / 2.0;
+//        distanceFromCenter = distanceFromCenter * (landingMode == 1 ? 1 : -1);
+        double dy_best = frameSizePx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
         double GSD = (sensor_width * droneHeight * 100) / (focal_length * frameSizePx);
-
         return GSD * dy_best;
     }
 
-    private ControlCommand buildControlCommandEdge(double dyReal, double dt, Mat imgToProcess) {
-        double maxSpeed = 2.0;
-        double Kp = 0.02;  // Proportional gain, adjust as needed - 0.01
-        error_y = dyReal * Kp;
+    private ControlCommand buildControlCommandEdgeFixedVelocity(double dyReal, double dt, Mat imgToProcess) {
+        double maxSpeed = 2.0;   // Cap the maximum velocity
+        double minSpeed = 0.01;  // Minimum starting velocity
 
-        if (0 <= error_y && error_y <= 0.001) {
-            showToast("Landing!!");
+        // Set initial distance only at the start of the movement
+        if (initialDistance == 0) {
+            initialDistance = Math.abs(dyReal);  // Absolute distance to target
+        }
+
+        double currentDistance = Math.abs(dyReal);  // Current remaining distance
+
+        // Calculate the midpoint where deceleration should begin
+        double midpoint = initialDistance / 2.0;
+
+        // Determine if we are before or after the midpoint
+        if (currentDistance > midpoint) {
+            // Increase velocity while the drone is before the midpoint
+            velocity = Math.min(velocity + accelerationRate, maxSpeed);
+        } else {
+            // Decrease velocity after passing the midpoint
+            velocity = Math.max(velocity - accelerationRate, minSpeed);
+        }
+
+        // Cap the velocity to make sure it doesn't exceed maxSpeed or drop below minSpeed
+        velocity = Math.max(minSpeed, Math.min(velocity, maxSpeed));
+
+        // Check if we're close enough to stop the drone
+        if (currentDistance <= 1) {
+            showToast("Stopping, distance reached!");
+            velocity = 0;  // Stop the drone
+            initialDistance = 0;  // Reset for the next movement
             t = -0.05f;
-            error_y = 0.05f;
-
+            error_y = 0.05;
         } else {
             t = 0;
         }
-        p = (float) pitch_pid.update(error_y, dt, maxSpeed);
+//        if (0 <= dyReal && dyReal <= 0.1) {
+//            showToast("Landing!!");
+//            t = -0.05f;
+//            changedDy = 0.05;
+//
+//        } else {
+//            changedDy = error_y;
+//            t = 0;
+//        }
+
+        // Use PID controller to move the drone with the calculated velocity
+        double error_y = dyReal * 0.01;  // Proportional gain can be adjusted if needed
+        p = (float) pitch_pid.update(velocity, dt, maxSpeed);
+        t = (float) throttle_pid.update(t, dt, maxSpeed);  // Adjust as needed for throttle
+
+        // Debug information for testing
+        Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
+        showToast("p: " + p + ", velocity: " + velocity + ", t: " + t);
+
+        // Build control command with the updated values
+        ControlCommand ans = new ControlCommand(p, r, t);
+        ans.setErr(1000, error_x, error_y, dataFromDrone.getAltitudeBelow());
+        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
+
+        return ans;
+    }
+
+    private ControlCommand buildControlCommandEdge(double dyReal, double dt, Mat imgToProcess) {
+        double maxSpeed = 1.0;
+        double Kp = 0.01;  // Proportional gain, adjust as needed - 0.02 / 0.01
+        error_y = dyReal * Kp;
+        double changedDy;
+
+        if (0 <= dyReal && dyReal < 1) {
+            showToast("Landing!!");
+            t = -0.05f;
+            changedDy = 0.05;
+
+        } else {
+            changedDy = error_y;
+            t = 0;
+        }
+        p = (float) pitch_pid.update(changedDy, dt, maxSpeed);
 //        r = (float) roll_pid.update(0, dt, maxSpeed);
         t = (float) throttle_pid.update(t, dt, maxSpeed);
         Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
-        showToast("p: " + p);
+        showToast("p: " + p + ", t: " + t);
 
         ControlCommand ans = new ControlCommand(p, r, t);
         ans.setErr(1000, error_x, error_y, dataFromDrone.getAltitudeBelow());
         ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
 
         return ans;
-    }
-
-    private ControlCommand buildControlCommandEdge(double dyReal, double dxReal, double dt, Mat imgToProcess) {
-        double maxSpeed = 2.0;
-        double Kp = 0.02;  // Proportional gain, adjust as needed - 0.01
-        error_y = dyReal * Kp;
-        error_x = dxReal * Kp;
-
-        if (0 <= error_y && error_y <= 0.001 && 0 <= error_x && error_x <= 0.001) {
-            showToast("Landing!!");
-
-            t = -0.05f;
-            error_y = 0.05f;
-            error_x = 0.05f;
-
-        } else {
-            t = 0;
-        }
-        p = (float) pitch_pid.update(error_y, dt, maxSpeed);
-        r = (float) roll_pid.update(error_x, dt, maxSpeed);
-        t = (float) throttle_pid.update(t, dt, maxSpeed);
-        Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
-        showToast("p: " + p);
-
-        ControlCommand ans = new ControlCommand(p, r, t);
-        ans.setErr(1000, error_x, error_y, dataFromDrone.getAltitudeBelow());
-        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
-
-        return ans;
-    }
-
-    public void stopPlanarVideo() {
-        isPlaying = false;
-//        releasePythonResources();
     }
 
     // TODO : Use this function after the drone has landed
@@ -1139,26 +544,6 @@ public class ControllerImageDetection {
     public void stopObjectDetectionAlgo() {
         isObjectDetecting = false;
 //        releasePythonResources();
-    }
-
-    private void releasePythonResources() {
-        if (PlaneHandlerClass != null) {
-            try {
-                PlaneHandlerClass.close();
-            } catch (Exception e) {
-                Log.e(TAG, "Error closing Python module", e);
-            }
-            PlaneHandlerClass = null;
-        }
-
-        if (getOutputFunc != null) {
-            try {
-                getOutputFunc.close();
-            } catch (Exception e) {
-                Log.e(TAG, "Error closing Python function", e);
-            }
-            getOutputFunc = null;
-        }
     }
 
     // Convert Mat to byte array

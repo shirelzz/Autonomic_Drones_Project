@@ -110,7 +110,7 @@ public class SpeechToText implements RecognitionListener {
     public void onResults(Bundle results) {
         ArrayList<String> matches = results
                 .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-        showToast(String.valueOf(results));
+//        showToast(String.valueOf(results));
 
         StringBuilder text = new StringBuilder();
         assert matches != null;
