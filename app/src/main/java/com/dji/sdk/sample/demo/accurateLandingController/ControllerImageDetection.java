@@ -287,7 +287,6 @@ public class ControllerImageDetection {
             return null;
         }
         Point[] currentLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
-//        showToast(Arrays.toString(currentLine));
 
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
@@ -496,20 +495,9 @@ public class ControllerImageDetection {
 //            t = 0;
 //        }
 
-//        if (frameCount % 5 != 0) {
-//            frameCount++;
-//            // Use PID controller to move the drone with the calculated velocity
-//            p = (float) pitch_pid.update(0, dt, maxSpeed);
-//            t = (float) throttle_pid.update(0, dt, maxSpeed);  // Adjust as needed for throttle
-//        } else {
-//            frameCount++;
-            // Use PID controller to move the drone with the calculated velocity
-            p = (float) pitch_pid.update(velocity, dt, maxSpeed);
-            t = (float) throttle_pid.update(t, dt, maxSpeed);  // Adjust as needed for throttle
-//        }
-//        // Use PID controller to move the drone with the calculated velocity
-//        p = (float) pitch_pid.update(velocity, dt, maxSpeed);
-//        t = (float) throttle_pid.update(t, dt, maxSpeed);  // Adjust as needed for throttle
+        // Use PID controller to move the drone with the calculated velocity
+        p = (float) pitch_pid.update(velocity, dt, maxSpeed);
+        t = (float) throttle_pid.update(t, dt, maxSpeed);  // Adjust as needed for throttle
 
         // Debug information for testing
         Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));

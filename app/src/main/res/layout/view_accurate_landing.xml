@@ -332,15 +332,15 @@
 <!--        android:layout_toEndOf="@+id/EdgeDetect"-->
 <!--        android:text="PD" />-->
 
-    <Button
-        android:id="@+id/start_yolo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@id/EdgeDetect"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="0dp"
-        android:layout_marginBottom="0dp"
-        android:text="Object Detection" />
+<!--    <Button-->
+<!--        android:id="@+id/start_yolo"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_toEndOf="@id/EdgeDetect"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_marginStart="0dp"-->
+<!--        android:layout_marginBottom="0dp"-->
+<!--        android:text="Object Detection" />-->
 
 <!--    <Button-->
 <!--        android:id="@+id/startLandingAlgo"-->
@@ -356,7 +356,7 @@
         android:id="@+id/guardian"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toEndOf="@id/start_yolo"
+        android:layout_toEndOf="@id/EdgeDetect"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="0dp"
         android:layout_marginBottom="0dp"

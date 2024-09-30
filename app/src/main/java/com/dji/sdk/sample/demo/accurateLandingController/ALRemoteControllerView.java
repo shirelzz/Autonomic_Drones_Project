@@ -146,7 +146,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //        recordingVideo = new RecordingVideo(context);
 
         gimbalController = new GimbalController(flightControlMethods);
-        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController, yoloDetector, this::toggleMovementDetection, edgeDetect);
+        controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController, yoloDetector, this::toggleMovementDetectionStart, edgeDetect);
         movementDetector = new MovementDetector(yoloDetector, textToSpeech);
         presentMap = new PresentMap(dataFromDrone, goToUsingVS);
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
@@ -233,7 +233,7 @@ public class ALRemoteControllerView extends RelativeLayout
         stopButton = findViewById(R.id.stop_btn);
 //        startAlgo_btn = findViewById(R.id.start_algo);
 //        startPlaneDetectionAlgo_btn = findViewById(R.id.start_plane_detection);
-        startObjectDetectionAlgo_btn = findViewById(R.id.start_yolo);
+//        startObjectDetectionAlgo_btn = findViewById(R.id.start_yolo);
 //        leftOrRightButton = findViewById(R.id.left_or_right_corner);
         guard_btn = findViewById(R.id.guardian);
 //        combinedLandingAlgo_btn = findViewById(R.id.startLandingAlgo);
@@ -272,7 +272,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //        followPhone_btn.setOnClickListener(this);
         stopButton.setOnClickListener(this);
 //        startPlaneDetectionAlgo_btn.setOnClickListener(this);
-        startObjectDetectionAlgo_btn.setOnClickListener(this);
+//        startObjectDetectionAlgo_btn.setOnClickListener(this);
         guard_btn.setOnClickListener(this);
 //        leftOrRightButton.setOnClickListener(this);
 //        combinedLandingAlgo_btn.setOnClickListener(this);
@@ -451,6 +451,8 @@ public class ALRemoteControllerView extends RelativeLayout
         gimbalController.rotateGimbalToDegree(-45);
         controllerImageDetection.stopPlaneDetectionAlgo();
         controllerImageDetection.stopObjectDetectionAlgo();
+        toggleMovementDetectionEnd();
+
 //        Objects.requireNonNull(flightControlMethods.getFlightController().getFlightAssistant()).setLandingProtectionEnabled(true, djiError -> {
 //            if (djiError != null) showToast("" + djiError);
 //            else showToast("Landing protection DISABLED!");
@@ -502,9 +504,10 @@ public class ALRemoteControllerView extends RelativeLayout
             edgeDetect.setBackgroundColor(Color.GREEN);
 //        stopButton.setBackgroundColor(Color.RED);
 ////        goTo_btn.setBackgroundColor(Color.WHITE);
-//            gimbalController.rotateGimbalToDegree(-45);
+            gimbalController.rotateGimbalToDegree(-45);
         } else {
             edgeDetect.setBackgroundColor(Color.WHITE);
+            gimbalController.rotateGimbalToDegree(0);
 
 //            gimbalController.rotateGimbalToDegree(-90);
         }
@@ -635,12 +638,12 @@ public class ALRemoteControllerView extends RelativeLayout
 //                startPlaneDetectionAlgo();
 //                break;
 
-            case R.id.start_yolo:
-                startObjectDetectionAlgo_btn.setBackgroundColor(Color.GREEN);
-
-                gimbalController.rotateGimbalToDegree(-45);
-                startObjectDetectionAlgo();
-                break;
+//            case R.id.start_yolo:
+//                startObjectDetectionAlgo_btn.setBackgroundColor(Color.GREEN);
+//
+//                gimbalController.rotateGimbalToDegree(-45);
+//                startObjectDetectionAlgo();
+//                break;
 
             case R.id.guardian:
                 toggleMovementDetection();
@@ -668,21 +671,34 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     // Toggle the movement detection process
+    private void toggleMovementDetectionStart() {
+
+        gimbalController.rotateGimbalToDegree(0);
+        // Start movement detection
+        isMovementDetectionRunning = true;
+        movementDetector.setOriginalImage(convertBitmapToMat(droneIMG));  // Set the initial frame
+        movementDetectionHandler.post(movementDetectionRunnable);  // Start periodic checking
+        guard_btn.setBackgroundColor(Color.GREEN);  // Indicate it's running
+        showToast("Movement detection started");
+    }
+
     private void toggleMovementDetection() {
         if (isMovementDetectionRunning) {
-            // Stop movement detection
-            isMovementDetectionRunning = false;
-            movementDetectionHandler.removeCallbacks(movementDetectionRunnable);
-            guard_btn.setBackgroundColor(Color.RED);  // Indicate it's stopped
-            showToast("Movement detection stopped");
-        } else {
             // Start movement detection
-            isMovementDetectionRunning = true;
-            movementDetector.setOriginalImage(convertBitmapToMat(droneIMG));  // Set the initial frame
-            movementDetectionHandler.post(movementDetectionRunnable);  // Start periodic checking
-            guard_btn.setBackgroundColor(Color.GREEN);  // Indicate it's running
-            showToast("Movement detection started");
+            toggleMovementDetectionEnd();
+        } else {
+            // Stop movement detection
+            toggleMovementDetectionStart();
+
         }
+    }
+
+    private void toggleMovementDetectionEnd() {
+        // Stop movement detection
+        isMovementDetectionRunning = false;
+        movementDetectionHandler.removeCallbacks(movementDetectionRunnable);
+        guard_btn.setBackgroundColor(Color.RED);  // Indicate it's stopped
+        showToast("Movement detection stopped");
     }
 
     private Mat convertBitmapToMat(Bitmap frame) {

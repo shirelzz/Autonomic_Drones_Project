@@ -1,7 +1,5 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
-import android.util.Log;
-
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
