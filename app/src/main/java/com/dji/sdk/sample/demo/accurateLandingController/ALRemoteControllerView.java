@@ -357,7 +357,7 @@ public class ALRemoteControllerView extends RelativeLayout
         if (controllerImageDetection.isEdgeDetectionMode() && gimbalController.isFinishRotate()) {
             controllerImageDetection.setBitmapFrame(droneIMG);
         }
-        accuracyLog.updateData(dataFromDrone.getAll(), controllerImageDetection.getControlStatus());
+        accuracyLog.updateData(dataFromDrone.getAll(), controllerImageDetection.getControlStatus(), controllerImageDetection.isEdgeDetectionMode(), isMovementDetectionRunning, movementDetector.getPrevAlertMessage());
 
         if (!onGoToMode && !onGoToFMMMode) {
 //            mVideoSurface.setVisibility(View.VISIBLE);
@@ -498,17 +498,14 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     private void accurateLanding() {
+//        gimbalController.rotateGimbalToDegree(-45);
         boolean isEdgeDetect = !controllerImageDetection.isEdgeDetectionMode();
-
+//        toggleMovementDetectionEnd();
         if (isEdgeDetect) {
             edgeDetect.setBackgroundColor(Color.GREEN);
-//        stopButton.setBackgroundColor(Color.RED);
-////        goTo_btn.setBackgroundColor(Color.WHITE);
-            gimbalController.rotateGimbalToDegree(-45);
+//            gimbalController.rotateGimbalToDegree(-45);
         } else {
             edgeDetect.setBackgroundColor(Color.WHITE);
-            gimbalController.rotateGimbalToDegree(0);
-
 //            gimbalController.rotateGimbalToDegree(-90);
         }
 //        if () {
@@ -684,10 +681,10 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private void toggleMovementDetection() {
         if (isMovementDetectionRunning) {
-            // Start movement detection
+            // Stop movement detection
             toggleMovementDetectionEnd();
         } else {
-            // Stop movement detection
+            // Start movement detection
             toggleMovementDetectionStart();
 
         }
@@ -695,9 +692,10 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private void toggleMovementDetectionEnd() {
         // Stop movement detection
+        gimbalController.rotateGimbalToDegree(-45);
         isMovementDetectionRunning = false;
         movementDetectionHandler.removeCallbacks(movementDetectionRunnable);
-        guard_btn.setBackgroundColor(Color.RED);  // Indicate it's stopped
+        guard_btn.setBackgroundColor(Color.WHITE);  // Indicate it's stopped
         showToast("Movement detection stopped");
     }
 

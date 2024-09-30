@@ -23,13 +23,15 @@ import java.util.Objects;
  */
 public class AccuracyLog {
 
-    private final String[] header = {"TimeMS", "date", "time", "Lat", "Lon", "Alt", "HeadDirection", "VelocityX", "VelocityY", "VelocityZ", "yaw", "pitch", "roll", "GimbalPitch",
+    private final String[] header = {"TimeMS", "date", "time", "Lat", "Lon", "Alt", "isUltrasonicBeingUsed", "altitudeBelow", "HeadDirection",/* "VelocityX", "VelocityY", "VelocityZ",*/ "yaw", "pitch", "roll", "GimbalPitch",
             "satelliteCount", "gpsSignalLevel", "batRemainingTime", "batCharge",
-            "saw_target", "edgeX", "edgeY","edgeDist","PitchOutput","RollOutput","ErrorX","ErrorY","Pp","Ip","Dp","Pr","Ir","Dr","Pt","It","Dt","MaxI","AutonomousMode"};
-    public Map<String, Double> algoLog;
-    TextView textViewLog, text;
+            "saw_target", "edgeX", "edgeY", "edgeDist", "PitchOutput", "RollOutput", "ThrottleOutput",
+//            "ErrorX","ErrorY","Pp","Ip","Dp","Pr","Ir","Dr","Pt","It","Dt","MaxI",
+            "AutonomousMode", "EdgeDetectionMode", "GuardianMode", "movementDetectionMessage"};
     private final DateFormat df = new SimpleDateFormat("dd/MM/yyyy , HH:mm:ss");
     private final DecimalFormat dcF = new DecimalFormat("##.####");
+    public Map<String, Double> algoLog;
+    TextView textViewLog, text;
     private BufferedWriter logFile;
     private StringBuilder currentRow;
     //            + ",Real/kalman,MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,Pp,Ip,Dp,Pr,Ir,Dr,Pt,It,Dt,MaxI,AutonomousMode"
@@ -99,7 +101,7 @@ public class AccuracyLog {
         this.algoLog = algo;
     }
 
-    public void appendLog(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus) {
+    public void appendLog(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus, boolean isEdgeDetectionMode, boolean isMovementDetectionRunning, String movementDetectionMessage) {
 
         if (logFile == null) {
             return;
@@ -116,11 +118,13 @@ public class AccuracyLog {
             sb.append(droneTelemetry.get("lat")).append(",");
             sb.append(droneTelemetry.get("lon")).append(",");
             sb.append(droneTelemetry.get("alt")).append(",");
+            sb.append(droneTelemetry.get("isUltrasonicBeingUsed")).append(",");
+            sb.append(droneTelemetry.get("altitudeBelow")).append(",");
             sb.append(droneTelemetry.get("HeadDirection")).append(",");
 
-            sb.append(format(droneTelemetry.get("velX"))).append(",");
-            sb.append(format(droneTelemetry.get("velY"))).append(",");
-            sb.append(format(droneTelemetry.get("velZ"))).append(",");
+//            sb.append(format(droneTelemetry.get("velX"))).append(",");
+//            sb.append(format(droneTelemetry.get("velY"))).append(",");
+//            sb.append(format(droneTelemetry.get("velZ"))).append(",");
 
             sb.append(format(droneTelemetry.get("yaw"))).append(",");
             sb.append(format(droneTelemetry.get("pitch"))).append(",");
@@ -136,35 +140,37 @@ public class AccuracyLog {
             sb.append(format(droneTelemetry.get("batCharge"))).append(",");
             sb.append(format(droneTelemetry.get("signalQuality")));
 
-            if(controlStatus != null){
+            if (controlStatus != null) {
                 sb.append(format(controlStatus.get("saw_target"))).append(",");
                 sb.append(format(controlStatus.get("edgeX"))).append(",");
                 sb.append(format(controlStatus.get("edgeY"))).append(",");
-
                 sb.append(format(controlStatus.get("edgeDist"))).append(",");
+
                 sb.append(format(controlStatus.get("PitchOutput"))).append(",");
                 sb.append(format(controlStatus.get("RollOutput"))).append(",");
-//            sb.append(format(controlStatus.get("Throttle"))).append(",");
+                sb.append(format(controlStatus.get("ThrottleOutput"))).append(",");
 
-                sb.append(format(controlStatus.get("ErrorX"))).append(",");
+//                sb.append(format(controlStatus.get("ErrorX"))).append(",");
+//
+//                sb.append(format(controlStatus.get("ErrorY"))).append(",");
+//                sb.append(format(controlStatus.get("Pp"))).append(",");
+//                sb.append(format(controlStatus.get("Ip"))).append(",");
+//                sb.append(format(controlStatus.get("Dp"))).append(",");
+//
+//                sb.append(format(controlStatus.get("Pr"))).append(",");
+//                sb.append(format(controlStatus.get("Ir"))).append(",");
+//                sb.append(format(controlStatus.get("Dr"))).append(",");
+//
+//                sb.append(format(controlStatus.get("Pt"))).append(",");
+//                sb.append(format(controlStatus.get("It"))).append(",");
+//                sb.append(format(controlStatus.get("Dt"))).append(",");
 
-                sb.append(format(controlStatus.get("ErrorY"))).append(",");
-                sb.append(format(controlStatus.get("Pp"))).append(",");
-                sb.append(format(controlStatus.get("Ip"))).append(",");
-                sb.append(format(controlStatus.get("Dp"))).append(",");
-
-                sb.append(format(controlStatus.get("Pr"))).append(",");
-                sb.append(format(controlStatus.get("Ir"))).append(",");
-                sb.append(format(controlStatus.get("Dr"))).append(",");
-
-                sb.append(format(controlStatus.get("Pt"))).append(",");
-                sb.append(format(controlStatus.get("It"))).append(",");
-                sb.append(format(controlStatus.get("Dt"))).append(",");
-
-                sb.append(format(controlStatus.get("MaxI"))).append(",");
+//                sb.append(format(controlStatus.get("MaxI"))).append(",");
 
                 sb.append(format(controlStatus.get("AutonomousMode"))).append(",");
-
+                sb.append(isEdgeDetectionMode).append(",");
+                sb.append(isMovementDetectionRunning).append(",");
+                sb.append(movementDetectionMessage).append(",");
             }
 
         } catch (Exception e) {
@@ -217,9 +223,9 @@ public class AccuracyLog {
             textViewLog.setText(debug.toString());
     }
 
-    public void updateData(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus) {
+    public void updateData(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus, boolean isEdgeDetectionMode, boolean isMovementDetectionRunning, String movementDetectionMessage) {
         dataOnScreen(droneTelemetry);
-        appendLog(droneTelemetry, controlStatus);
+        appendLog(droneTelemetry, controlStatus, isEdgeDetectionMode, isMovementDetectionRunning, movementDetectionMessage);
     }
 
 }

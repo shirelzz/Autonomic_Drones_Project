@@ -19,6 +19,7 @@ public class MovementDetector {
     private YoloDetector yoloDetector;
     private Mat previousImage;
     private TextToSpeech textToSpeech;
+    private String prevAlertMessage = "";
 
 
     public MovementDetector(YoloDetector yoloDetector, TextToSpeech tts) {
@@ -62,6 +63,7 @@ public class MovementDetector {
             for (Map.Entry<String, Integer> entry : movementSummary.entrySet()) {
                 alertMessage.append(entry.getValue()).append(" ").append(entry.getKey()).append(", ");
             }
+            this.prevAlertMessage = alertMessage.toString();
 
             // Show toast with detected movement details
             showToast(alertMessage.toString());
@@ -77,6 +79,10 @@ public class MovementDetector {
     private List<String> getTargetClasses() {
         // Define the list of classes you want to monitor for movement
         return Arrays.asList("person", "bicycle", "car", "motorbike", "bus", "train", "truck", "boat");
+    }
+
+    public String getPrevAlertMessage() {
+        return prevAlertMessage;
     }
 
     private boolean isSimilar(Rect2d r1, Rect2d r2) {

@@ -146,7 +146,7 @@ public class ControllerImageDetection {
 //        saw_target, edgeX,edgeY,edgeDist,PitchOutput,RollOutput,ErrorX,ErrorY,P,I,D,MaxI
 
 //        controlStatus.put("saw_target",(double)(imageCoordinates.saw_target()? 1 : 0));
-        controlStatus.put("saw_target", (double) numEdges);
+//        controlStatus.put("saw_target", (double) numEdges);
         if (numEdges > 0) {
             controlStatus.put("edgeX", (chosenEdge[0].x + chosenEdge[1].x) / 2.0);
             controlStatus.put("edgeY", (chosenEdge[0].y + chosenEdge[1].y) / 2.0);
@@ -155,25 +155,25 @@ public class ControllerImageDetection {
 
         controlStatus.put("PitchOutput", (double) control.getPitch());
         controlStatus.put("RollOutput", (double) control.getRoll());
+        controlStatus.put("ThrottleOutput", (double) control.getVerticalThrottle());
 
-        controlStatus.put("ErrorX", control.xError);
-        controlStatus.put("ErrorY", control.yError);
+//        controlStatus.put("ErrorX", control.xError);
+//        controlStatus.put("ErrorY", control.yError);
 
-        controlStatus.put("Pp", control.p_pitch);
-        controlStatus.put("Ip", control.i_pitch);
-        controlStatus.put("Dp", control.d_pitch);
+//        controlStatus.put("Pp", control.p_pitch);
+//        controlStatus.put("Ip", control.i_pitch);
+//        controlStatus.put("Dp", control.d_pitch);
+//
+//        controlStatus.put("Pr", control.p_roll);
+//        controlStatus.put("Ir", control.i_roll);
+//        controlStatus.put("Dr", control.d_roll);
+//
+//        controlStatus.put("Pt", control.p_Throttle);
+//        controlStatus.put("It", control.i_Throttle);
+//        controlStatus.put("Dt", control.d_Throttle);
 
-        controlStatus.put("Pr", control.p_roll);
-        controlStatus.put("Ir", control.i_roll);
-        controlStatus.put("Dr", control.d_roll);
+//        controlStatus.put("maxI", control.maxI);
 
-        controlStatus.put("Pt", control.p_Throttle);
-        controlStatus.put("It", control.i_Throttle);
-        controlStatus.put("Dt", control.d_Throttle);
-
-        controlStatus.put("maxI", control.maxI);
-
-        controlStatus.put("Throttle", (double) control.getVerticalThrottle());
 
         boolean autonomous_mode = Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().isVirtualStickControlModeAvailable();
         controlStatus.put("AutonomousMode", (double) (autonomous_mode ? 1 : 0));
@@ -286,11 +286,20 @@ public class ControllerImageDetection {
         if (selectedLine == null) {
             return null;
         }
+
         Point[] currentLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
 
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
-
+        if (droneRelativeHeight <= 0f
+            //|| dataFromDrone.getGPS().getAltitude() <= 0.2f
+        ) {
+            showToast("Land2!!!!");
+            throttle_pid.reset();
+            pitch_pid.reset();
+            flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+            return null;
+        }
         if (currentLine == null) {
             Log.i("EdgeDetect", isUltrasonicBeingUsed + ": rh: " + droneRelativeHeight + ", h:" + dataFromDrone.getGPS().getAltitude());
             if (droneRelativeHeight <= 0.2f
