@@ -66,6 +66,8 @@ public class ALRemoteControllerView extends RelativeLayout
     //    protected EditText lat;
 //    protected EditText lon;
     protected PresentMap presentMap;
+    private boolean isRecording = false;
+    private RecordVideo recordVideo;
     private Context ctx;
     private Button startPlaneDetectionAlgo_btn, startObjectDetectionAlgo_btn, edgeDetect, combinedLandingAlgo_btn, guard_btn, leftOrRightButton;
     private Button goToFMM_btn, followPhone_btn, startAlgo_btn, stopButton, goTo_btn, land_btn, recordBtn;
@@ -74,6 +76,8 @@ public class ALRemoteControllerView extends RelativeLayout
     private Bitmap droneIMG;
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
+
+//    private BitmapToVideoEncoder bitmapToVideoEncoder;
     //    ExcelWriter excelWriter;
     private DataFromDrone dataFromDrone;
     private GoToUsingVS goToUsingVS;
@@ -125,6 +129,8 @@ public class ALRemoteControllerView extends RelativeLayout
         initTextToSpeech(context);
         initYoloDetector(context);
 
+//        bitmapToVideoEncoder = new BitmapToVideoEncoder(this.getContext());
+
         accuracyLog = new AccuracyLog(dataLog, dist, this.getContext());
 //        accuracyLog = new AccuracyLog(dist, this.getContext());
 
@@ -143,8 +149,7 @@ public class ALRemoteControllerView extends RelativeLayout
                 this::downButton,
                 this::landBtnFunc
         );
-//        recordingVideo = new RecordingVideo(context);
-
+        recordVideo = new RecordVideo();
         gimbalController = new GimbalController(flightControlMethods);
         controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController, yoloDetector, this::toggleMovementDetectionStart, edgeDetect);
         movementDetector = new MovementDetector(yoloDetector, textToSpeech);
@@ -152,7 +157,6 @@ public class ALRemoteControllerView extends RelativeLayout
         missionControlWrapper = new MissionControlWrapper(flightControlMethods.getFlightController(), dataFromDrone, dist);
         androidGPS = new AndroidGPS(context);
         gimbalController.rotateGimbalToDegree(-45);
-
     }
 
     private void initTextToSpeech(Context context) {
@@ -178,6 +182,7 @@ public class ALRemoteControllerView extends RelativeLayout
             textToSpeech.stop();
             textToSpeech.shutdown();
         }
+        recordVideo.onEnd();
     }
 
     private void initYoloDetector(Context context) {
@@ -241,7 +246,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //        goTo_btn = findViewById(R.id.goTo_btn);
         land_btn = findViewById(R.id.land_btn);
         audioIcon = findViewById(R.id.audioIcon);
-//        recordBtn = findViewById(R.id.recordBtn);
+        recordBtn = findViewById(R.id.recordBtn);
 
 //        lat = findViewById(R.id.latEditText);
 //        lon = findViewById(R.id.lonEditText);
@@ -256,7 +261,7 @@ public class ALRemoteControllerView extends RelativeLayout
         t_minus_btn = findViewById(R.id.t_minus_btn);
         t_plus_btn = findViewById(R.id.t_plus_btn);
         g_minus_btn_up = findViewById(R.id.gimbal_pitch_update);
-//        recIcon = findViewById(R.id.recIcon);
+        recIcon = findViewById(R.id.recIcon);
 
 //        g_plus_btn_up = findViewById(R.id.g_plus_up_update);
 //        g_minus_btn_side = findViewById(R.id.g_minus_side_update);
@@ -267,7 +272,7 @@ public class ALRemoteControllerView extends RelativeLayout
         if (mVideoSurface != null) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
-//        recordBtn.setOnClickListener(this);
+        recordBtn.setOnClickListener(this);
 //        goToFMM_btn.setOnClickListener(this);
 //        followPhone_btn.setOnClickListener(this);
         stopButton.setOnClickListener(this);
@@ -298,16 +303,18 @@ public class ALRemoteControllerView extends RelativeLayout
 
     }
 
-//    public void setRecIconVisibility() {
-//        boolean isVisible = !recordingVideo.getIsRecording();
-//        if (isVisible) {
-//            recIcon.setVisibility(View.VISIBLE);
-//        } else {
-//            recIcon.setVisibility(View.INVISIBLE);
-//        }
-//        recordingVideo.toggleRecording();
-//
-//    }
+    public void setRecIconVisibility() {
+        if (!isRecording) {
+            recIcon.setVisibility(View.VISIBLE);
+            isRecording = true;
+            recordVideo.startRecording();
+
+        } else {
+            recIcon.setVisibility(View.INVISIBLE);
+            isRecording = false;
+            recordVideo.endRecording();
+        }
+    }
 
     @Override
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
@@ -358,7 +365,6 @@ public class ALRemoteControllerView extends RelativeLayout
             controllerImageDetection.setBitmapFrame(droneIMG);
         }
         accuracyLog.updateData(dataFromDrone.getAll(), controllerImageDetection.getControlStatus(), controllerImageDetection.isEdgeDetectionMode(), isMovementDetectionRunning, movementDetector.getPrevAlertMessage());
-
         if (!onGoToMode && !onGoToFMMMode) {
 //            mVideoSurface.setVisibility(View.VISIBLE);
             imgView.setVisibility(View.VISIBLE);
@@ -400,66 +406,14 @@ public class ALRemoteControllerView extends RelativeLayout
         }
     }
 
-//    private void goToFMM_BTN() {
-//        onGoToFMMMode = !onGoToFMMMode;
-//        onGoToMode = false;
-//
-//        if (!onGoToFMMMode) {
-//            goToFMM_btn.setBackgroundColor(Color.WHITE);
-////                    mVideoSurface.setVisibility(View.VISIBLE);
-//            imgView.setVisibility(View.VISIBLE);
-//            presentMap.MapVisibility(false);
-//            return;
-//        }
-////        double lat_ = Double.parseDouble(lat.getText().toString());
-////        double lon_ = Double.parseDouble(lon.getText().toString());
-//        double lat_ = Double.parseDouble("32.1027972");
-//        double lon_ = Double.parseDouble("32.1027972");
-//
-////                float alt_ = Double.parseDouble(alt.getText().toString());
-//        float alt_ = (float) dataFromDrone.getGPS().getAltitude();
-//
-//        LocationCoordinate2D targetLoc = new LocationCoordinate2D(lat_, lon_); // need to be in degrees
-////        MissionControlWrapper fmm = new MissionControlWrapper(targetLoc,
-////                alt_ + 1.0F,
-////                flightControlMethods.getFlightController(), dataFromDrone, dist);
-//        missionControlWrapper.setTargetLocation(targetLoc);
-//        missionControlWrapper.setAltitude(alt_ + 1.0F);
-//        missionControlWrapper.startGoToMission();
-////                ToastUtils.showToast("active go-to mission");
-//        goToFMM_btn.setBackgroundColor(Color.GREEN);
-//        stopButton.setBackgroundColor(Color.RED);
-////        goTo_btn.setBackgroundColor(Color.WHITE);
-//
-//    }
-
-//    private void followPhone() {
-//        onFollowPhoneMode = !onFollowPhoneMode;
-//        onGoToFMMMode = false;
-//        onGoToMode = false;
-//
-//        if (onFollowPhoneMode) {
-//            startFollowingPhone();
-//        } else {
-//            stopFollowingPhone();
-//        }
-//    }
-
     public void stopBtnFunc() {
         controllerImageDetection.stopEdgeDetection();
-//        gimbalController.rotateGimbalToDegree(-90);
         gimbalController.rotateGimbalToDegree(-45);
         controllerImageDetection.stopPlaneDetectionAlgo();
         controllerImageDetection.stopObjectDetectionAlgo();
         toggleMovementDetectionEnd();
 
-//        Objects.requireNonNull(flightControlMethods.getFlightController().getFlightAssistant()).setLandingProtectionEnabled(true, djiError -> {
-//            if (djiError != null) showToast("" + djiError);
-//            else showToast("Landing protection DISABLED!");
-//        });
-
         goToUsingVS.setTargetGpsLocation((GPSLocation) null);
-//        missionControlWrapper.stopGoToMission();
         ControlCommand command = flightControlMethods.stayOnPlace();
         flightControlMethods.sendVirtualStickCommands(command, 0.0f);
         flightControlMethods.disableVirtualStickControl();
@@ -498,20 +452,13 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     private void accurateLanding() {
-//        gimbalController.rotateGimbalToDegree(-45);
         boolean isEdgeDetect = !controllerImageDetection.isEdgeDetectionMode();
-//        toggleMovementDetectionEnd();
         if (isEdgeDetect) {
             edgeDetect.setBackgroundColor(Color.GREEN);
-//            gimbalController.rotateGimbalToDegree(-45);
         } else {
             edgeDetect.setBackgroundColor(Color.WHITE);
-//            gimbalController.rotateGimbalToDegree(-90);
         }
-//        if () {
         controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
-//        }
-
     }
 
     public void upButton() {
@@ -624,9 +571,9 @@ public class ALRemoteControllerView extends RelativeLayout
                     showToast("not float");
                 }
                 break;
-//            case R.id.recordBtn:
-//                setRecIconVisibility();
-//                break;
+            case R.id.recordBtn:
+                setRecIconVisibility();
+                break;
 //            case R.id.start_plane_detection:
 //                startPlaneDetectionAlgo_btn.setBackgroundColor(Color.GREEN);
 //
