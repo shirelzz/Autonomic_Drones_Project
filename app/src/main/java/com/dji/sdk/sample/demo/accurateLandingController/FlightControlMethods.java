@@ -190,21 +190,6 @@ public class FlightControlMethods {
     }
 
     public void land(Runnable function1, Runnable function2) {
-//        //  מאפס את כל הערכים לאפס - מתייצב
-////        roll_pid.reset();
-////        pitch_pid.reset();
-////        while()
-//        float t = -2;
-//        float r = 0;
-//        float p = 0;
-////        y = 0;
-////        need to set another gp
-//        //        ans.setErr(1000, 0, 0, 0);
-////        ans.setPID(throttle_pid.getP(), throttle_pid.getI(), throttle_pid.getD(), pitch_pid.getP(), pitch_pid.getI(), pitch_pid.getD(), roll_pid.getP(), roll_pid.getI(), roll_pid.getD(), roll_pid.getMax_i());
-////        ans.setImageDistance(-1);
-//        ControlCommand cmd = new ControlCommand(p, r, t);
-//        inLandingMode = true;
-
         flightController.startLanding(djiError -> {
             if (djiError != null)
                 showToast(djiError.getDescription());
@@ -220,9 +205,6 @@ public class FlightControlMethods {
                     function2.run();
             }
         });
-//        inLandingMode = false;
-//        return;
-//        return null;
     }
 
     /**
@@ -342,8 +324,8 @@ public class FlightControlMethods {
             }
 
             // Sets the angular velocity (degrees/s) or angle (degrees) value for yaw
-//            flightControlData.setYaw((float) pZ * yawJoyControlMaxSpeed);
-            flightControlData.setYaw(0.0f);
+            flightControlData.setYaw((float) pZ * yawJoyControlMaxSpeed);
+//            flightControlData.setYaw(0.0f);
             // Sets the aircraft's velocity (m/s) or altitude (m) value for verticalControl
 
             flightControlData.setVerticalThrottle(command.getVerticalThrottle());
@@ -372,18 +354,6 @@ public class FlightControlMethods {
 //                        movementFinished = true;
 //                            if (command.getControllMode() == VerticalControlMode.VELOCITY) {
 //
-//                            }
-//                flightController.confirmLanding((CommonCallbacks.CompletionCallback) this);
-//                            if (djiError != null &&inLandingMode &&) {
-
-//                                long currentTime = System.currentTimeMillis();
-//                                long elapsedTime = currentTime - startTime;
-//                                if (elapsedTime < CONTROL_DURATION) {
-//                                    sendVirtualStickCommands(command, pZ);
-//                                } else {
-//                                    disableVirtualStickControl();
-////
-//                                }
 //                            }
                     }
             );

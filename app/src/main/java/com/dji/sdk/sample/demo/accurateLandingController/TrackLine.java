@@ -39,7 +39,7 @@ public class TrackLine {
 
         Mat grayImage = new Mat();
         Imgproc.cvtColor(image, grayImage, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.goodFeaturesToTrack(grayImage, selectedLineFeatures, 100, 0.01, 10, mask);
+        Imgproc.goodFeaturesToTrack(grayImage, selectedLineFeatures, 200, 0.03, 5, mask);
 
         // Convert features to a format suitable for optical flow
         prevPoints = new MatOfPoint2f(selectedLineFeatures.toArray());
@@ -112,15 +112,6 @@ public class TrackLine {
 
         Mat lineParams = new Mat();
         Imgproc.fitLine(points, lineParams, Imgproc.DIST_L2, 0, 0.01, 0.01);
-//        Log.i("EdgeDetect", "MAt: " + lineParams.toString());
-//        // Check if lineParams contains the correct number of elements
-//        double[] v = lineParams.get(0, 0);
-//        double[] p = lineParams.get(2, 0);
-//
-//        // Check if the arrays are of the expected length (2)
-//        if (v.length < 2 || p.length < 2) {
-//            throw new RuntimeException("Unexpected array length: v=" + v.length + ", p=" + p.length);
-//        }
 
         // lineParams contains [vx, vy, x0, y0]
         // Extract these values from the matrix
