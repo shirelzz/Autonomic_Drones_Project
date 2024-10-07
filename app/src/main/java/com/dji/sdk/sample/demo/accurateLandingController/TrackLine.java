@@ -23,8 +23,21 @@ public class TrackLine {
     MatOfPoint selectedLineFeatures;
     MatOfPoint2f prevPoints, currPoints;
     Mat previousImage = null;
+    // Variables to store original line properties
+    private double originalLineLength;
+    private double originalSlope;
 
     public TrackLine() {
+    }
+
+    // Calculate and store original line length and slope when selecting the line
+    public void storeOriginalLineProperties(Point[] selectedLine) {
+        // Calculate the length of the selected line
+        originalLineLength = Math.sqrt(Math.pow(selectedLine[1].x - selectedLine[0].x, 2) +
+                Math.pow(selectedLine[1].y - selectedLine[0].y, 2));
+
+        // Calculate the slope of the selected line
+        originalSlope = (selectedLine[1].y - selectedLine[0].y) / (selectedLine[1].x - selectedLine[0].x);
     }
 
     // Detect features along the selected line

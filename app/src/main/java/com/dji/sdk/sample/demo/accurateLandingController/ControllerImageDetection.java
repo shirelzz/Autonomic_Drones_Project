@@ -106,7 +106,7 @@ public class ControllerImageDetection {
     private Runnable toggleMovementDetection;
     private Button edgeDetect;
     private double initialDistance = 0;  // Store the original distance when the movement starts
-    private double velocity = 0.01;      // Start with an initial velocity of 0.01
+    private double velocity = 0.02;      // Start with an initial velocity of 0.01
     private double accelerationRate = 0.01;  // Fixed rate of velocity increase/decrease
 
     //constructor
@@ -256,7 +256,11 @@ public class ControllerImageDetection {
         if (closestLine != null) {
             selectedLine = closestLine;
             lineSelected = true;
+
+            // Store the original line properties
+            trackLine.storeOriginalLineProperties(selectedLine);
         }
+
     }
 
     public void setCurrentImage(Bitmap frame, double[] pos) {
@@ -291,9 +295,7 @@ public class ControllerImageDetection {
 
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
-        if (droneRelativeHeight <= 0f
-            //|| dataFromDrone.getGPS().getAltitude() <= 0.2f
-        ) {
+        if (droneRelativeHeight <= 0f) {
             showToast("Land2!!!!");
             throttle_pid.reset();
             pitch_pid.reset();
@@ -455,7 +457,7 @@ public class ControllerImageDetection {
 
     private ControlCommand buildControlCommandEdgeFixedVelocity(double dyReal, double dt, Mat imgToProcess) {
         double maxSpeed = 1.0;   // Cap the maximum velocity
-        double minSpeed = 0.01;  // Minimum starting velocity
+        double minSpeed = 0.02;  // Minimum starting velocity
 
         // Set initial distance only at the start of the movement
         if (initialDistance == 0) {
@@ -489,8 +491,8 @@ public class ControllerImageDetection {
             showToast("Stopping, distance reached!");
             velocity = 0;  // Stop the drone
             initialDistance = 0;  // Reset for the next movement
-            t = -0.1f;
-            error_y = 0.1;
+            t = -0.08f;
+            error_y = 0.08;
         } else {
             t = 0;
         }
@@ -523,7 +525,7 @@ public class ControllerImageDetection {
     private ControlCommand buildControlCommandEdge(double dyReal, double dt, Mat imgToProcess) {
         double maxSpeed = 2.0;
         double Kp = 0.01;  // Proportional gain, adjust as needed - 0.02 / 0.01
-        error_y = dyReal * Kp;
+        error_y = (dyReal / 2.0) * Kp;
         double changedDy;
 
         if (0 <= dyReal && dyReal < 1) {
@@ -567,6 +569,10 @@ public class ControllerImageDetection {
 //        releasePythonResources();
     }
 
+    public boolean isObjectDetecting() {
+        return isObjectDetecting;
+    }
+
     public void stopObjectDetectionAlgo() {
         isObjectDetecting = false;
 //        releasePythonResources();
@@ -599,7 +605,7 @@ public class ControllerImageDetection {
 
         isDetectingPlane = true;
 
-// Initialize Python and load the module
+        // Initialize Python and load the module
         try {
             if (!Python.isStarted()) {
                 Python.start(new AndroidPlatform(context)); // 'this' is the Context here
@@ -674,7 +680,7 @@ public class ControllerImageDetection {
                                         // Stop plane detection
                                         stopPlaneDetectionAlgo();
                                         if (inAlgo) {
-                                            startObjectDetectionAlgo(inAlgo);
+//                                            startObjectDetectionAlgo(inAlgo);
                                         }
 //                                        }
 
@@ -724,38 +730,34 @@ public class ControllerImageDetection {
 
     }
 
-    public void startObjectDetectionAlgo(boolean inAlgo) {
+    public void startObjectDetectionAlgo() {
         Log.d(TAG, "entered startObjectDetectionAlgo");
 
         isObjectDetecting = true;
 
         DroneSafety droneSafety = new DroneSafety(yoloDetector);
 
-        new Thread(() -> {
-            try {
+        try {
 
-                while (isObjectDetecting) {
-                    // Check for hazards before attempting to land
-                    boolean isHazardous = droneSafety.checkForHazards(current_image);
+            // Check for hazards before attempting to land
+            boolean isHazardous = droneSafety.checkForHazards(current_image);
 
-                    if (isHazardous) {
-                        System.out.println("Landing aborted due to hazards.");
-                        runOnUiThread(() -> showToast("Landing aborted due to hazards."));
-                    } else {
-                        System.out.println("No hazards detected. Safe to land.");
-                        runOnUiThread(() -> showToast("No hazards detected. Safe to land."));
-                        stopObjectDetectionAlgo();
-                        if (inAlgo) {
-                            setEdgeDetectionMode(true);
-                        }
-                    }
-
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-
+            if (isHazardous) {
+                System.out.println("Landing aborted due to hazards.");
+                showToast("Landing aborted due to hazards.");
+                stayOnPlace();
+                edgeDetect.setBackgroundColor(Color.WHITE);
+            } else {
+                System.out.println("No hazards detected. Safe to land.");
+                showToast("No hazards detected. Safe to land.");
+                setEdgeDetectionMode(true);
+                stopObjectDetectionAlgo();
             }
-        }).start();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        isObjectDetecting = false;
 
         Log.d(TAG, "ended startObjectDetectionAlgo");
 

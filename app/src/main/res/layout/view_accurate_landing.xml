@@ -252,17 +252,6 @@
         android:layout_marginStart="0dp"
         android:text="P: -" />
 
-    <!--    <EditText-->
-    <!--        android:id="@+id/setP_tv"-->
-    <!--        android:layout_width="70dp"-->
-    <!--        android:layout_height="40dp"-->
-    <!--        android:layout_toEndOf="@id/r_minus_btn"-->
-    <!--        android:layout_above="@+id/y_minus_btn"-->
-    <!--        android:layout_marginBottom="0dp"-->
-    <!--        android:ems="100"-->
-    <!--        android:inputType="text"-->
-    <!--        android:text="0.19" />-->
-
     <Button
         android:id="@+id/p_plus_btn"
         android:layout_width="50dp"
