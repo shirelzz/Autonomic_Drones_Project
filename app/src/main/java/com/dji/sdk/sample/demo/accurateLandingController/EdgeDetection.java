@@ -15,8 +15,8 @@ import java.util.List;
 public class EdgeDetection {
 
     private static final int edgeThreshold = 150;
-    private static final int threshold1 = 170; //200;//170;
-    private static final int threshold2 = 280; //300;//280;
+    private static final int threshold1 = 200; //200;//170;
+    private static final int threshold2 = 300; //300;//280;
     private static final int apertureSize = 3;
     // adjust the maximum number of found lines in the image
     private static final int maxLines = 5;
@@ -51,16 +51,18 @@ public class EdgeDetection {
             double thetaDegrees = Math.toDegrees(theta);
 
             // Determine if the line is horizontal (within 30 degrees of the x-axis)
-            boolean isHorizontal = (Math.abs(thetaDegrees) <= 30) || (thetaDegrees >= 150 && thetaDegrees <= 180);
+            boolean isHorizontal = !((Math.abs(thetaDegrees) <= 30) || (thetaDegrees >= 150 && thetaDegrees <= 180));
 
 
             double a = Math.cos(theta), b = Math.sin(theta);
             double x0 = a * rho, y0 = b * rho;
             Point pt1 = new Point(Math.round(x0 + 1000 * (-b)), Math.round(y0 + 1000 * (a)));
             Point pt2 = new Point(Math.round(x0 - 1000 * (-b)), Math.round(y0 - 1000 * (a)));
+            if (isHorizontal) {
+                pointList.add(new Object[]{new Point[]{pt1, pt2}, isHorizontal});
 
-            pointList.add(new Object[]{new Point[]{pt1, pt2}, isHorizontal});
-            Imgproc.line(input, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+                Imgproc.line(input, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+            }
         }
 
         if (pointList.size() == 0 && droneHeight <= 0.2) {
@@ -124,7 +126,7 @@ public class EdgeDetection {
             double thetaDegrees = Math.toDegrees(theta);
 
             // Determine if the line is horizontal (within 30 degrees of the x-axis)
-            boolean isHorizontal = (Math.abs(thetaDegrees) <= 30) || (thetaDegrees >= 150 && thetaDegrees <= 180);
+            boolean isHorizontal = !((Math.abs(thetaDegrees) <= 30) || (thetaDegrees >= 150 && thetaDegrees <= 180));
 
             Point pt1 = new Point(Math.round(x0 + 10000 * (-b)), Math.round(y0 + 10000 * (a)));
             Point pt2 = new Point(Math.round(x0 - 10000 * (-b)), Math.round(y0 - 10000 * (a)));
@@ -132,9 +134,11 @@ public class EdgeDetection {
                 pt1.y += input.rows() / 2.0; // Adjust y-coordinates back to full image scale
                 pt2.y += input.rows() / 2.0;
             }
-            pointList.add(new Object[]{new Point[]{pt1, pt2}, isHorizontal});
+            if(isHorizontal) {
+                pointList.add(new Object[]{new Point[]{pt1, pt2}, isHorizontal});
 
-            Imgproc.line(input, pt1, pt2, new Scalar(0, 255, 0), 3, Imgproc.LINE_AA, 0);
+                Imgproc.line(input, pt1, pt2, new Scalar(0, 255, 0), 3, Imgproc.LINE_AA, 0);
+            }
         }
 
         // Save the result image

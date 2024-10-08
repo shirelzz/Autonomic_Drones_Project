@@ -29,6 +29,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -250,16 +251,18 @@ public class ControllerImageDetection {
 //        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
         List<Object[]> pointArr = EdgeDetection.detectLines(imgToProcess, droneRelativeHeight);
         Point[] closestLine = selectBestLinePoint(pointArr);
-        trackLine.detectLineFeatures(closestLine, imgToProcess);
+        showToast(Arrays.toString(closestLine));
 
         // Store the closest line as the selected line and mark that a line has been selected
         if (closestLine != null) {
             selectedLine = closestLine;
             lineSelected = true;
+            Imgproc.line(imgToProcess, closestLine[0], closestLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
             // Store the original line properties
             trackLine.storeOriginalLineProperties(selectedLine);
         }
+        trackLine.detectLineFeatures(closestLine, imgToProcess);
 
     }
 
@@ -299,7 +302,8 @@ public class ControllerImageDetection {
             showToast("Land2!!!!");
             throttle_pid.reset();
             pitch_pid.reset();
-            flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+            flightControlMethods.land(this::stopEdgeDetection, null);
+//            flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
             return null;
         }
         if (currentLine == null) {
@@ -310,7 +314,8 @@ public class ControllerImageDetection {
                 showToast("Land2!!!!");
                 throttle_pid.reset();
                 pitch_pid.reset();
-                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+//                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+                flightControlMethods.land(this::stopEdgeDetection, null);
                 return null;
             } else {
                 return stayOnPlace();
@@ -344,6 +349,7 @@ public class ControllerImageDetection {
             if (!lineSelected) {
                 findClosestLine(imgToProcess);
                 frameCount = 0;
+                return;
             }
             ControlCommand command = moveDroneToLine(imgToProcess);
 //            command = detectLending(imgToProcess, droneHeight);
@@ -361,7 +367,8 @@ public class ControllerImageDetection {
                 showToast("LandError!!!!");
                 throttle_pid.reset();
                 pitch_pid.reset();
-                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+                flightControlMethods.land(this::stopEdgeDetection, null);
+//                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
 
             } else {
                 stopEdgeDetection();

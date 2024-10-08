@@ -1,5 +1,7 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
+
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -15,6 +17,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.video.Video;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TrackLine {
@@ -50,8 +53,8 @@ public class TrackLine {
 
         Mat grayImage = new Mat();
         Imgproc.cvtColor(image, grayImage, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.goodFeaturesToTrack(grayImage, selectedLineFeatures, 200, 0.03, 5, mask);
-
+        Imgproc.goodFeaturesToTrack(grayImage, selectedLineFeatures, 150, 0.05, 10, mask);
+        showToast(Arrays.toString(selectedLineFeatures.toArray()));
         // Convert features to a format suitable for optical flow
         prevPoints = new MatOfPoint2f(selectedLineFeatures.toArray());
 
@@ -111,7 +114,7 @@ public class TrackLine {
     // Helper function to create a mask around the selected line
     private Mat createLineMask(Point[] selectedLine, Size imageSize) {
         Mat mask = Mat.zeros(imageSize, CvType.CV_8U);
-        Imgproc.line(mask, selectedLine[0], selectedLine[1], new Scalar(255), 5); // Adjust thickness
+        Imgproc.line(mask, selectedLine[0], selectedLine[1], new Scalar(255), 10); // Adjust thickness
         return mask;
     }
 

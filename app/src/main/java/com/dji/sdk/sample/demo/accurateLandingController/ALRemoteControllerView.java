@@ -616,7 +616,7 @@ public class ALRemoteControllerView extends RelativeLayout
     // Toggle the movement detection process
     private void toggleMovementDetectionStart() {
 
-        gimbalController.rotateGimbalToDegree(0);
+//        gimbalController.rotateGimbalToDegree(0);
         // Start movement detection
         isMovementDetectionRunning = true;
         movementDetector.setOriginalImage(convertBitmapToMat(droneIMG));  // Set the initial frame
