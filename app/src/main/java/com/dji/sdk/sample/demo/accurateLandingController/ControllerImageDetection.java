@@ -299,23 +299,13 @@ public class ControllerImageDetection {
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
         if (droneRelativeHeight <= 0f) {
-            showToast("Land2!!!!");
-            throttle_pid.reset();
-            pitch_pid.reset();
-            flightControlMethods.land(this::stopEdgeDetection, null);
-//            flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+            autoLand("Land2!!!!");
             return null;
         }
         if (currentLine == null) {
             Log.i("EdgeDetect", isUltrasonicBeingUsed + ": rh: " + droneRelativeHeight + ", h:" + dataFromDrone.getGPS().getAltitude());
-            if (droneRelativeHeight <= 0.2f
-                //|| dataFromDrone.getGPS().getAltitude() <= 0.2f
-            ) {
-                showToast("Land2!!!!");
-                throttle_pid.reset();
-                pitch_pid.reset();
-//                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
-                flightControlMethods.land(this::stopEdgeDetection, null);
+            if (droneRelativeHeight <= 0.2f) {
+                autoLand("Land3!!!!");
                 return null;
             } else {
                 return stayOnPlace();
@@ -333,6 +323,14 @@ public class ControllerImageDetection {
 
         updateLog(command, 1, selectedLine, dyRealPitch);
         return command;
+    }
+
+    public void autoLand(String message) {
+        showToast(message);
+        throttle_pid.reset();
+        pitch_pid.reset();
+//                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+        flightControlMethods.land(this::stopEdgeDetection, null);
     }
 
     public void processImage(Bitmap frame, double droneHeight) {
@@ -361,15 +359,8 @@ public class ControllerImageDetection {
             Log.e("Error: ", Objects.requireNonNull(e.getMessage()));
             showToast(Objects.requireNonNull(e.getMessage()));
             double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
-            if (droneRelativeHeight <= 0.2f
-                //|| dataFromDrone.getGPS().getAltitude() <= 0.2f
-            ) {
-                showToast("LandError!!!!");
-                throttle_pid.reset();
-                pitch_pid.reset();
-                flightControlMethods.land(this::stopEdgeDetection, null);
-//                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
-
+            if (droneRelativeHeight <= 0.2f) {
+                autoLand("LandError!!!!");
             } else {
                 stopEdgeDetection();
             }
