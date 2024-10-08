@@ -1,27 +1,18 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
+import android.view.View;
+import android.widget.ImageView;
 
-import android.content.Context;
-
-import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
-
 import dji.common.camera.SettingsDefinitions;
-import dji.common.error.DJIError;
-import dji.common.util.CommonCallbacks;
 
-/**
- * Created by dji on 16/1/6.
- */
 public class RecordVideo{
-
-    public RecordVideo() {
+    private ImageView recIcon;
+    public RecordVideo(ImageView recIcon) {
         onStart();
+        this.recIcon = recIcon;
     }
 
     protected void onStart() {
@@ -44,6 +35,8 @@ public class RecordVideo{
     }
 
     protected void startRecording() {
+        recIcon.setVisibility(View.VISIBLE);
+
         if (ModuleVerificationUtil.isCameraModuleAvailable()) {
             DJISampleApplication.getProductInstance()
                     .getCamera()
@@ -56,14 +49,13 @@ public class RecordVideo{
         }
     }
 
-    protected void endRecording() {
+    protected void stopRecording() {
+        recIcon.setVisibility(View.INVISIBLE);
 
         if (ModuleVerificationUtil.isCameraModuleAvailable()) {
             DJISampleApplication.getProductInstance()
                     .getCamera()
-                    .stopRecordVideo(djiError -> {
-                        ToastUtils.setResultToToast("StopRecord");
-                    });
+                    .stopRecordVideo(djiError -> ToastUtils.setResultToToast("StopRecord"));
         }
     }
 }

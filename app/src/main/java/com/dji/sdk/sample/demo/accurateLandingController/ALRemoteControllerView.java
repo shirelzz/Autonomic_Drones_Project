@@ -60,25 +60,19 @@ public class ALRemoteControllerView extends RelativeLayout
     protected ImageView audioIcon, recIcon;
     protected ImageView imgView;
     protected TextureView mVideoSurface = null;
-    protected TextView dataLog;
-    protected TextView dist;
+    protected TextView dataLog, dist;
     protected EditText gimbal;
-    //    protected EditText lat;
-//    protected EditText lon;
     protected PresentMap presentMap;
     private boolean isRecording = false;
     private RecordVideo recordVideo;
     private Context ctx;
-    private Button startPlaneDetectionAlgo_btn, startObjectDetectionAlgo_btn, edgeDetect, combinedLandingAlgo_btn, guard_btn, leftOrRightButton;
-    private Button goToFMM_btn, followPhone_btn, startAlgo_btn, stopButton, goTo_btn, land_btn, recordBtn;
-    private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn, t_minus_btn, t_plus_btn;
-    private Button g_minus_btn_up;
+    private Button edgeDetect, guard_btn, stopButton, land_btn, recordBtn;
+    private Button y_minus_btn, y_plus_btn, r_minus_btn, r_plus_btn, p_minus_btn, p_plus_btn,
+            t_minus_btn, t_plus_btn, g_minus_btn_up;
     private Bitmap droneIMG;
     private ReceivedVideo receivedVideo;
     private AccuracyLog accuracyLog;
 
-//    private BitmapToVideoEncoder bitmapToVideoEncoder;
-    //    ExcelWriter excelWriter;
     private DataFromDrone dataFromDrone;
     private GoToUsingVS goToUsingVS;
     private FlightControlMethods flightControlMethods;
@@ -129,8 +123,6 @@ public class ALRemoteControllerView extends RelativeLayout
         initTextToSpeech(context);
         initYoloDetector(context);
 
-//        bitmapToVideoEncoder = new BitmapToVideoEncoder(this.getContext());
-
         accuracyLog = new AccuracyLog(dataLog, dist, this.getContext());
 //        accuracyLog = new AccuracyLog(dist, this.getContext());
 
@@ -139,17 +131,23 @@ public class ALRemoteControllerView extends RelativeLayout
         goToUsingVS = new GoToUsingVS(dataFromDrone);
         flightControlMethods = new FlightControlMethods();
         droneFeatures = new DroneFeatures(flightControlMethods);
-        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(context, audioIcon
-//                , this::goToFMM_BTN
-                , this::stopBtnFunc, this::stopBtnFunc, this.flightControlMethods::takeOff,
-//                this::followPhone,
-                this::goToFunc
-                , this::accurateLanding
-                , this::upButton,
+        recordVideo = new RecordVideo(recIcon);
+
+        HandleSpeechToText handleSpeechToText = new HandleSpeechToText(
+                context,
+                audioIcon,
+                this::stopBtnFunc,
+                this.flightControlMethods::takeOff,
+                this::goToFunc,
+                this::accurateLanding,
+                this::upButton,
                 this::downButton,
-                this::landBtnFunc
+                this::landBtnFunc,
+                this.recordVideo::startRecording,
+                this.recordVideo::stopRecording,
+                this::toggleMovementDetectionStart,
+                this::toggleMovementDetectionEnd
         );
-        recordVideo = new RecordVideo();
         gimbalController = new GimbalController(flightControlMethods);
         controllerImageDetection = new ControllerImageDetection(dataFromDrone, flightControlMethods, ctx, imageView, gimbalController, yoloDetector, this::toggleMovementDetectionStart, edgeDetect);
         movementDetector = new MovementDetector(yoloDetector, textToSpeech);
@@ -160,15 +158,12 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     private void initTextToSpeech(Context context) {
-        textToSpeech = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status == TextToSpeech.SUCCESS) {
-                    textToSpeech.setLanguage(Locale.US);  // Set language to US English
-                    Log.d("TTS", "TextToSpeech initialized successfully");
-                } else {
-                    Log.e("TTS", "TextToSpeech initialization failed");
-                }
+        textToSpeech = new TextToSpeech(context, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                textToSpeech.setLanguage(Locale.US);  // Set language to US English
+                Log.d("TTS", "TextToSpeech initialized successfully");
+            } else {
+                Log.e("TTS", "TextToSpeech initialization failed");
             }
         });
     }
@@ -182,6 +177,11 @@ public class ALRemoteControllerView extends RelativeLayout
             textToSpeech.stop();
             textToSpeech.shutdown();
         }
+
+        // Stop movement detection runnable if it's running
+        movementDetectionHandler.removeCallbacks(movementDetectionRunnable);
+
+        // Additional cleanup
         recordVideo.onEnd();
     }
 
@@ -305,14 +305,12 @@ public class ALRemoteControllerView extends RelativeLayout
 
     public void setRecIconVisibility() {
         if (!isRecording) {
-            recIcon.setVisibility(View.VISIBLE);
             isRecording = true;
             recordVideo.startRecording();
 
         } else {
-            recIcon.setVisibility(View.INVISIBLE);
             isRecording = false;
-            recordVideo.endRecording();
+            recordVideo.stopRecording();
         }
     }
 
@@ -453,12 +451,13 @@ public class ALRemoteControllerView extends RelativeLayout
 
     private void accurateLanding() {
         boolean isEdgeDetect = !controllerImageDetection.isEdgeDetectionMode();
-        if (isEdgeDetect) {
+        if (isEdgeDetect || !controllerImageDetection.isObjectDetecting()) {
             edgeDetect.setBackgroundColor(Color.GREEN);
         } else {
             edgeDetect.setBackgroundColor(Color.WHITE);
         }
-        controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
+        startObjectDetectionAlgo();
+//        controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
     }
 
     public void upButton() {
@@ -661,7 +660,7 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     private void startObjectDetectionAlgo() {
-        controllerImageDetection.startObjectDetectionAlgo(false);
+        controllerImageDetection.startObjectDetectionAlgo();
     }
 
     @Override
