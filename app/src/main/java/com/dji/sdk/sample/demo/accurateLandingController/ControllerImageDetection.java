@@ -465,7 +465,7 @@ public class ControllerImageDetection {
         double currentDistance = Math.abs(dyReal);  // Current remaining distance
 
         // Calculate the midpoint where deceleration should begin
-        double midpoint = initialDistance / 2.0;
+        double midpoint = initialDistance / 3.0;
 
         // Determine if we are before or after the midpoint
         if (currentDistance > midpoint) {
@@ -485,7 +485,7 @@ public class ControllerImageDetection {
 //        error_y = dyReal * 0.01;  // Proportional gain can be adjusted if needed
 
         // Check if we're close enough to stop the drone
-        if (currentDistance <= 2) {
+        if (currentDistance <= 1.5) {
             showToast("Stopping, distance reached!");
             velocity = 0;  // Stop the drone
             initialDistance = 0;  // Reset for the next movement
