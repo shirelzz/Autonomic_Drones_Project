@@ -343,7 +343,7 @@ public class ControllerImageDetection {
 //        return command;
 //    }
 
-    public ControlCommand moveDroneToLine(Mat imgToProcess) {
+    public ControlCommand moveDroneToLine_sh(Mat imgToProcess) {
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0;
         prevTime = currTime;
@@ -400,7 +400,7 @@ public class ControllerImageDetection {
                 findClosestLine(imgToProcess);
                 frameCount = 0;
             }
-            ControlCommand command = moveDroneToLine(imgToProcess);
+            ControlCommand command = moveDroneToLine_sh(imgToProcess);
 
 //            command = detectLending(imgToProcess, droneHeight);
 
