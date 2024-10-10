@@ -26,6 +26,7 @@ public class LandingAlgorithm {
         this.throttlePID = throttlePID;
     }
 
+
     public ControlCommand moveForwardByDistance(double distance, double dt, Mat imgToProcess) {
         double currentDistance = Math.abs(distance);
         if (currentDistance > 0.05) {  // Stop when close enough (5 cm tolerance)

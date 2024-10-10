@@ -343,6 +343,45 @@ public class ControllerImageDetection {
 //        return command;
 //    }
 
+    public ControlCommand approachAndLand(Mat imgToProcess) {
+        long currTime = System.currentTimeMillis();
+        double dt = (currTime - prevTime) / 1000.0;
+        prevTime = currTime;
+
+        // Step 1: Move Forward the Distance of the Blind Spot
+        double altitude = dataFromDrone.getAltitudeBelow();
+        double blindSpotDistance = calculateBlindSpotDistance(altitude);  // Based on altitude
+        ControlCommand moveForwardCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
+
+        // If still moving forward, return the command to keep moving
+        if (moveForwardCommand.getPitch() != 0 || moveForwardCommand.getRoll() != 0 || moveForwardCommand.getVerticalThrottle() != 0) {
+            return moveForwardCommand;
+        }
+
+        // Step 2: Ensure the Line is in Sight and at the Bottom of the Image
+        Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+        if (detectedLine == null) {
+            return stayOnPlace();  // Hover if no line is detected
+        }
+
+        double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
+        if (lineCenterY < imageHeight - 20 || lineCenterY > imageHeight - 10) {
+            // Align vertically to bring the line to the desired position at the bottom
+            double yOffset = (imageHeight - 15) - lineCenterY;  // Target 10-20 pixels from bottom
+            ControlCommand alignCommand = landingAlgorithm.verticalAlign(yOffset, dt, imgToProcess);
+            return alignCommand;
+        }
+
+        // Step 3: Land
+        flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+        return null;  // No further commands needed after landing is triggered
+    }
+
+    private double calculateBlindSpotDistance(double altitude) {
+        // Calculating blind spot distance based on altitude
+        return (altitude / 0.7) * 0.3;  // Given measurements: 0.3m blind spot per 0.7m altitude
+    }
+
     public ControlCommand alignAndLand(Mat imgToProcess) {
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0;
@@ -438,7 +477,8 @@ public class ControllerImageDetection {
             }
 
 //            ControlCommand command = moveDroneToLine_sh(imgToProcess);
-            ControlCommand command = alignAndLand(imgToProcess);
+//            ControlCommand command = alignAndLand(imgToProcess);
+            ControlCommand command = approachAndLand(imgToProcess);
 
 //            command = detectLending(imgToProcess, droneHeight);
 
