@@ -46,6 +46,8 @@ public class ControllerImageDetection {
     private final DataFromDrone dataFromDrone;
     //    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
     Double PP = 0.05, II = 0.02, DD = 0.01, MAX_I = 0.5;
+//    Double PP = 0.1, II = 0.01, DD = 0.05, MAX_I = 1.0;
+
     private ImageView imageView;  // ImageView to display the frames
     private boolean isPlaying = false;  // To control the video playback
     private boolean isDetectingPlane = false;
@@ -53,7 +55,7 @@ public class ControllerImageDetection {
     private boolean isObjectDetecting = false;
     private Handler handler = new Handler(Looper.getMainLooper());  // For updating the UI
     private Python python;
-    private double focal_length = 4.8; // Field of View in mm
+    private double focal_length = 4.5; // Field of View in mm
     private double sensor_width = 6.4;  // Sensor width in millimeters (approximate for 1/2" CMOS sensor)
     private ArrayList<Bitmap> imageList = new ArrayList<>();
     private PyObject PlaneHandlerClass;
@@ -107,7 +109,7 @@ public class ControllerImageDetection {
     private Runnable toggleMovementDetection;
     private Button edgeDetect;
     private double initialDistance = 0;  // Store the original distance when the movement starts
-    private double velocity = 0.02;      // Start with an initial velocity of 0.01
+    private double velocity = 0.01;      // Start with an initial velocity of 0.01
     private double accelerationRate = 0.01;  // Fixed rate of velocity increase/decrease
 
     //constructor
@@ -126,15 +128,21 @@ public class ControllerImageDetection {
         this.gimbalController = gimbalController;
         this.imageView = imageView;  // Initialize the ImageView
 
-        //Do we need it
-        this.frameWidth = 640;
-        this.frameHeight = 480;
-        this.trackLine = new TrackLine();
+//        //Do we need it?
+//        this.frameWidth = 640;
+//        this.frameHeight = 480;
+        this.trackLine = new TrackLine(context);
 
         initPIDs(p, i, d, max_i, "roll");
         initPIDs(p, i, d, max_i, "pitch");
         initPIDs(p, i, d, max_i, "throttle");
         setDescentRate(t);
+    }
+
+    private static double calculateOptimalVelocity(double distance, double maxSpeed) {
+        // Simple velocity calculation based on distance
+        // You may want to adjust this based on your specific requirements
+        return Math.min(Math.sqrt(2 * distance), maxSpeed);
     }
 
     public void setClickedPoint(Point clickedPoint) {
@@ -144,10 +152,6 @@ public class ControllerImageDetection {
 
     private void updateLog(ControlCommand control, int numEdges, Point[] chosenEdge, double dy) {
 
-//        saw_target, edgeX,edgeY,edgeDist,PitchOutput,RollOutput,ErrorX,ErrorY,P,I,D,MaxI
-
-//        controlStatus.put("saw_target",(double)(imageCoordinates.saw_target()? 1 : 0));
-//        controlStatus.put("saw_target", (double) numEdges);
         if (numEdges > 0) {
             controlStatus.put("edgeX", (chosenEdge[0].x + chosenEdge[1].x) / 2.0);
             controlStatus.put("edgeY", (chosenEdge[0].y + chosenEdge[1].y) / 2.0);
@@ -157,24 +161,6 @@ public class ControllerImageDetection {
         controlStatus.put("PitchOutput", (double) control.getPitch());
         controlStatus.put("RollOutput", (double) control.getRoll());
         controlStatus.put("ThrottleOutput", (double) control.getVerticalThrottle());
-
-//        controlStatus.put("ErrorX", control.xError);
-//        controlStatus.put("ErrorY", control.yError);
-
-//        controlStatus.put("Pp", control.p_pitch);
-//        controlStatus.put("Ip", control.i_pitch);
-//        controlStatus.put("Dp", control.d_pitch);
-//
-//        controlStatus.put("Pr", control.p_roll);
-//        controlStatus.put("Ir", control.i_roll);
-//        controlStatus.put("Dr", control.d_roll);
-//
-//        controlStatus.put("Pt", control.p_Throttle);
-//        controlStatus.put("It", control.i_Throttle);
-//        controlStatus.put("Dt", control.d_Throttle);
-
-//        controlStatus.put("maxI", control.maxI);
-
 
         boolean autonomous_mode = Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().isVirtualStickControlModeAvailable();
         controlStatus.put("AutonomousMode", (double) (autonomous_mode ? 1 : 0));
@@ -285,7 +271,7 @@ public class ControllerImageDetection {
     }
 
     public ControlCommand moveDroneToLine(Mat imgToProcess) {
-        showToast("bestHorizontalLine");
+        showToast("moveDroneToLine");
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
         prevTime = currTime;
@@ -294,7 +280,7 @@ public class ControllerImageDetection {
             return null;
         }
 
-        Point[] currentLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+        Point[] currentLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess, selectedLine);
 
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
@@ -318,8 +304,8 @@ public class ControllerImageDetection {
         Imgproc.line(imgToProcess, selectedLine[0], selectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 //        showToast("droneRelativeHeight: " + droneRelativeHeight);
         double dyRealPitch = adjustDronePosition(selectedLine, imgToProcess.height(), droneRelativeHeight, 0);
-//        ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
-        ControlCommand command = buildControlCommandEdgeFixedVelocity(dyRealPitch, dt, imgToProcess);
+        ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
+//        ControlCommand command = buildControlCommandEdgeFixedVelocity(dyRealPitch, dt, imgToProcess);
 
         updateLog(command, 1, selectedLine, dyRealPitch);
         return command;
@@ -447,9 +433,15 @@ public class ControllerImageDetection {
 
     private double adjustDronePosition(Point[] finalLine, double frameSizePx, double droneHeight, double distanceFromCenter) {
 //        distanceFromCenter = distanceFromCenter * (landingMode == 1 ? 1 : -1);
-        double dy_best = frameSizePx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
-        double GSD = (sensor_width * droneHeight * 100) / (focal_length * frameSizePx);
-        return GSD * dy_best;
+        double pixelDistance = frameSizePx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
+//        double GSD = (sensor_width * droneHeight) / (focal_length * frameSizePx);
+        double GSD = (sensor_width * 100 * droneHeight) / (focal_length * frameSizePx);
+        double realDistance = GSD * pixelDistance;
+        // Convert gimbal pitch to radians
+        double gimbalPitchRadians = Math.toRadians(-45);
+//        realDistance = realDistance / Math.cos(gimbalPitchRadians);
+
+        return realDistance;
 
     }
 
@@ -465,44 +457,48 @@ public class ControllerImageDetection {
         double currentDistance = Math.abs(dyReal);  // Current remaining distance
 
         // Calculate the midpoint where deceleration should begin
-        double midpoint = initialDistance / 3.0;
+        double midpoint = initialDistance / 2.0;
 
         // Determine if we are before or after the midpoint
         if (currentDistance > midpoint) {
-            // Increase velocity while the drone is before the midpoint
             velocity = Math.min(velocity + accelerationRate, maxSpeed);
+
+//            if(currentDistance < 0){
+//                velocity *= -1;
+//            }
+            // Increase velocity while the drone is before the midpoint
+//            velocity = Math.max(minSpeed, Math.min(velocity, maxSpeed));
         } else {
 
             // Decrease velocity after passing the midpoint
 //            velocity = Math.max(velocity - accelerationRate, minSpeed);
+//            initialDistance = currentDistance;
             velocity = 0;
         }
         showToast("velocity: " + velocity);
 
         // Cap the velocity to make sure it doesn't exceed maxSpeed or drop below minSpeed
-        velocity = Math.max(minSpeed, Math.min(velocity, maxSpeed));
-//        velocity = 0.01;
-//        error_y = dyReal * 0.01;  // Proportional gain can be adjusted if needed
-
+//        velocity = Math.max(minSpeed, Math.min(velocity, maxSpeed));
+        if (dyReal < 0) {
+            showToast("back");
+            t = -0.05f;
+            velocity = 0;  // Stop the drone
+            error_y = 0.05;
+            initialDistance = 0;  // Reset for the next movement
+        }
         // Check if we're close enough to stop the drone
-        if (currentDistance <= 1.5) {
+        else if (currentDistance <= 1.5) {
             showToast("Stopping, distance reached!");
             velocity = 0;  // Stop the drone
             initialDistance = 0;  // Reset for the next movement
-            t = -0.08f;
-            error_y = 0.08;
+            t = -0.05f;
+            if (dataFromDrone.getAltitudeBelow() < 0.2) {
+                velocity = 0.01;  // move the drone
+            }
+            error_y = 0.05;
         } else {
             t = 0;
         }
-//        if (0 <= dyReal && dyReal <= 0.1) {
-//            showToast("Landing!!");
-//            t = -0.05f;
-//            changedDy = 0.05;
-//
-//        } else {
-//            changedDy = error_y;
-//            t = 0;
-//        }
 
         // Use PID controller to move the drone with the calculated velocity
         p = (float) pitch_pid.update(velocity, dt, maxSpeed);
@@ -521,12 +517,15 @@ public class ControllerImageDetection {
     }
 
     private ControlCommand buildControlCommandEdge(double dyReal, double dt, Mat imgToProcess) {
+//        double maxSpeed = 1.0;
+//        double Kp = 1;  // Proportional gain, adjust as needed - 0.02 / 0.01
+////        error_y = (dyReal / 4.0) * Kp;
+//        error_y = calculateOptimalVelocity(dyReal, maxSpeed);
         double maxSpeed = 2.0;
-        double Kp = 0.01;  // Proportional gain, adjust as needed - 0.02 / 0.01
+        double Kp = 1;  // Proportional gain, adjust as needed - 0.02 / 0.01
         error_y = (dyReal / 2.0) * Kp;
         double changedDy;
-
-        if (0 <= dyReal && dyReal < 1) {
+        if (0 <= dyReal && dyReal < 0.1) {
             maxSpeed = 1.0;
             showToast("Landing!!");
             t = -0.1f;
@@ -534,22 +533,25 @@ public class ControllerImageDetection {
             pitch_pid.reset();
             throttle_pid.reset();
 
+//        } else if (dyReal < 0) {
+//            t = -0.1f;
+//            changedDy = 0;
         } else {
             changedDy = error_y;
             t = 0;
         }
-        if (frameCount % 2 != 0) {
-            frameCount++;
-            // Use PID controller to move the drone with the calculated velocity
-            p = (float) pitch_pid.update(0, dt, maxSpeed);
-            t = (float) throttle_pid.update(0, dt, maxSpeed);  // Adjust as needed for throttle
-        } else {
-            frameCount++;
-            // Use PID controller to move the drone with the calculated velocity
-            p = (float) pitch_pid.update(changedDy, dt, maxSpeed);
-            r = (float) roll_pid.update(0, dt, maxSpeed);
-            t = (float) throttle_pid.update(t, dt, maxSpeed);
-        }
+//        if (frameCount % 2 != 0) {
+//            frameCount++;
+//            // Use PID controller to move the drone with the calculated velocity
+//            p = (float) pitch_pid.update(0, dt, maxSpeed);
+//            t = (float) throttle_pid.update(0, dt, maxSpeed);  // Adjust as needed for throttle
+//        } else {
+//            frameCount++;
+        // Use PID controller to move the drone with the calculated velocity
+        p = (float) pitch_pid.update(changedDy, dt, maxSpeed);
+        r = (float) roll_pid.update(0, dt, maxSpeed);
+        t = (float) throttle_pid.update(t, dt, maxSpeed);
+//        }
 
         Imgproc.putText(imgToProcess, "dy: " + dyReal, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0), 5, 1, new Scalar(0, 255, 0));
         showToast("p: " + p + ", t: " + t);

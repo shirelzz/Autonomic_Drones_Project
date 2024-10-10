@@ -1,6 +1,7 @@
 package com.dji.sdk.sample.demo.camera;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.dji.sdk.sample.R;
 import com.dji.sdk.sample.internal.controller.DJISampleApplication;
@@ -43,7 +44,14 @@ public class RecordVideoView extends BaseThreeBtnView {
                             new CommonCallbacks.CompletionCallback() {
                                 @Override
                                 public void onResult(DJIError djiError) {
-                                    ToastUtils.setResultToToast("SetCameraMode to recordVideo");
+                                    if (djiError != null) {
+                                        ToastUtils.setResultToToast(djiError.getDescription());
+                                        Log.i("videoError:", djiError.getDescription());
+                                    } else {
+
+                                        ToastUtils.setResultToToast("SetCameraMode to recordVideo");
+                                    }
+
                                 }
                             });
         }
@@ -60,7 +68,13 @@ public class RecordVideoView extends BaseThreeBtnView {
                             new CommonCallbacks.CompletionCallback() {
                                 @Override
                                 public void onResult(DJIError djiError) {
-                                    ToastUtils.setResultToToast("SetCameraMode to shootPhoto");
+                                    if (djiError != null) {
+                                        ToastUtils.setResultToToast(djiError.getDescription());
+                                        Log.i("videoError:", djiError.getDescription());
+                                    } else {
+
+                                        ToastUtils.setResultToToast("SetCameraMode to shootPhoto");
+                                    }
                                 }
                             });
         }
@@ -114,6 +128,9 @@ public class RecordVideoView extends BaseThreeBtnView {
                                         changeDescription(time);
                                     }
                                 }, 0, 1);
+                            } else {
+                                ToastUtils.setResultToToast(djiError.getDescription());
+                                Log.i("videoError:", djiError.getDescription());
                             }
                         }
                     });
@@ -129,10 +146,15 @@ public class RecordVideoView extends BaseThreeBtnView {
                     .stopRecordVideo(new CommonCallbacks.CompletionCallback() {
                         @Override
                         public void onResult(DJIError djiError) {
-                            ToastUtils.setResultToToast("StopRecord");
-                            changeDescription("00:00:00");
-                            timer.cancel();
-                            timeCounter = 0;
+                            if (djiError == null) {
+                                ToastUtils.setResultToToast("StopRecord");
+                                changeDescription("00:00:00");
+                                timer.cancel();
+                                timeCounter = 0;
+                            } else {
+                                ToastUtils.setResultToToast(djiError.getDescription());
+                                Log.i("videoError:", djiError.getDescription());
+                            }
                         }
                     });
         }

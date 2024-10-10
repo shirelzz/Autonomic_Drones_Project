@@ -307,10 +307,11 @@ public class ALRemoteControllerView extends RelativeLayout
         if (!isRecording) {
             isRecording = true;
             recordVideo.startRecording();
-
+            recordBtn.setBackgroundColor(Color.GREEN);
         } else {
             isRecording = false;
             recordVideo.stopRecording();
+            recordBtn.setBackgroundColor(Color.WHITE);
         }
     }
 
@@ -450,14 +451,16 @@ public class ALRemoteControllerView extends RelativeLayout
     }
 
     private void accurateLanding() {
-        boolean isEdgeDetect = !controllerImageDetection.isEdgeDetectionMode();
-        if (isEdgeDetect || !controllerImageDetection.isObjectDetecting()) {
-            edgeDetect.setBackgroundColor(Color.GREEN);
-        } else {
+        if (controllerImageDetection.isObjectDetecting()) {
             edgeDetect.setBackgroundColor(Color.WHITE);
+            controllerImageDetection.stopObjectDetectionAlgo();
+        } else if (controllerImageDetection.isEdgeDetectionMode()) {
+            edgeDetect.setBackgroundColor(Color.WHITE);
+            controllerImageDetection.setEdgeDetectionMode(false);
+        } else {
+            edgeDetect.setBackgroundColor(Color.GREEN);
+            startObjectDetectionAlgo();
         }
-        startObjectDetectionAlgo();
-//        controllerImageDetection.setEdgeDetectionMode(isEdgeDetect);
     }
 
     public void upButton() {
@@ -597,7 +600,7 @@ public class ALRemoteControllerView extends RelativeLayout
 //                break;
 
             case R.id.gimbal_pitch_update:
-//                ToastUtils.setResultToToast(String.valueOf(Float.parseFloat(gimbal.getText().toString())));
+                showToast(String.valueOf(Float.parseFloat(gimbal.getText().toString())));
                 gimbalController.rotateGimbalToDegree(Float.parseFloat(gimbal.getText().toString()));
 
 

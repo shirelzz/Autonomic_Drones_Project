@@ -289,7 +289,7 @@
         android:layout_above="@id/gimbal_pitch_update"
         android:layout_marginStart="10dp"
 
-        android:text="-30"
+        android:text="-45"
         android:textSize="18sp" />
     <Button
         android:id="@+id/gimbal_pitch_update"

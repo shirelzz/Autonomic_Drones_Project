@@ -1,6 +1,14 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.demo.accurateLandingController.ALRemoteControllerView.TAG;
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
+
+import static org.opencv.android.Utils.matToBitmap;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.os.Environment;
+import android.util.Log;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -16,6 +24,10 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.Video;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,11 +38,18 @@ public class TrackLine {
     MatOfPoint selectedLineFeatures;
     MatOfPoint2f prevPoints, currPoints;
     Mat previousImage = null;
+    // Define tolerances for slope and distance
+    private static final double TOLERANCE_SLOPE = 0.1; // Adjust as necessary
+    private static final double TOLERANCE_DISTANCE = 5.0; // Adjust as necessary
+
     // Variables to store original line properties
     private double originalLineLength;
     private double originalSlope;
+    private Context context;
 
-    public TrackLine() {
+
+    public TrackLine(Context context) {
+        this.context = context;
     }
 
     // Calculate and store original line length and slope when selecting the line
@@ -53,7 +72,7 @@ public class TrackLine {
 
         Mat grayImage = new Mat();
         Imgproc.cvtColor(image, grayImage, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.goodFeaturesToTrack(grayImage, selectedLineFeatures, 150, 0.05, 10, mask);
+        Imgproc.goodFeaturesToTrack(grayImage, selectedLineFeatures, 200, 0.03, 5, mask);
         showToast(Arrays.toString(selectedLineFeatures.toArray()));
         // Convert features to a format suitable for optical flow
         prevPoints = new MatOfPoint2f(selectedLineFeatures.toArray());
@@ -62,8 +81,48 @@ public class TrackLine {
         previousImage = image;
     }
 
+    public void saveImage(Bitmap bitmap) {
+        File pictureFile = getOutputMediaFile();
+        if (pictureFile == null) {
+            Log.d(TAG,
+                    "Error creating media file, check storage permissions: ");// e.getMessage());
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            Log.d(TAG, "File not found: " + e.getMessage());
+        } catch (IOException e) {
+            Log.d(TAG, "Error accessing file: " + e.getMessage());
+        }
+    }
+    private File getOutputMediaFile() {
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+        File mediaStorageDir = new File(Environment.getExternalStorageDirectory()
+                + "/Android/data/"
+                + context.getPackageName()
+                + "/Files");
+
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
+
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                return null;
+            }
+        }
+        // Create a media file name
+        File mediaFile;
+        String mImageName = "mask_" + System.currentTimeMillis() + ".jpg";
+        mediaFile = new File(mediaStorageDir.getPath() + File.separator + mImageName);
+        return mediaFile;
+    }
     // Track the selected line in a new image - first try
-    public Point[] trackSelectedLineUsingOpticalFlow(Mat newImage) {
+    public Point[] trackSelectedLineUsingOpticalFlow(Mat newImage, Point[] originalLine) {
         if (prevPoints == null || prevPoints.rows() == 0) {
             return null; // No features to track
         }
@@ -102,6 +161,17 @@ public class TrackLine {
             // Fit a line using the tracked points
             Point[] trackedLine = fitLineThroughPoints(validCurrMat);
 
+//            // Validate against the original line's properties
+//            double currentSlope = calculateLineSlope(trackedLine);
+//            double distanceToOriginal = calculateDistanceBetweenLines(trackedLine, originalLine);
+//
+//            // Check if the slope and distance are within acceptable bounds
+//            if (Math.abs(currentSlope - originalSlope) > TOLERANCE_SLOPE ||
+//                    distanceToOriginal > TOLERANCE_DISTANCE) {
+//                // Reject this line and continue with previous points or reinitialize
+//                return null; // or handle reinitialization logic
+//            }
+
             // Update previous points for the next iteration
             prevPoints = validCurrMat;
 
@@ -111,10 +181,57 @@ public class TrackLine {
         return null; // No valid line found
     }
 
+
+    private double calculateLineSlope(Point[] line) {
+        return (line[1].y - line[0].y) / (line[1].x - line[0].x);
+    }
+
+    private double calculateDistanceBetweenLines(Point[] line1, Point[] line2) {
+        // Line1: passes through points (x1, y1) and (x2, y2)
+        double x1 = line1[0].x;
+        double y1 = line1[0].y;
+        double x2 = line1[1].x;
+        double y2 = line1[1].y;
+
+        // Line2: passes through points (x3, y3) and (x4, y4)
+        double x3 = line2[0].x;
+        double y3 = line2[0].y;
+        double x4 = line2[1].x;
+        double y4 = line2[1].y;
+
+        // Equation of Line1: Ax + By + C = 0
+        double A1 = y2 - y1;
+        double B1 = x1 - x2;
+        double C1 = A1 * x1 + B1 * y1;
+
+        // Equation of Line2: Ax + By + C = 0
+        double A2 = y4 - y3;
+        double B2 = x3 - x4;
+        double C2 = A2 * x3 + B2 * y3;
+
+        // Calculate distance between the two lines using formula:
+        // d = |C2 - C1| / sqrt(A1^2 + B1^2)
+        double numerator = Math.abs(C2 - C1);
+        double denominator = Math.sqrt(A1 * A1 + B1 * B1);
+
+        // If denominator is 0, lines are parallel and coincident
+        if (denominator == 0) {
+            return 0;
+        }
+
+        // Return the shortest distance between the two lines
+        return numerator / denominator;
+    }
+
+
     // Helper function to create a mask around the selected line
     private Mat createLineMask(Point[] selectedLine, Size imageSize) {
         Mat mask = Mat.zeros(imageSize, CvType.CV_8U);
-        Imgproc.line(mask, selectedLine[0], selectedLine[1], new Scalar(255), 10); // Adjust thickness
+        Imgproc.line(mask, selectedLine[0], selectedLine[1], new Scalar(255), 5); // Adjust thickness
+        Bitmap frame = Bitmap.createBitmap((int) imageSize.width, (int) imageSize.height, Bitmap.Config.ARGB_8888);
+        matToBitmap(mask, frame);
+
+        saveImage(frame);
         return mask;
     }
 
@@ -125,7 +242,7 @@ public class TrackLine {
         }
 
         Mat lineParams = new Mat();
-        Imgproc.fitLine(points, lineParams, Imgproc.DIST_L2, 0, 0.01, 0.01);
+        Imgproc.fitLine(points, lineParams, Imgproc.DIST_L2, 0, 0.001, 0.001);
 
         // lineParams contains [vx, vy, x0, y0]
         // Extract these values from the matrix
