@@ -111,8 +111,8 @@ public class ControllerImageDetection {
     private int imageHeight = 480;  // Width of the camera feed in pixels
     private double blindSpotRatio = 0.3 / 0.7;  // 0.3 meters blind spot per 0.7 meters altitude
 
-    private int bottomTargetRangeMin = imageHeight - 20;  // Target range 10-20 pixels from bottom
-    private int bottomTargetRangeMax = imageHeight - 10;
+    private int bottomTargetRangeMin = imageHeight - 50;  // Target range 10-50 pixels from bottom
+    private int bottomTargetRangeMax = imageHeight - 20;
     //constructor
     public ControllerImageDetection(DataFromDrone dataFromDrone,
                                     FlightControlMethods flightControlMethods,
