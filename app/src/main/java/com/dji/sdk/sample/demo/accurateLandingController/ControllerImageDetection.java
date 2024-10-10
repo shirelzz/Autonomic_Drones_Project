@@ -40,7 +40,7 @@ public class ControllerImageDetection {
 
     // depth map python view
 
-    private static final String TAG = ControllerImageDetection_copy.class.getSimpleName();
+    private static final String TAG = ControllerImageDetection.class.getSimpleName();
     private final int displayFps = 0;
     private final DataFromDrone dataFromDrone;
     //    Double PP = 0.5, II = 0.02, DD = 0.01, MAX_I = 0.5;
@@ -89,15 +89,10 @@ public class ControllerImageDetection {
     private Context context;
     private int frameHeight, frameWidth;
     private GimbalController gimbalController;
-
-
     private float lastP = 0, lastR = 0; // previous error
-
     private float r, gp = 0;
     private float p = 0.5f, i = 0.02f, d = 0.01f, max_i = 1, t = -0.6f;//t fot vertical throttle
-
     private double error_x, error_y;
-
     private double pitch = 0.0, roll = 0.0, alt = 0.0, dt = 0.0;
     private boolean activate = false;
     private TrackLine trackLine;
@@ -108,9 +103,22 @@ public class ControllerImageDetection {
     private double initialDistance = 0;  // Store the original distance when the movement starts
     private double velocity = 0.02;      // Start with an initial velocity of 0.01
     private double accelerationRate = 0.01;  // Fixed rate of velocity increase/decrease
+    private LandingAlgorithm landingAlgorithm;
+    private VLD_PID pitchPID;
+    private VLD_PID throttlePID;
+    private double fieldOfView = 84.0;  // Camera's horizontal field of view in degrees
+    private int imageWidth = 640;  // Width of the camera feed in pixels
+    private int imageHeight = 480;  // Width of the camera feed in pixels
 
     //constructor
-    public ControllerImageDetection(DataFromDrone dataFromDrone, FlightControlMethods flightControlMethods, Context context, ImageView imageView, GimbalController gimbalController, YoloDetector yoloDetector, Runnable toggleMovementDetection, Button edgeDetect) {
+    public ControllerImageDetection(DataFromDrone dataFromDrone,
+                                    FlightControlMethods flightControlMethods,
+                                    Context context,
+                                    ImageView imageView,
+                                    GimbalController gimbalController,
+                                    YoloDetector yoloDetector,
+                                    Runnable toggleMovementDetection,
+                                    Button edgeDetect) {
 
         this.yoloDetector = yoloDetector;
         this.context = context;
@@ -134,6 +142,11 @@ public class ControllerImageDetection {
         initPIDs(p, i, d, max_i, "pitch");
         initPIDs(p, i, d, max_i, "throttle");
         setDescentRate(t);
+
+        this.pitchPID = new VLD_PID(p, i, d, max_i);
+        this.throttlePID = new VLD_PID(p, i, d, max_i);
+        this.landingAlgorithm = new LandingAlgorithm(pitchPID, throttlePID);
+
     }
 
     public void setClickedPoint(Point clickedPoint) {
@@ -281,10 +294,58 @@ public class ControllerImageDetection {
         current_image_pos = pos;
     }
 
+//    public ControlCommand moveDroneToLine(Mat imgToProcess) {
+//        showToast("bestHorizontalLine");
+//        long currTime = System.currentTimeMillis();
+//        double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
+//        prevTime = currTime;
+//
+//        if (selectedLine == null) {
+//            return null;
+//        }
+//
+//        Point[] currentLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+//
+//        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
+//        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
+//        if (droneRelativeHeight <= 0f) {
+//            showToast("Land2!!!!");
+//            throttle_pid.reset();
+//            pitch_pid.reset();
+//            flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+//            return null;
+//        }
+//        if (currentLine == null) {
+//            Log.i("EdgeDetect", isUltrasonicBeingUsed + ": rh: " + droneRelativeHeight + ", h:" + dataFromDrone.getGPS().getAltitude());
+//            if (droneRelativeHeight <= 0.2f
+//                //|| dataFromDrone.getGPS().getAltitude() <= 0.2f
+//            ) {
+//                showToast("Land2!!!!");
+//                throttle_pid.reset();
+//                pitch_pid.reset();
+//                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+//                return null;
+//            } else {
+//                return stayOnPlace();
+//            }
+//            //TODO: Maybe add a scenario when the line is disappearing from the image
+////            return null;
+//        }
+//
+//        selectedLine = currentLine;
+//        Imgproc.line(imgToProcess, selectedLine[0], selectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
+////        showToast("droneRelativeHeight: " + droneRelativeHeight);
+//        double dyRealPitch = adjustDronePosition(selectedLine, imgToProcess.height(), droneRelativeHeight, 0);
+////        ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
+//        ControlCommand command = buildControlCommandEdgeFixedVelocity(dyRealPitch, dt, imgToProcess);
+//
+//        updateLog(command, 1, selectedLine, dyRealPitch);
+//        return command;
+//    }
+
     public ControlCommand moveDroneToLine(Mat imgToProcess) {
-        showToast("bestHorizontalLine");
         long currTime = System.currentTimeMillis();
-        double dt = (currTime - prevTime) / 1000.0; // Calculate time difference
+        double dt = (currTime - prevTime) / 1000.0;
         prevTime = currTime;
 
         if (selectedLine == null) {
@@ -294,40 +355,34 @@ public class ControllerImageDetection {
         Point[] currentLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
 
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
-        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
-        if (droneRelativeHeight <= 0f) {
-            showToast("Land2!!!!");
-            throttle_pid.reset();
-            pitch_pid.reset();
+        if (droneRelativeHeight <= 0.03) {
+            showToast("Landing now!");
             flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
             return null;
         }
-        if (currentLine == null) {
-            Log.i("EdgeDetect", isUltrasonicBeingUsed + ": rh: " + droneRelativeHeight + ", h:" + dataFromDrone.getGPS().getAltitude());
-            if (droneRelativeHeight <= 0.2f
-                //|| dataFromDrone.getGPS().getAltitude() <= 0.2f
-            ) {
-                showToast("Land2!!!!");
-                throttle_pid.reset();
-                pitch_pid.reset();
-                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
-                return null;
-            } else {
-                return stayOnPlace();
-            }
-            //TODO: Maybe add a scenario when the line is disappearing from the image
-//            return null;
-        }
 
-        selectedLine = currentLine;
-        Imgproc.line(imgToProcess, selectedLine[0], selectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
-//        showToast("droneRelativeHeight: " + droneRelativeHeight);
-        double dyRealPitch = adjustDronePosition(selectedLine, imgToProcess.height(), droneRelativeHeight, 0);
-//        ControlCommand command = buildControlCommandEdge(dyRealPitch, dt, imgToProcess);
-        ControlCommand command = buildControlCommandEdgeFixedVelocity(dyRealPitch, dt, imgToProcess);
+        double dyReal = calculateDistanceToLine(currentLine);
+        ControlCommand command = landingAlgorithm.approachLine(dyReal, dt, imgToProcess);
 
-        updateLog(command, 1, selectedLine, dyRealPitch);
-        return command;
+        return command == null ? stayOnPlace() : command;
+    }
+
+    private double calculateDistanceToLine(Point[] line) {
+        Point start = line[0];
+        Point end = line[1];
+        Point dronePosition = new Point(imageWidth / 2, imageHeight);
+
+        double numerator = Math.abs((end.y - start.y) * dronePosition.x - (end.x - start.x) * dronePosition.y + end.x * start.y - end.y * start.x);
+        double denominator = Math.sqrt(Math.pow(end.y - start.y, 2) + Math.pow(end.x - start.x, 2));
+        double imageDistance = denominator != 0 ? numerator / denominator : 0;
+
+        return convertImageDistanceToRealDistance(imageDistance);
+    }
+
+    private double convertImageDistanceToRealDistance(double imageDistance) {
+        double altitude = dataFromDrone.getAltitudeBelow();
+        double metersPerPixel = (2 * altitude * Math.tan(Math.toRadians(fieldOfView) / 2)) / imageWidth;
+        return imageDistance * metersPerPixel;
     }
 
     public void processImage(Bitmap frame, double droneHeight) {
@@ -346,6 +401,7 @@ public class ControllerImageDetection {
                 frameCount = 0;
             }
             ControlCommand command = moveDroneToLine(imgToProcess);
+
 //            command = detectLending(imgToProcess, droneHeight);
 
             if (command != null) {
@@ -447,10 +503,10 @@ public class ControllerImageDetection {
         return bestLine;
     }
 
-    private double adjustDronePosition(Point[] finalLine, double frameSizePx, double droneHeight, double distanceFromCenter) {
+    private double adjustDronePosition(Point[] finalLine, double frameHeightPx, double droneHeight, double distanceFromCenter) {
 //        distanceFromCenter = distanceFromCenter * (landingMode == 1 ? 1 : -1);
-        double dy_best = frameSizePx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
-        double GSD = (sensor_width * droneHeight * 100) / (focal_length * frameSizePx);
+        double dy_best = frameHeightPx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
+        double GSD = (sensor_width * droneHeight * 100) / (focal_length * frameHeightPx);
         return GSD * dy_best;
 
     }
