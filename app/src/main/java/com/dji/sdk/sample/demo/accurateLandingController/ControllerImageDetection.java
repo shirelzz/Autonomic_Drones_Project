@@ -343,6 +343,42 @@ public class ControllerImageDetection {
 //        return command;
 //    }
 
+    public ControlCommand alignAndLand(Mat imgToProcess) {
+        long currTime = System.currentTimeMillis();
+        double dt = (currTime - prevTime) / 1000.0;
+        prevTime = currTime;
+
+        // Detect the line and get the center of the line segment
+        Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+        if (detectedLine == null) {
+            return stayOnPlace();  // Hover if no line is detected
+        }
+
+        // Calculate vertical distance to center the line horizontally in the image
+        double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
+        double centerY = imageHeight / 2.0;
+        double yOffset = lineCenterY - centerY;
+
+        // If the line is centered vertically within a small threshold
+        if (Math.abs(yOffset) < 5) {
+            // Move forward by the distance equal to the altitude and land
+            double altitude = dataFromDrone.getAltitudeBelow();
+            showToast("Moving forward by altitude distance and landing.");
+            ControlCommand moveForwardCommand = landingAlgorithm.moveForwardByDistance(altitude, dt, imgToProcess);
+
+            if (moveForwardCommand.getPitch() == 0 && moveForwardCommand.getRoll() == 0 && moveForwardCommand.getVerticalThrottle() == 0) {
+                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+                return null;
+            }
+
+            return moveForwardCommand;
+        } else {
+            // Move vertically to align the line in the center
+            ControlCommand alignCommand = landingAlgorithm.verticalAlign(yOffset, dt, imgToProcess);
+            return alignCommand;
+        }
+    }
+
     public ControlCommand moveDroneToLine_sh(Mat imgToProcess) {
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0;
@@ -370,7 +406,7 @@ public class ControllerImageDetection {
     private double calculateDistanceToLine(Point[] line) {
         Point start = line[0];
         Point end = line[1];
-        Point dronePosition = new Point(imageWidth / 2, imageHeight);
+        Point dronePosition = new Point(imageWidth / 2, imageHeight/2);
 
         double numerator = Math.abs((end.y - start.y) * dronePosition.x - (end.x - start.x) * dronePosition.y + end.x * start.y - end.y * start.x);
         double denominator = Math.sqrt(Math.pow(end.y - start.y, 2) + Math.pow(end.x - start.x, 2));
@@ -400,7 +436,9 @@ public class ControllerImageDetection {
                 findClosestLine(imgToProcess);
                 frameCount = 0;
             }
-            ControlCommand command = moveDroneToLine_sh(imgToProcess);
+
+//            ControlCommand command = moveDroneToLine_sh(imgToProcess);
+            ControlCommand command = alignAndLand(imgToProcess);
 
 //            command = detectLending(imgToProcess, droneHeight);
 

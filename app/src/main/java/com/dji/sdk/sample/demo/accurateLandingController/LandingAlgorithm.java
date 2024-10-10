@@ -26,6 +26,25 @@ public class LandingAlgorithm {
         this.throttlePID = throttlePID;
     }
 
+    public ControlCommand moveForwardByDistance(double distance, double dt, Mat imgToProcess) {
+        double currentDistance = Math.abs(distance);
+        if (currentDistance > 0.05) {  // Stop when close enough (5 cm tolerance)
+            float pitchCommand = (float) pitchPID.update(currentDistance, dt, 1.0);
+            Imgproc.putText(imgToProcess, "Moving Forward by " + currentDistance, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
+                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+            return new ControlCommand(pitchCommand, 0, 0);
+        } else {
+            return new ControlCommand(0, 0, 0);  // Stop movement
+        }
+    }
+
+    public ControlCommand verticalAlign(double yOffset, double dt, Mat imgToProcess) {
+        float throttleCommand = (float) throttlePID.update(yOffset, dt, 1.0);
+        Imgproc.putText(imgToProcess, "Aligning Vertically", new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
+                Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+        return new ControlCommand(0, 0, throttleCommand);
+    }
+
     public ControlCommand approachLine(double dyReal, double dt, Mat imgToProcess) {
 
         if (initialDistance == 0) {
