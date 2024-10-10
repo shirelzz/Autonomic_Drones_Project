@@ -109,6 +109,7 @@ public class ControllerImageDetection {
     private double fieldOfView = 84.0;  // Camera's horizontal field of view in degrees
     private int imageWidth = 640;  // Width of the camera feed in pixels
     private int imageHeight = 480;  // Width of the camera feed in pixels
+    private double blindSpotRatio = 0.3 / 0.7;  // 0.3 meters blind spot per 0.7 meters altitude
 
     //constructor
     public ControllerImageDetection(DataFromDrone dataFromDrone,
@@ -343,6 +344,43 @@ public class ControllerImageDetection {
 //        return command;
 //    }
 
+    public ControlCommand alignAndLand(Mat imgToProcess) {
+        long currTime = System.currentTimeMillis();
+        double dt = (currTime - prevTime) / 1000.0;
+        prevTime = currTime;
+
+        // Detect the line and get the center of the line segment
+        Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+        if (detectedLine == null) {
+            return stayOnPlace();  // Hover if no line is detected
+        }
+
+        // Calculate the distance from the line to the bottom of the image
+        double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
+        double targetY = imageHeight - 15;  // Target position 10-20 pixels from the bottom
+        double yOffset = lineCenterY - targetY;
+
+        // Step 1: Align line to be near the bottom of the image
+        if (Math.abs(yOffset) > 5) {
+            ControlCommand alignCommand = landingAlgorithm.verticalAlign(yOffset, dt, imgToProcess);
+            return alignCommand;
+        }
+
+        // Step 2: Move forward by the blind spot distance
+        double altitude = dataFromDrone.getAltitudeBelow();
+        double blindSpotDistance = altitude * blindSpotRatio;
+        showToast("Moving forward by blind spot distance of " + blindSpotDistance + " meters.");
+        ControlCommand moveForwardCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
+
+        // Check if the command is effectively a zero movement command
+        if (moveForwardCommand.getPitch() == 0 && moveForwardCommand.getRoll() == 0 && moveForwardCommand.getVerticalThrottle() == 0) {
+            // Step 3: Land once forward movement is complete
+            flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+        }
+
+        return moveForwardCommand;
+    }
+
     public ControlCommand approachAndLand(Mat imgToProcess) {
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0;
@@ -382,41 +420,41 @@ public class ControllerImageDetection {
         return (altitude / 0.7) * 0.3;  // Given measurements: 0.3m blind spot per 0.7m altitude
     }
 
-    public ControlCommand alignAndLand(Mat imgToProcess) {
-        long currTime = System.currentTimeMillis();
-        double dt = (currTime - prevTime) / 1000.0;
-        prevTime = currTime;
-
-        // Detect the line and get the center of the line segment
-        Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
-        if (detectedLine == null) {
-            return stayOnPlace();  // Hover if no line is detected
-        }
-
-        // Calculate vertical distance to center the line horizontally in the image
-        double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
-        double centerY = imageHeight / 2.0;
-        double yOffset = lineCenterY - centerY;
-
-        // If the line is centered vertically within a small threshold
-        if (Math.abs(yOffset) < 5) {
-            // Move forward by the distance equal to the altitude and land
-            double altitude = dataFromDrone.getAltitudeBelow();
-            showToast("Moving forward by altitude distance and landing.");
-            ControlCommand moveForwardCommand = landingAlgorithm.moveForwardByDistance(altitude, dt, imgToProcess);
-
-            if (moveForwardCommand.getPitch() == 0 && moveForwardCommand.getRoll() == 0 && moveForwardCommand.getVerticalThrottle() == 0) {
-                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
-                return null;
-            }
-
-            return moveForwardCommand;
-        } else {
-            // Move vertically to align the line in the center
-            ControlCommand alignCommand = landingAlgorithm.verticalAlign(yOffset, dt, imgToProcess);
-            return alignCommand;
-        }
-    }
+//    public ControlCommand alignAndLand(Mat imgToProcess) {
+//        long currTime = System.currentTimeMillis();
+//        double dt = (currTime - prevTime) / 1000.0;
+//        prevTime = currTime;
+//
+//        // Detect the line and get the center of the line segment
+//        Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+//        if (detectedLine == null) {
+//            return stayOnPlace();  // Hover if no line is detected
+//        }
+//
+//        // Calculate vertical distance to center the line horizontally in the image
+//        double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
+//        double centerY = imageHeight / 2.0;
+//        double yOffset = lineCenterY - centerY;
+//
+//        // If the line is centered vertically within a small threshold
+//        if (Math.abs(yOffset) < 5) {
+//            // Move forward by the distance equal to the altitude and land
+//            double altitude = dataFromDrone.getAltitudeBelow();
+//            showToast("Moving forward by altitude distance and landing.");
+//            ControlCommand moveForwardCommand = landingAlgorithm.moveForwardByDistance(altitude, dt, imgToProcess);
+//
+//            if (moveForwardCommand.getPitch() == 0 && moveForwardCommand.getRoll() == 0 && moveForwardCommand.getVerticalThrottle() == 0) {
+//                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+//                return null;
+//            }
+//
+//            return moveForwardCommand;
+//        } else {
+//            // Move vertically to align the line in the center
+//            ControlCommand alignCommand = landingAlgorithm.verticalAlign(yOffset, dt, imgToProcess);
+//            return alignCommand;
+//        }
+//    }
 
     public ControlCommand moveDroneToLine_sh(Mat imgToProcess) {
         long currTime = System.currentTimeMillis();
@@ -477,8 +515,8 @@ public class ControllerImageDetection {
             }
 
 //            ControlCommand command = moveDroneToLine_sh(imgToProcess);
-//            ControlCommand command = alignAndLand(imgToProcess);
-            ControlCommand command = approachAndLand(imgToProcess);
+            ControlCommand command = alignAndLand(imgToProcess);
+//            ControlCommand command = approachAndLand(imgToProcess);
 
 //            command = detectLending(imgToProcess, droneHeight);
 
