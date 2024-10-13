@@ -4,6 +4,7 @@ import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
@@ -46,6 +47,20 @@ public class SpeechToText implements RecognitionListener {
         this.updateStartListening = updateStartListening;
     }
 
+    private void muteSpeechSound(){
+        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setStreamMute(AudioManager.STREAM_NOTIFICATION, true);
+        audioManager.setStreamMute(AudioManager.STREAM_SYSTEM, true);
+        audioManager.setStreamMute(AudioManager.STREAM_RING, true);
+
+// Start speech recognition
+
+        audioManager.setStreamMute(AudioManager.STREAM_NOTIFICATION, false);
+        audioManager.setStreamMute(AudioManager.STREAM_SYSTEM, false);
+        audioManager.setStreamMute(AudioManager.STREAM_RING, false);
+        audioManager.setStreamMute(AudioManager.STREAM_MUSIC, false);  // Keep TTS sounds
+
+    }
     private void setRecogniserIntent() {
         recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,
@@ -55,6 +70,10 @@ public class SpeechToText implements RecognitionListener {
 
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
 //        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "he");
+//        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 0L);
+//        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 0L);
+//        recognizerIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 0L);
+//        muteSpeechSound();
         recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
     }
 

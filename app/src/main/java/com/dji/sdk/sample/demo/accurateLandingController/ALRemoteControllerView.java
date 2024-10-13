@@ -9,6 +9,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
@@ -166,6 +167,14 @@ public class ALRemoteControllerView extends RelativeLayout
                 Log.e("TTS", "TextToSpeech initialization failed");
             }
         });
+//        AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+//        AudioManager.OnAudioFocusChangeListener focusChangeListener = focusChange -> {
+//            if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+//                // Handle audio focus loss
+//            }
+//        };
+//        audioManager.requestAudioFocus(focusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+
     }
 
     @Override

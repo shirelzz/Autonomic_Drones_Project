@@ -59,6 +59,7 @@ public class ControllerImageDetection {
     private PyObject getOutputFunc;
     private int frameCounter = 0;
     private Map<String, Double> controlStatus = new HashMap<>();
+    private boolean inLandingProcess = false;
 
     //    private final ALRemoteControllerView mainView;
     private long prevTime = System.currentTimeMillis();
@@ -113,6 +114,7 @@ public class ControllerImageDetection {
 
     private int bottomTargetRangeMin = imageHeight - 50;  // Target range 10-50 pixels from bottom
     private int bottomTargetRangeMax = imageHeight - 20;
+
     //constructor
     public ControllerImageDetection(DataFromDrone dataFromDrone,
                                     FlightControlMethods flightControlMethods,
@@ -139,7 +141,7 @@ public class ControllerImageDetection {
         //Do we need it
         this.frameWidth = 640;
         this.frameHeight = 480;
-        this.trackLine = new TrackLine();
+        this.trackLine = new TrackLine(context);
 
         initPIDs(p, i, d, max_i, "roll");
         initPIDs(p, i, d, max_i, "pitch");
@@ -264,9 +266,10 @@ public class ControllerImageDetection {
         // After detecting all lines, find the line closest to the clicked point (clickedX, clickedY)
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
 //        boolean isUltrasonicBeingUsed = dataFromDrone.isUltrasonicBeingUsed();
-        List<Object[]> pointArr = EdgeDetection.detectLines(imgToProcess, droneRelativeHeight);
+        List<Object[]> pointArr = EdgeDetection.detectLines(imgToProcess, droneRelativeHeight, false, 0.0);
         Point[] closestLine = selectBestLinePoint(pointArr);
         trackLine.detectLineFeatures(closestLine, imgToProcess);
+//        trackLine.initializeTracking(imgToProcess, selectedLine);
 
         // Store the closest line as the selected line and mark that a line has been selected
         if (closestLine != null) {
@@ -274,7 +277,7 @@ public class ControllerImageDetection {
             lineSelected = true;
 
             // Store the original line properties
-            trackLine.storeOriginalLineProperties(selectedLine);
+//            trackLine.storeOriginalLineProperties(selectedLine);
         }
 
     }
@@ -351,36 +354,42 @@ public class ControllerImageDetection {
         double dt = (currTime - prevTime) / 1000.0;
         prevTime = currTime;
 
+        double altitude = dataFromDrone.getAltitudeBelow();
         // Step 1: Detect the line and get the center of the line segment
+//        Point[] detectedLine = trackLine.trackLine(imgToProcess);
         Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
-        if (detectedLine == null) {
+
+        if (detectedLine == null && !inLandingProcess) {
             return stayOnPlace();  // Hover if no line is detected
         }
+        if (detectedLine != null) {
+            inLandingProcess = false;
+//        selectedLine = detectedLine;
+            Imgproc.line(imgToProcess, detectedLine[0], detectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
-        // Calculate vertical distance to place the line near the bottom
-        double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
+            // Calculate vertical distance to place the line near the bottom
+            double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
 
-        // Step 2: If line is not within 10-20 pixels from the bottom, move forward
-        if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
-            showToast("Aligning line to bottom range.");
-            ControlCommand moveForwardCommand = landingAlgorithm.moveForward(dt, imgToProcess);
-            return moveForwardCommand;
-
-        } else {
-            // Step 3: Move forward the blind spot distance based on altitude
-            double altitude = dataFromDrone.getAltitudeBelow();
-            double blindSpotDistance = calculateBlindSpotDistance(altitude);
-            showToast("Moving forward by blind spot distance.");
-
-            ControlCommand blindSpotMoveCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
-
-            if (blindSpotMoveCommand.getPitch() == 0 && blindSpotMoveCommand.getRoll() == 0 && blindSpotMoveCommand.getVerticalThrottle() == 0) {
-                // Step 4: Land when the blind spot distance is covered
-                flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+            // Step 2: If line is not within 10-20 pixels from the bottom, move forward
+            if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
+                showToast("Aligning line to bottom range.");
+                return landingAlgorithm.moveForward(dt, imgToProcess);
             }
-
-            return blindSpotMoveCommand;
         }
+        // Step 3: Move forward the blind spot distance based on altitude
+        double blindSpotDistance = calculateBlindSpotDistance(altitude);
+        showToast("Moving forward by blind spot distance.");
+
+        ControlCommand blindSpotMoveCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
+        inLandingProcess = true;
+        if (blindSpotMoveCommand.getPitch() == 0 && blindSpotMoveCommand.getRoll() == 0 && blindSpotMoveCommand.getVerticalThrottle() == 0) {
+            // Step 4: Land when the blind spot distance is covered
+//            flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
+            flightControlMethods.land(this::stopEdgeDetection, null);
+        }
+
+        return blindSpotMoveCommand;
+
     }
 
     private double calculateBlindSpotDistance(double altitude) {
@@ -433,10 +442,12 @@ public class ControllerImageDetection {
         if (selectedLine == null) {
             return null;
         }
+        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
 
+
+//        Point[] currentLine = trackLine.trackLine(imgToProcess);
         Point[] currentLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
 
-        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
         if (droneRelativeHeight <= 0.03) {
             showToast("Landing now!");
             flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
@@ -452,7 +463,7 @@ public class ControllerImageDetection {
     private double calculateDistanceToLine(Point[] line) {
         Point start = line[0];
         Point end = line[1];
-        Point dronePosition = new Point(imageWidth / 2, imageHeight/2);
+        Point dronePosition = new Point(imageWidth / 2, imageHeight / 2);
 
         double numerator = Math.abs((end.y - start.y) * dronePosition.x - (end.x - start.x) * dronePosition.y + end.x * start.y - end.y * start.x);
         double denominator = Math.sqrt(Math.pow(end.y - start.y, 2) + Math.pow(end.x - start.x, 2));
@@ -473,7 +484,7 @@ public class ControllerImageDetection {
         Utils.bitmapToMat(frame, imgToProcess);
         try {
             if (clickedPoint == null) {
-                List<Object[]> PointList = EdgeDetection.detectLines(imgToProcess, droneHeight);
+                List<Object[]> PointList = EdgeDetection.detectLines(imgToProcess, droneHeight, false, 0.0);
                 matToBitmap(imgToProcess, frame);
                 return;
             }
@@ -589,7 +600,8 @@ public class ControllerImageDetection {
         return bestLine;
     }
 
-    private double adjustDronePosition(Point[] finalLine, double frameHeightPx, double droneHeight, double distanceFromCenter) {
+    private double adjustDronePosition(Point[] finalLine, double frameHeightPx,
+                                       double droneHeight, double distanceFromCenter) {
 //        distanceFromCenter = distanceFromCenter * (landingMode == 1 ? 1 : -1);
         double dy_best = frameHeightPx / 2.0 - (finalLine[0].y + finalLine[1].y) / 2.0;
         double GSD = (sensor_width * droneHeight * 100) / (focal_length * frameHeightPx);
@@ -597,7 +609,8 @@ public class ControllerImageDetection {
 
     }
 
-    private ControlCommand buildControlCommandEdgeFixedVelocity(double dyReal, double dt, Mat imgToProcess) {
+    private ControlCommand buildControlCommandEdgeFixedVelocity(double dyReal, double dt, Mat
+            imgToProcess) {
         double maxSpeed = 1.0;   // Cap the maximum velocity
         double minSpeed = 0.02;  // Minimum starting velocity
 

@@ -25,7 +25,7 @@ public class EdgeDetection {
     private static boolean in_blur = false;
 
     // Check if it works = return an array with edges
-    public static List<Object[]> detectLines(Mat input, double droneHeight) {
+    public static List<Object[]> detectLines(Mat input, double droneHeight, boolean detectLineAlgo, double originalSlope) {
         in_blur = false;
         // Declare the output variables
         Mat dst = new Mat(), cdst = new Mat();
@@ -58,9 +58,24 @@ public class EdgeDetection {
             double x0 = a * rho, y0 = b * rho;
             Point pt1 = new Point(Math.round(x0 + 1000 * (-b)), Math.round(y0 + 1000 * (a)));
             Point pt2 = new Point(Math.round(x0 - 1000 * (-b)), Math.round(y0 - 1000 * (a)));
+//            if (detectLineAlgo) {
+//                // Calculate the slope of the detected line
+//                double slope = (pt2.y - pt1.y) / (pt2.x - pt1.x);
+//
+//                // If the slope is close to the original slope, save the line
+//                if (Math.abs(slope - originalSlope) < 0.1) { // Adjust threshold as needed
+//                    pointList.add(new Point[]{pt1, pt2});
+//                }
+//            } else {
+            if(!isHorizontal) {
+                pointList.add(new Object[]{new Point[]{pt1, pt2}, isHorizontal});
+                Imgproc.line(input, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+            }
 
-            pointList.add(new Object[]{new Point[]{pt1, pt2}, isHorizontal});
-            Imgproc.line(input, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+
+//                Imgproc.line(input, pt1, pt2, new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+//            }
+
         }
 
         if (pointList.size() == 0 && droneHeight <= 0.2) {

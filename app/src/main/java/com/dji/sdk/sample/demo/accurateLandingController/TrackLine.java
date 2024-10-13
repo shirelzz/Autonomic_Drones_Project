@@ -1,5 +1,15 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
+import static com.dji.sdk.sample.demo.accurateLandingController.ALRemoteControllerView.TAG;
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
+import static org.opencv.android.Utils.matToBitmap;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.os.Environment;
+import android.util.Log;
+
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -14,20 +24,33 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.Video;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TrackLine {
 
     // Variables for storing the features to track
-    MatOfPoint selectedLineFeatures;
+    MatOfPoint selectedLineFeatures, originalLineFeatures;
     MatOfPoint2f prevPoints, currPoints;
     Mat previousImage = null;
     // Variables to store original line properties
-    private double originalLineLength;
-    private double originalSlope;
+    private Point[] prevLine;
+    private double originalSlope, originalLineLength;
+    private Context context;
+    private static final String TAG = "TrackLine";
+    private static final double SLOPE_THRESHOLD = 0.1;
+    private static final int MAX_CORNERS = 100;
+    private static final double QUALITY_LEVEL = 0.01;
+    private static final double MIN_DISTANCE = 10;
+    private static final int FEATURE_DISTANCE = 10;
 
-    public TrackLine() {
+
+    public TrackLine(Context context) {
+        this.context = context;
     }
 
     // Calculate and store original line length and slope when selecting the line
@@ -40,79 +63,290 @@ public class TrackLine {
         originalSlope = (selectedLine[1].y - selectedLine[0].y) / (selectedLine[1].x - selectedLine[0].x);
     }
 
+    // Method to define the ROI around the previous line
+    Point[] defineROI(Point[] previousLine, int margin) {
+        // Calculate the points that define the rectangle ROI based on the line position and margin
+        Point topLeft = new Point(previousLine[0].x - margin, previousLine[0].y - margin);
+        Point bottomRight = new Point(previousLine[1].x + margin, previousLine[1].y + margin);
+        return new Point[]{topLeft, bottomRight};
+    }
+
     // Detect features along the selected line
     public void detectLineFeatures(Point[] selectedLine, Mat image) {
         // Create a mask around the selected line
         Mat mask = createLineMask(selectedLine, image.size());
-
+        this.prevLine = selectedLine;
         // Detect good features (corners, edges) along the selected line
         selectedLineFeatures = new MatOfPoint();
-
+        storeOriginalLineProperties(selectedLine);
         Mat grayImage = new Mat();
         Imgproc.cvtColor(image, grayImage, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.goodFeaturesToTrack(grayImage, selectedLineFeatures, 200, 0.03, 5, mask);
+        Imgproc.goodFeaturesToTrack(grayImage, selectedLineFeatures, MAX_CORNERS, QUALITY_LEVEL, MIN_DISTANCE, mask);
 
         // Convert features to a format suitable for optical flow
         prevPoints = new MatOfPoint2f(selectedLineFeatures.toArray());
+        originalLineFeatures = new MatOfPoint(selectedLineFeatures.toArray()); // Store original features for comparison
 
         // Update previous image
-        previousImage = image;
+        previousImage = new Mat();
+        image.copyTo(previousImage);
     }
 
     // Track the selected line in a new image - first try
+//    public Point[] trackSelectedLineUsingOpticalFlow(Mat newImage) {
+//        if (prevPoints == null || prevPoints.rows() == 0) {
+//            return null; // No features to track
+//        }
+//
+//        // Track the features using Optical Flow
+//        currPoints = new MatOfPoint2f();
+//        MatOfByte status = new MatOfByte();
+//        MatOfFloat err = new MatOfFloat();
+//
+//        Video.calcOpticalFlowPyrLK(previousImage, newImage, prevPoints, currPoints, status, err);
+//
+//        // Filter valid points
+//        List<Point> validPrevPoints = new ArrayList<>();
+//        List<Point> validCurrPoints = new ArrayList<>();
+//        byte[] statusArray = status.toArray();
+//        Point[] prevArray = prevPoints.toArray();
+//        Point[] currArray = currPoints.toArray();
+//        // Check for array size mismatches
+//        if (statusArray.length != prevArray.length || prevArray.length != currArray.length) {
+//            throw new RuntimeException("Mismatched array lengths: status=" + statusArray.length +
+//                    ", prevPoints=" + prevArray.length + ", currPoints=" + currArray.length);
+//        }
+//
+//        for (int i = 0; i < statusArray.length; i++) {
+//            if (statusArray[i] == 1) {
+//                validPrevPoints.add(prevArray[i]);
+//                validCurrPoints.add(currArray[i]);
+////                               // Filter points that deviate too far from the original line
+////                Point prevPoint = prevArray[i];
+////                Point currPoint = currArray[i];
+////                double distance = Math.abs((currPoint.y - prevPoint.y) - originalSlope * (currPoint.x - prevPoint.x));
+////
+////                if (distance < 10) {  // Adjust this threshold based on your specific use case
+////                    validPrevPoints.add(prevPoint);
+////                    validCurrPoints.add(currPoint);
+////                }
+//            }
+//        }
+//        previousImage = newImage;
+//        // Fit a line through the tracked points
+//        if (!validCurrPoints.isEmpty()) {
+//            MatOfPoint2f validCurrMat = new MatOfPoint2f();
+//            validCurrMat.fromList(validCurrPoints);
+//
+//            // Fit a line using the tracked points
+//            Point[] trackedLine = fitLineThroughPoints(validCurrMat);
+//
+//            // Update previous points for the next iteration
+//            prevPoints = validCurrMat;
+//
+//            return trackedLine;
+//        }
+////         // Check if the new line deviates too much from the original position
+////            double distance = Math.sqrt(Math.pow(trackedLine[0].x - prevLine[0].x, 2) +
+////                    Math.pow(trackedLine[0].y - prevLine[0].y, 2));
+////
+////            if (distance < 50) {  // Adjust based on your requirements
+////                prevPoints = validCurrMat;
+////                this.prevLine = trackedLine;
+////                return trackedLine;
+////            } else {
+////                return null;  // Line has drifted too much, discard it
+////            }
+//        return null; // No valid line found
+//    }
+
     public Point[] trackSelectedLineUsingOpticalFlow(Mat newImage) {
-        if (prevPoints == null || prevPoints.rows() == 0) {
-            return null; // No features to track
+        if (prevLine == null || previousImage == null || originalLineFeatures.empty()) {
+            return null;
         }
 
-        // Track the features using Optical Flow
-        currPoints = new MatOfPoint2f();
+        Mat grayFrame = new Mat();
+        Imgproc.cvtColor(newImage, grayFrame, Imgproc.COLOR_BGR2GRAY);
+
+        MatOfPoint2f nextFeatures = new MatOfPoint2f();
         MatOfByte status = new MatOfByte();
         MatOfFloat err = new MatOfFloat();
 
-        Video.calcOpticalFlowPyrLK(previousImage, newImage, prevPoints, currPoints, status, err);
+        Mat grayPrev = new Mat();
+        Imgproc.cvtColor(previousImage, grayPrev, Imgproc.COLOR_BGR2GRAY);
 
-        // Filter valid points
-        List<Point> validPrevPoints = new ArrayList<>();
-        List<Point> validCurrPoints = new ArrayList<>();
-        byte[] statusArray = status.toArray();
-        Point[] prevArray = prevPoints.toArray();
-        Point[] currArray = currPoints.toArray();
-        // Check for array size mismatches
-        if (statusArray.length != prevArray.length || prevArray.length != currArray.length) {
-            throw new RuntimeException("Mismatched array lengths: status=" + statusArray.length +
-                    ", prevPoints=" + prevArray.length + ", currPoints=" + currArray.length);
-        }
+        Video.calcOpticalFlowPyrLK(grayPrev, grayFrame, prevPoints, nextFeatures, status, err);
 
-        for (int i = 0; i < statusArray.length; i++) {
-            if (statusArray[i] == 1) {
-                validPrevPoints.add(prevArray[i]);
-                validCurrPoints.add(currArray[i]);
+        List<Point> goodPrev = new ArrayList<>();
+        List<Point> goodNext = new ArrayList<>();
+
+        for (int i = 0; i < status.toArray().length; i++) {
+            if (status.toArray()[i] == 1) {
+                goodPrev.add(originalLineFeatures.toArray()[i]);
+                goodNext.add(nextFeatures.toArray()[i]);
             }
         }
-        previousImage = newImage;
-        // Fit a line through the tracked points
-        if (!validCurrPoints.isEmpty()) {
-            MatOfPoint2f validCurrMat = new MatOfPoint2f();
-            validCurrMat.fromList(validCurrPoints);
 
-            // Fit a line using the tracked points
-            Point[] trackedLine = fitLineThroughPoints(validCurrMat);
+        if (goodPrev.size() >= 4 && goodNext.size() >= 4) {
+            MatOfPoint2f goodPrevMat = new MatOfPoint2f();
+            MatOfPoint2f goodNextMat = new MatOfPoint2f();
+            goodPrevMat.fromList(goodPrev);
+            goodNextMat.fromList(goodNext);
 
-            // Update previous points for the next iteration
-            prevPoints = validCurrMat;
+            Mat homography = Calib3d.findHomography(goodPrevMat, goodNextMat, Calib3d.RANSAC, 3);
 
-            return trackedLine;
+            if (!homography.empty()) {
+                MatOfPoint2f initialLineMat = new MatOfPoint2f(prevLine);
+                MatOfPoint2f transformedPoints = new MatOfPoint2f();
+                Core.perspectiveTransform(initialLineMat, transformedPoints, homography);
+
+                Point[] transformedArray = transformedPoints.toArray();
+                if (transformedArray.length >= 2) {
+                    prevLine = new Point[]{transformedArray[0], transformedArray[1]};
+                }
+            }
         }
 
-        return null; // No valid line found
+        detectLineFeatures(prevLine, newImage);
+        newImage.copyTo(previousImage);
+
+        return prevLine;
     }
 
+
+//    // Compare detected lines with the original line features and select the best line
+//    public Point[] findBestMatchingLine(Mat image, double height) {
+//        // Get horizontal lines with the same slope
+//        List<Object[]> horizontalLines = EdgeDetection.detectLines(image, height,true, originalSlope);
+//
+//        if (horizontalLines.isEmpty()) {
+//            return null; // No matching lines found
+//        }
+//
+//        Point[] bestLine = null;
+//        double bestScore = Double.MAX_VALUE;
+//        showToast("horizontalLines: "+ horizontalLines.size());
+//        // Compare each line to the original line features
+//        for (Object[] entry : horizontalLines) {
+//            Point[] line = (Point[]) entry;
+//
+//            // Calculate how close the line is to the original line (Euclidean distance)
+//            double distance = Math.sqrt(Math.pow(line[0].x - prevLine[0].x, 2) + Math.pow(line[0].y - prevLine[0].y, 2));
+//
+//            // Compare line features with the original line features
+//            Mat mask = createLineMask(line, image.size());
+//            MatOfPoint newLineFeatures = new MatOfPoint();
+//            Mat grayImage = new Mat();
+//            Imgproc.cvtColor(image, grayImage, Imgproc.COLOR_BGR2GRAY);
+//            Imgproc.goodFeaturesToTrack(grayImage, newLineFeatures, 200, 0.03, 5, mask);
+//
+//            // Compare the features (count matches)
+//            int matchingFeatures = countMatchingFeatures(newLineFeatures, selectedLineFeatures);
+//
+//            // Combine distance and feature matching to determine the best line (lower score is better)
+//            double score = distance - matchingFeatures; // You can adjust the weights of distance and matchingFeatures
+//
+//            if (score < bestScore) {
+//                bestScore = score;
+//                bestLine = line;
+//            }
+//        }
+//        return bestLine;
+//    }
+//
+//    // Count how many features match between two sets of line features
+//    private int countMatchingFeatures(MatOfPoint features1, MatOfPoint features2) {
+//        Point[] points1 = features1.toArray();
+//        Point[] points2 = features2.toArray();
+//
+//        int matchCount = 0;
+//        for (Point p1 : points1) {
+//            for (Point p2 : points2) {
+//                double distance = Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+//                if (distance < 5) { // Adjust matching threshold as needed
+//                    matchCount++;
+//                }
+//            }
+//        }
+//        return matchCount;
+//    }
+
     // Helper function to create a mask around the selected line
+//    private Mat createLineMask(Point[] selectedLine, Size imageSize) {
+//        Mat mask = Mat.zeros(imageSize, CvType.CV_8U);
+//        Imgproc.line(mask, selectedLine[0], selectedLine[1], new Scalar(255), 5); // Adjust thickness
+//        Bitmap savedImage = Bitmap.createBitmap((int) imageSize.width, (int) imageSize.height, Bitmap.Config.ARGB_8888);
+//        matToBitmap(mask, savedImage);
+//        saveImage(savedImage);
+//        return mask;
+//    }
+
     private Mat createLineMask(Point[] selectedLine, Size imageSize) {
-        Mat mask = Mat.zeros(imageSize, CvType.CV_8U);
-        Imgproc.line(mask, selectedLine[0], selectedLine[1], new Scalar(255), 5); // Adjust thickness
+        Mat mask = Mat.zeros(imageSize, CvType.CV_8UC1);
+        Point direction = new Point(selectedLine[1].x - selectedLine[0].x, selectedLine[1].y - selectedLine[0].y);
+        double length = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
+        Point unitDirection = new Point(direction.x / length, direction.y / length);
+        Point perpendicular = new Point(-unitDirection.y, unitDirection.x);
+
+        List<Point> maskPoints = new ArrayList<>();
+        for (int i = -2; i <= 2; i++) {
+            Point offset = new Point(perpendicular.x * i * FEATURE_DISTANCE, perpendicular.y * i * FEATURE_DISTANCE);
+            maskPoints.add(new Point(selectedLine[0].x + offset.x, selectedLine[0].y + offset.y));
+            maskPoints.add(new Point(selectedLine[1].x + offset.x, selectedLine[1].y + offset.y));
+        }
+
+        MatOfPoint maskContour = new MatOfPoint();
+        maskContour.fromList(maskPoints);
+        List<MatOfPoint> contours = new ArrayList<>();
+        contours.add(maskContour);
+        Imgproc.fillPoly(mask, contours, new Scalar(255));
+
+        Bitmap savedImage = Bitmap.createBitmap((int) imageSize.width, (int) imageSize.height, Bitmap.Config.ARGB_8888);
+        matToBitmap(mask, savedImage);
+        saveImage(savedImage);
+
         return mask;
+    }
+    public void saveImage(Bitmap bitmap) {
+        File pictureFile = getOutputMediaFile();
+        if (pictureFile == null) {
+            Log.d(TAG,
+                    "Error creating media file, check storage permissions: ");// e.getMessage());
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
+            fos.close();
+        } catch (FileNotFoundException e) {
+            Log.d(TAG, "File not found: " + e.getMessage());
+        } catch (IOException e) {
+            Log.d(TAG, "Error accessing file: " + e.getMessage());
+        }
+    }
+
+    private File getOutputMediaFile() {
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+        File mediaStorageDir = new File(Environment.getExternalStorageDirectory()
+                + "/Android/data/"
+                + context.getPackageName()
+                + "/Files");
+
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
+
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                return null;
+            }
+        }
+        // Create a media file name
+        File mediaFile;
+        String mImageName = "MI_" + System.currentTimeMillis() + ".jpg";
+        mediaFile = new File(mediaStorageDir.getPath() + File.separator + mImageName);
+        return mediaFile;
     }
 
     // Fit a line using tracked points
@@ -130,9 +364,14 @@ public class TrackLine {
         double vy = lineParams.get(1, 0)[0];
         double x0 = lineParams.get(2, 0)[0];
         double y0 = lineParams.get(3, 0)[0];
-        if(Math.abs(vy) > Math.abs(vx)){
-            vy = 0;
-            vx = 1;
+//        if(Math.abs(vy) > Math.abs(vx)){
+//            vy = 0;
+//            vx = 1;
+//        }
+        // Enforce the original slope
+        double currentSlope = vy / vx;
+        if (Math.abs(currentSlope - originalSlope) > 0.1) {  // Adjust the tolerance based on your needs
+            vy = originalSlope * vx; // Adjust the new slope to match the original
         }
         // Create a start and end point based on the direction (vx, vy) and a point on the line (x0, y0)
         Point startPoint = new Point(x0 - 1000 * vx, y0 - 1000 * vy); // Extend the line backward
@@ -221,3 +460,174 @@ public class TrackLine {
 //        return numerator / denominator;
 //    }
 }
+
+
+//package com.dji.sdk.sample.demo.accurateLandingController;
+//
+//import android.content.Context;
+//import android.util.Log;
+//
+//import org.opencv.core.Core;
+//import org.opencv.core.CvType;
+//import org.opencv.core.Mat;
+//import org.opencv.core.MatOfByte;
+//import org.opencv.core.MatOfFloat;
+//import org.opencv.core.MatOfPoint;
+//import org.opencv.core.MatOfPoint2f;
+//import org.opencv.core.Point;
+//import org.opencv.core.Scalar;
+//import org.opencv.core.Size;
+//import org.opencv.imgproc.Imgproc;
+//import org.opencv.video.Video;
+//
+//import java.util.ArrayList;
+//import java.util.List;
+//
+//public class TrackLine {
+//    private static final String TAG = "TrackLine";
+//    private static final double SLOPE_THRESHOLD = 0.1;
+//    private static final int MAX_CORNERS = 100;
+//    private static final double QUALITY_LEVEL = 0.01;
+//    private static final double MIN_DISTANCE = 10;
+//
+//    private Context context;
+//    private Mat previousImage;
+//    private MatOfPoint2f prevPoints;
+//    private double originalSlope;
+//    private double originalLength;
+//
+//    public TrackLine(Context context) {
+//        this.context = context;
+//    }
+//
+//    public void initializeTracking(Mat image, Point[] selectedLine) {
+//        if (selectedLine == null || selectedLine.length != 2) {
+//            throw new IllegalArgumentException("Selected line must contain exactly two points");
+//        }
+//
+//        previousImage = new Mat();
+//        image.copyTo(previousImage);
+//
+//        originalSlope = calculateSlope(selectedLine[0], selectedLine[1]);
+//        originalLength = calculateDistance(selectedLine[0], selectedLine[1]);
+//
+//        Mat mask = createLineMask(selectedLine, image.size());
+//        Mat grayImage = new Mat();
+//        Imgproc.cvtColor(image, grayImage, Imgproc.COLOR_BGR2GRAY);
+//
+//        MatOfPoint corners = new MatOfPoint();
+//        Imgproc.goodFeaturesToTrack(grayImage, corners, MAX_CORNERS, QUALITY_LEVEL, MIN_DISTANCE, mask);
+//
+//        prevPoints = new MatOfPoint2f(corners.toArray());
+//    }
+//
+//    public Point[] trackLine(Mat newImage) {
+//        if (previousImage == null || prevPoints == null || prevPoints.empty()) {
+//            Log.e(TAG, "Tracking not initialized properly");
+//            return null;
+//        }
+//
+//        MatOfPoint2f nextPoints = new MatOfPoint2f();
+//        MatOfByte status = new MatOfByte();
+//        MatOfFloat err = new MatOfFloat();
+//
+//        Mat grayPrev = new Mat();
+//        Mat grayNext = new Mat();
+//        Imgproc.cvtColor(previousImage, grayPrev, Imgproc.COLOR_BGR2GRAY);
+//        Imgproc.cvtColor(newImage, grayNext, Imgproc.COLOR_BGR2GRAY);
+//
+//        Video.calcOpticalFlowPyrLK(grayPrev, grayNext, prevPoints, nextPoints, status, err);
+//
+//        List<Point> goodNew = new ArrayList<>();
+//        List<Point> goodPrev = new ArrayList<>();
+//
+//        for (int i = 0; i < status.rows(); i++) {
+//            if (status.get(i, 0)[0] == 1) {
+//                goodNew.add(nextPoints.toArray()[i]);
+//                goodPrev.add(prevPoints.toArray()[i]);
+//            }
+//        }
+//
+//        if (goodNew.size() < 2) {
+//            Log.e(TAG, "Not enough points tracked");
+//            return null;
+//        }
+//
+//        Point[] trackedLine = fitLineRobust(goodNew);
+//
+//        if (trackedLine != null) {
+//            double currentSlope = calculateSlope(trackedLine[0], trackedLine[1]);
+//            if (Math.abs(currentSlope - originalSlope) > SLOPE_THRESHOLD) {
+//                Log.w(TAG, "Slope changed too much, reverting to previous line");
+//                trackedLine = fitLineRobust(goodPrev);
+//            }
+//
+//            // Adjust line length to match original
+//            trackedLine = adjustLineLength(trackedLine[0], trackedLine[1], originalLength);
+//        }
+//
+//        // Update for next iteration
+//        MatOfPoint2f goodNewMat = new MatOfPoint2f();
+//        goodNewMat.fromList(goodNew);
+//        prevPoints = goodNewMat;
+//        newImage.copyTo(previousImage);
+//
+//        return trackedLine;
+//    }
+//
+//    private Mat createLineMask(Point[] selectedLine, Size imageSize) {
+//        Mat mask = Mat.zeros(imageSize, CvType.CV_8U);
+//        Imgproc.line(mask, selectedLine[0], selectedLine[1], new Scalar(255), 5);
+//        return mask;
+//    }
+//
+//    private Point[] fitLineRobust(List<Point> points) {
+//        if (points.size() < 2) {
+//            return null;
+//        }
+//
+//        MatOfPoint2f pointsMat = new MatOfPoint2f();
+//        pointsMat.fromList(points);
+//
+//        Mat lineParams = new Mat();
+//        Imgproc.fitLine(pointsMat, lineParams, Imgproc.DIST_HUBER, 0, 0.01, 0.01);
+//
+//        double vx = lineParams.get(0, 0)[0];
+//        double vy = lineParams.get(1, 0)[0];
+//        double x = lineParams.get(2, 0)[0];
+//        double y = lineParams.get(3, 0)[0];
+//
+//        Point start = new Point(x - vx * 1000, y - vy * 1000);
+//        Point end = new Point(x + vx * 1000, y + vy * 1000);
+//
+//        return new Point[]{start, end};
+//    }
+//
+//    private double calculateSlope(Point p1, Point p2) {
+//        return (p2.y - p1.y) / (p2.x - p1.x);
+//    }
+//
+//    private double calculateDistance(Point p1, Point p2) {
+//        return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+//    }
+//
+//    private Point[] adjustLineLength(Point start, Point end, double targetLength) {
+//        double currentLength = calculateDistance(start, end);
+//        double scale = targetLength / currentLength;
+//
+//        double midX = (start.x + end.x) / 2;
+//        double midY = (start.y + end.y) / 2;
+//
+//        Point newStart = new Point(
+//                midX + (start.x - midX) * scale,
+//                midY + (start.y - midY) * scale
+//        );
+//
+//        Point newEnd = new Point(
+//                midX + (end.x - midX) * scale,
+//                midY + (end.y - midY) * scale
+//        );
+//
+//        return new Point[]{newStart, newEnd};
+//    }
+//}
