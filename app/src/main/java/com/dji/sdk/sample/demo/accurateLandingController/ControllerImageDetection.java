@@ -417,7 +417,7 @@ public class ControllerImageDetection {
 //        showToast(Arrays.toString(detectedLine));
         Log.d(TAG, Arrays.toString(detectedLine));
 
-        if (detectedLine != null && ((detectedLine[0].y > 0 && detectedLine[0].y < 480) || (detectedLine[1].y > 0 && detectedLine[1].y < 480))) {
+        if (!step2 && !step3 && detectedLine != null && ((detectedLine[0].y > 0 && detectedLine[0].y < 480) || (detectedLine[1].y > 0 && detectedLine[1].y < 480))) {
             // Line is detected, proceed to position it at the bottom range
             Imgproc.line(imgToProcess, detectedLine[0], detectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
@@ -427,10 +427,12 @@ public class ControllerImageDetection {
             // Step 2: Move forward until the line is in target range (10-20 pixels from the bottom)
             if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
 //                showToast("Aligning line to bottom range.");
-                ControlCommand landingCommand = landingAlgorithm.moveForward(dt, imgToProcess);
 
-                updateLog(landingCommand, 1, detectedLine, lineCenterY, 1);
-                return landingCommand;
+                ControlCommand moveForwardCommand = landingAlgorithm.moveForward(dt, imgToProcess);
+
+                updateLog(moveForwardCommand, 1, detectedLine, lineCenterY, 2);
+
+                return moveForwardCommand;
             }
 
             // If the line is in the target position, adjust gimbal to prepare for blind spot movement
@@ -438,18 +440,20 @@ public class ControllerImageDetection {
             gimbalController.rotateGimbalToDegree(-90);
             step2 = true;
 
-        } else if (!step2 && !step3) {
-            updateLog(null, 0, null, 0, 0);
-            Point[] prevLine = trackLine.getPrevLine();
-            Point middlePoint = new Point((prevLine[0].x + prevLine[1].x) / 2.0, (prevLine[0].y + prevLine[1].y) / 2.0);
-            edgeNotFoundWithClickedPoint(middlePoint);
         }
 
-        if (step2) {
+//        else if (!step2 && !step3) {
+//            updateLog(null, 0, null, 0, 0);
+//            Point[] prevLine = trackLine.getPrevLine();
+//            Point middlePoint = new Point((prevLine[0].x + prevLine[1].x) / 2.0, (prevLine[0].y + prevLine[1].y) / 2.0);
+//            edgeNotFoundWithClickedPoint(middlePoint);
+//        }
+
+        if (step2){
             // If we lose the line (likely due to close proximity), proceed with blind spot movement
             showToast("Step 2: Moving by blind spot distance.");
 
-            double blindSpotDistance = calculateBlindSpotDistance(altitude);
+            double blindSpotDistance = calculateBlindSpotDistance(dataFromDrone.getAltitudeBelow());
             showToast("blindSpotDistance: " + blindSpotDistance);
             ControlCommand blindSpotMoveCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
 
@@ -466,24 +470,25 @@ public class ControllerImageDetection {
 
 //            detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
 //            if (detectedLine != null) {
-            showToast("Line detected. Landing now.");
+                showToast("Line detected. Landing now.");
+                if (isHazardous(dataFromDrone.getAltitudeBelow())){
+                    showToast("Landing aborted due to hazards.");
+                    ControlCommand stayOnPlaceCommand = stayOnPlace();
+                    updateLog(stayOnPlaceCommand, 0, detectedLine, 0, 3);
+                    return stayOnPlaceCommand;
 
-            if (isHazardous()) {
-                showToast("Landing aborted due to hazards.");
+                } else {
+                    showToast("No hazards. Landing.");
 
-                ControlCommand stayOnPlaceCommand = stayOnPlace();
-                updateLog(stayOnPlaceCommand, 0, detectedLine, 0, 3);
-                return stayOnPlaceCommand;
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
 
-            } else {
-                updateLog(null, 0, detectedLine, 0, 3);
-                flightControlMethods.land(this::stopEdgeDetection, this::rotateGimbalToMinus45);
-            }
-
-//            } else {
-//                showToast("No line detected. Hovering in place.");
-//                return stayOnPlace();
-//            }
+                    updateLog(null, 0, detectedLine, 0, 3);
+                    flightControlMethods.land(this::stopEdgeDetection, this::rotateGimbalToMinus45);
+                }
 
             step3 = false;
         }
@@ -497,11 +502,11 @@ public class ControllerImageDetection {
         return altitude * blindSpotRatio;
     }
 
-    public boolean isHazardous() {
+    public boolean isHazardous(double altitude) {
         Log.d(TAG, "entered checkForHazards");
 
         DroneSafety droneSafety = new DroneSafety(yoloDetector);
-        return droneSafety.checkForHazards(current_image);
+        return droneSafety.checkForHazardsInRegion(current_image, altitude);
     }
 
 //    public ControlCommand alignAndLand(Mat imgToProcess) {

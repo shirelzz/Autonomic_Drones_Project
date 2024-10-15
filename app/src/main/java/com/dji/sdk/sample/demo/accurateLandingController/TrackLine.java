@@ -40,6 +40,8 @@ public class TrackLine {
     // Variables to store original line properties
     private Point[] currentLine;
     private Point[] prevLine;
+    private static final double CROP_SIZE_CM = 60.0;
+
     private double originalSlope, originalLineLength;
     private Context context;
     private static final String TAG = "TrackLine";
@@ -98,6 +100,12 @@ public class TrackLine {
         previousImage = new Mat();
         image.copyTo(previousImage);
     }
+
+//    public Point[] findLineInRegion(){
+//
+//    }
+
+//    public Mat cropImage (){}
 
     // Track the selected line in a new image - first try
 //    public Point[] trackSelectedLineUsingOpticalFlow(Mat newImage) {

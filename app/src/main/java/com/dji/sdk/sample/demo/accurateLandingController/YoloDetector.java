@@ -121,6 +121,23 @@ public class YoloDetector {
         return detectedObjects;
     }
 
+    public List<Rect2d> detectObjectsInRegion(Mat image, List<String> targetClasses, Rect2d regionOfInterest, float confThreshold, float nmsThreshold) {
+        List<Rect2d> detectedObjectsInRegion = new ArrayList<>();
+
+        // Detect objects in the entire image first
+        List<Rect2d> allDetectedObjects = detectObjects(image, targetClasses, confThreshold, nmsThreshold);
+
+        // Filter objects that are within the specified region
+        for (Rect2d box : allDetectedObjects) {
+            if (regionOfInterest.contains(new Point(box.x, box.y)) || regionOfInterest.contains(new Point(box.x + box.width, box.y + box.height))) {
+                detectedObjectsInRegion.add(box);
+            }
+        }
+
+        return detectedObjectsInRegion;
+    }
+
+
     public List<DetectedObject> detectObjectsWithClass(Mat image, List<String> targetClasses, float confThreshold, float nmsThreshold) {
         List<DetectedObject> detectedObjects = new ArrayList<>();
 

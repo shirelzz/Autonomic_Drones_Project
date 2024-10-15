@@ -29,7 +29,7 @@ public class LandingAlgorithm {
 
 
     public ControlCommand moveForward(double dt, Mat imgToProcess) {
-        float pitchCommand = (float) pitchPID.update(0.04, dt, 1.0);  // Example constant speed forward
+        float pitchCommand = (float) pitchPID.update(0.05, dt, 1.0);  // Example constant speed forward
         Imgproc.putText(imgToProcess, "(1) Moving Forward", new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
                 Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
         return new ControlCommand(pitchCommand, 0, 0);
@@ -38,7 +38,7 @@ public class LandingAlgorithm {
     public ControlCommand moveForwardByDistance(double distance, double dt, Mat imgToProcess) {
 
         // Decelerate as we approach the target
-        if (distance > 0.05) {  // Stop when within a 5 cm tolerance
+        if (distance > 0.03) {  // Stop when within a 5 cm tolerance
             float adjustedVelocity = (float) Math.min(distance / 2.0, maxVelocity);
             float pitchCommand = (float) pitchPID.update(adjustedVelocity, dt, maxVelocity);
             showToast("(2) Moving Forward" + distance);
