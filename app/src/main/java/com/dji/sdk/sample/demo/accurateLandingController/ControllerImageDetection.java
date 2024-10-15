@@ -29,6 +29,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,6 +115,9 @@ public class ControllerImageDetection {
 
     private int bottomTargetRangeMin = imageHeight - 50;  // Target range 10-50 pixels from bottom
     private int bottomTargetRangeMax = imageHeight - 20;
+
+    private boolean step2 = false;
+    private boolean step3 = false;
 
     //constructor
     public ControllerImageDetection(DataFromDrone dataFromDrone,
@@ -260,6 +264,10 @@ public class ControllerImageDetection {
         first_detect = true;
     }
 
+    public void rotateGimbalToMinus45() {
+        gimbalController.rotateGimbalToDegree(-45);
+    }
+
     // Method to find the closest line to the point where the user clicked
     private void findClosestLine(Mat imgToProcess) {
         Log.i("EdgeDetect", "Hey");
@@ -355,47 +363,87 @@ public class ControllerImageDetection {
         prevTime = currTime;
 
         double altitude = dataFromDrone.getAltitudeBelow();
-        // Step 1: Detect the line and get the center of the line segment
-//        Point[] detectedLine = trackLine.trackLine(imgToProcess);
-        Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
 
-        if (detectedLine == null && !inLandingProcess) {
-            return stayOnPlace();  // Hover if no line is detected
-        }
-        if (detectedLine != null) {
+        // Step 1: Detect the line and get the center of the line segment
+        Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+//        showToast(Arrays.toString(detectedLine));
+        Log.d(TAG, Arrays.toString(detectedLine));
+
+        if (detectedLine != null && ( (detectedLine[0].y > 0 && detectedLine[0].y < 480) || (detectedLine[1].y > 0 && detectedLine[1].y < 480) ) ) {
+            // Line is detected, proceed to position it at the bottom range
             inLandingProcess = false;
-//        selectedLine = detectedLine;
             Imgproc.line(imgToProcess, detectedLine[0], detectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
-            // Calculate vertical distance to place the line near the bottom
+            // Calculate the y position of the line center
             double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
 
-            // Step 2: If line is not within 10-20 pixels from the bottom, move forward
+            // Step 2: Move forward until the line is in target range (10-20 pixels from the bottom)
             if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
-                showToast("Aligning line to bottom range.");
+//                showToast("Aligning line to bottom range.");
                 return landingAlgorithm.moveForward(dt, imgToProcess);
             }
-        }
-        // Step 3: Move forward the blind spot distance based on altitude
-        double blindSpotDistance = calculateBlindSpotDistance(altitude);
-        showToast("Moving forward by blind spot distance.");
 
-        ControlCommand blindSpotMoveCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
-        inLandingProcess = true;
-        if (blindSpotMoveCommand.getPitch() == 0 && blindSpotMoveCommand.getRoll() == 0 && blindSpotMoveCommand.getVerticalThrottle() == 0) {
-            // Step 4: Land when the blind spot distance is covered
-//            flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
-            flightControlMethods.land(this::stopEdgeDetection, null);
+            // If the line is in the target position, adjust gimbal to prepare for blind spot movement
+            showToast("Line positioned correctly. Preparing for blind spot movement.");
+            gimbalController.rotateGimbalToDegree(-90);
+
+            step2 = true;
+
         }
 
-        return blindSpotMoveCommand;
+        ControlCommand blindSpotMoveCommand = null;
 
+        if (step2){
+            // If we lose the line (likely due to close proximity), proceed with blind spot movement
+            showToast("Step 2: Moving by blind spot distance.");
+
+            double blindSpotDistance = calculateBlindSpotDistance(altitude);
+            showToast("blindSpotDistance: " + blindSpotDistance);
+            blindSpotMoveCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
+
+            step2 = false;
+            step3 = true;
+
+            return blindSpotMoveCommand;
+        }
+
+        if (step3) {
+            // Step 3: After moving forward by the blind spot distance, check if the line is detected
+            showToast("Step 3: Land or Hover.");
+
+//            detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+//            if (detectedLine != null) {
+                showToast("Line detected. Landing now.");
+
+                if (isHazardous()){
+                    showToast("Landing aborted due to hazards.");
+                    stayOnPlace();
+                } else {
+                    flightControlMethods.land(this::stopEdgeDetection, this::rotateGimbalToMinus45);
+                }
+
+//            } else {
+//                showToast("No line detected. Hovering in place.");
+//                return stayOnPlace();
+//            }
+
+            step3 = false;
+        }
+
+        return null;  // No further movement command if line positioning is still in process
     }
 
     private double calculateBlindSpotDistance(double altitude) {
         // Based on your measurements: for every 0.7 meters altitude, there is a 0.3 meters blind spot.
         double blindSpotRatio = 0.3 / 0.7;
         return altitude * blindSpotRatio;
+    }
+
+    public boolean isHazardous() {
+        Log.d(TAG, "entered checkForHazards");
+
+        DroneSafety droneSafety = new DroneSafety(yoloDetector);
+        return droneSafety.checkForHazards(current_image);
     }
 
 //    public ControlCommand alignAndLand(Mat imgToProcess) {

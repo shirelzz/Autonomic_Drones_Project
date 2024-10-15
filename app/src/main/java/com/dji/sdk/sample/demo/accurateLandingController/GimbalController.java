@@ -154,6 +154,12 @@ public class GimbalController implements gimbelListener {
                 ToastUtils.setResultToToast("Gimbal rotated successfully to degree: " + finalDegree);
             }
         });
+
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public boolean isFinishRotate() {

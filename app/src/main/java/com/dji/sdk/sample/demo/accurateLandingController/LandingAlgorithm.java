@@ -5,6 +5,7 @@ import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 import com.dji.sdk.sample.demo.kcgremotecontroller.VLD_PID;
+import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 
 
 public class LandingAlgorithm {
@@ -28,21 +29,27 @@ public class LandingAlgorithm {
 
 
     public ControlCommand moveForward(double dt, Mat imgToProcess) {
-        float pitchCommand = (float) pitchPID.update(0.05, dt, 1.0);  // Example constant speed forward
-        Imgproc.putText(imgToProcess, "Moving Forward", new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
+        float pitchCommand = (float) pitchPID.update(0.04, dt, 1.0);  // Example constant speed forward
+        Imgproc.putText(imgToProcess, "(1) Moving Forward", new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
                 Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
         return new ControlCommand(pitchCommand, 0, 0);
     }
 
     public ControlCommand moveForwardByDistance(double distance, double dt, Mat imgToProcess) {
-        double currentDistance = Math.abs(distance);
-        if (currentDistance > 0.05) {  // Stop when close enough (5 cm tolerance)
-            float pitchCommand = (float) pitchPID.update(currentDistance, dt, 1.0);
-            Imgproc.putText(imgToProcess, "Moving Forward by " + currentDistance, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
+
+        // Decelerate as we approach the target
+        if (distance > 0.05) {  // Stop when within a 5 cm tolerance
+            float adjustedVelocity = (float) Math.min(distance / 2.0, maxVelocity);
+            float pitchCommand = (float) pitchPID.update(adjustedVelocity, dt, maxVelocity);
+            showToast("(2) Moving Forward" + distance);
+            Imgproc.putText(imgToProcess, "(2) Moving Forward by " + distance, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
                     Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
             return new ControlCommand(pitchCommand, 0, 0);
         } else {
-            return new ControlCommand(0, 0, 0);  // Stop movement
+            // Stop when within a 5 cm tolerance
+            Imgproc.putText(imgToProcess, "(3) Stopping", new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
+                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+            return new ControlCommand(0, 0, 0);
         }
     }
 
