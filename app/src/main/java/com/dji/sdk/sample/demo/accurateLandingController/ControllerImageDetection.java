@@ -125,6 +125,7 @@ public class ControllerImageDetection {
 
     private boolean step2 = false;
     private boolean step3 = false;
+    private double prevDistance;
 
     //constructor
     public ControllerImageDetection(DataFromDrone dataFromDrone,
@@ -224,33 +225,6 @@ public class ControllerImageDetection {
         this.descentRate = descentRate;
     }
 
-    public void initPIDs(double p, double i, double d, double max_i, String type) {
-
-        if (type.equals("roll")) {
-            if (roll_pid == null) {
-                roll_pid = new VLD_PID(p, i, d, max_i);
-            } else {
-                roll_pid.setPID(p, i, d, max_i);
-            }
-        }
-
-        if (type.equals("pitch")) {
-            if (pitch_pid == null) {
-                pitch_pid = new VLD_PID(p, i, d, max_i);
-            } else {
-                pitch_pid.setPID(p, i, d, max_i);
-            }
-        }
-
-        if (type.equals("throttle")) {
-            if (throttle_pid == null) {
-                throttle_pid = new VLD_PID(p, i, d, max_i);
-            } else {
-                throttle_pid.setPID(p, i, d, max_i);
-            }
-        }
-    }
-
 //    public ControlCommand alignAndLand(Mat imgToProcess) {
 //        long currTime = System.currentTimeMillis();
 //        double dt = (currTime - prevTime) / 1000.0;
@@ -286,6 +260,33 @@ public class ControllerImageDetection {
 //            return alignCommand;
 //        }
 //    }
+
+    public void initPIDs(double p, double i, double d, double max_i, String type) {
+
+        if (type.equals("roll")) {
+            if (roll_pid == null) {
+                roll_pid = new VLD_PID(p, i, d, max_i);
+            } else {
+                roll_pid.setPID(p, i, d, max_i);
+            }
+        }
+
+        if (type.equals("pitch")) {
+            if (pitch_pid == null) {
+                pitch_pid = new VLD_PID(p, i, d, max_i);
+            } else {
+                pitch_pid.setPID(p, i, d, max_i);
+            }
+        }
+
+        if (type.equals("throttle")) {
+            if (throttle_pid == null) {
+                throttle_pid = new VLD_PID(p, i, d, max_i);
+            } else {
+                throttle_pid.setPID(p, i, d, max_i);
+            }
+        }
+    }
 
     public void setBitmapFrame(Bitmap bitmap) {
         try {
@@ -423,7 +424,7 @@ public class ControllerImageDetection {
 
             // Calculate the y position of the line center
             double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
-
+            prevDistance = lineCenterY;
             // Step 2: Move forward until the line is in target range (10-20 pixels from the bottom)
             if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
 //                showToast("Aligning line to bottom range.");
@@ -440,16 +441,20 @@ public class ControllerImageDetection {
             gimbalController.rotateGimbalToDegree(-90);
             step2 = true;
 
-        }
-
-//        else if (!step2 && !step3) {
+        } 
+//        else if (!step2 && !step3 && (prevDistance < bottomTargetRangeMin || prevDistance > bottomTargetRangeMax)) {
 //            updateLog(null, 0, null, 0, 0);
 //            Point[] prevLine = trackLine.getPrevLine();
 //            Point middlePoint = new Point((prevLine[0].x + prevLine[1].x) / 2.0, (prevLine[0].y + prevLine[1].y) / 2.0);
 //            edgeNotFoundWithClickedPoint(middlePoint);
 //        }
+//        else if (!(prevDistance < bottomTargetRangeMin || prevDistance > bottomTargetRangeMax)) {
+//            showToast("Line positioned correctly. Preparing for blind spot movement.");
+//            gimbalController.rotateGimbalToDegree(-90);
+//            step2 = true;
+//        }
 
-        if (step2){
+        if (step2) {
             // If we lose the line (likely due to close proximity), proceed with blind spot movement
             showToast("Step 2: Moving by blind spot distance.");
 
@@ -457,9 +462,10 @@ public class ControllerImageDetection {
             showToast("blindSpotDistance: " + blindSpotDistance);
             ControlCommand blindSpotMoveCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
 
-            step2 = false;
             step3 = true;
-//            updateLog(blindSpotMoveCommand, 1, detectedLine, blindSpotDistance, 2);
+            step2 = false;
+//            showToast("step3: " + step3 + ", step2: " + step2);
+            updateLog(blindSpotMoveCommand, 1, detectedLine, blindSpotDistance, 2);
 
             return blindSpotMoveCommand;
         }
@@ -468,14 +474,17 @@ public class ControllerImageDetection {
             // Step 3: After moving forward by the blind spot distance, check if the line is detected
             showToast("Step 3: Land or Hover.");
 
-//            detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
+//            detectedLine = (Point[]) trackLine.findLineInRegion(imgToProcess, dataFromDrone.getAltitudeBelow());
+//            showToast(Arrays.toString(detectedLine));
 //            if (detectedLine != null) {
-                showToast("Line detected. Landing now.");
-                if (isHazardous(dataFromDrone.getAltitudeBelow())){
-                    showToast("Landing aborted due to hazards.");
-                    ControlCommand stayOnPlaceCommand = stayOnPlace();
-                    updateLog(stayOnPlaceCommand, 0, detectedLine, 0, 3);
-                    return stayOnPlaceCommand;
+//                showToast("Line detected. Landing now.");
+//            }
+            if (isHazardous(dataFromDrone.getAltitudeBelow())){
+                showToast("Landing aborted due to hazards.");
+
+                ControlCommand stayOnPlaceCommand = stayOnPlace();
+                updateLog(stayOnPlaceCommand, 0, detectedLine, 0, 3);
+                return stayOnPlaceCommand;
 
                 } else {
                     showToast("No hazards. Landing.");

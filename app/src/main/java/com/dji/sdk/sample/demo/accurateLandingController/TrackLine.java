@@ -1,6 +1,5 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
-import static com.dji.sdk.sample.demo.accurateLandingController.ALRemoteControllerView.TAG;
 import static com.dji.sdk.sample.internal.utils.ToastUtils.showToast;
 import static org.opencv.android.Utils.matToBitmap;
 
@@ -33,6 +32,14 @@ import java.util.List;
 
 public class TrackLine {
 
+    private static final double CROP_SIZE_CM = 60.0;
+    private static final String TAG = "TrackLine";
+    private static final double SLOPE_THRESHOLD = 0.1;
+    private static final int MAX_CORNERS = 100;
+    private static final double QUALITY_LEVEL = 0.01;
+    private static final double MIN_DISTANCE = 10;
+    private static final int FEATURE_DISTANCE = 10;
+    private static final int MAX_FRAMES_WITHOUT_DETECTION = 10;
     // Variables for storing the features to track
     MatOfPoint selectedLineFeatures, originalLineFeatures;
     MatOfPoint2f prevPoints, currPoints;
@@ -40,18 +47,8 @@ public class TrackLine {
     // Variables to store original line properties
     private Point[] currentLine;
     private Point[] prevLine;
-    private static final double CROP_SIZE_CM = 60.0;
-
     private double originalSlope, originalLineLength;
     private Context context;
-    private static final String TAG = "TrackLine";
-    private static final double SLOPE_THRESHOLD = 0.1;
-    private static final int MAX_CORNERS = 100;
-    private static final double QUALITY_LEVEL = 0.01;
-    private static final double MIN_DISTANCE = 10;
-    private static final int FEATURE_DISTANCE = 3;
-
-    private static final int MAX_FRAMES_WITHOUT_DETECTION = 10;
 
     public TrackLine(Context context) {
         this.context = context;
@@ -101,11 +98,58 @@ public class TrackLine {
         image.copyTo(previousImage);
     }
 
-//    public Point[] findLineInRegion(){
-//
-//    }
+    public Object[] findLineInRegion(Mat imageToProcess, double altitude) {
+        showToast("findLineInRegion");
+        Mat croppedImage = cropImage(imageToProcess, altitude);
+        List<Object[]> allEdges = EdgeDetection.detectLines(croppedImage, altitude, true, 0);
+        for (Object[] points : allEdges) {
+            Imgproc.line(imageToProcess, (Point) points[0], (Point) points[1], new Scalar(0, 0, 255), 3, Imgproc.LINE_AA, 0);
+        }
+        showToast(String.valueOf(allEdges.size()));
 
-//    public Mat cropImage (){}
+        if (allEdges.size() > 0) {
+            return allEdges.get(0);
+        }
+        return null;
+    }
+
+    public Mat cropImage(Mat image, double altitude) {
+        // Calculate real-world dimensions
+        double[] realDimensions = calculateRealDimensions(altitude);
+        double realWidth = realDimensions[0];
+        double realHeight = realDimensions[1];
+
+        // Calculate pixels per centimeter
+        double pixelsPerCmWidth = (double) image.width() / realWidth;
+        double pixelsPerCmHeight = (double) image.height() / realHeight;
+
+        // Calculate crop size in pixels (60x60 cm)
+        int cropSizePixels = (int) (CROP_SIZE_CM * Math.min(pixelsPerCmWidth, pixelsPerCmHeight));
+
+        // Calculate starting point for centered crop
+        int left = (image.width() - cropSizePixels) / 2;
+        int top = (image.height() - cropSizePixels) / 2;
+
+        // Define the region of interest (ROI)
+        Rect roi = new Rect(left, top, cropSizePixels, cropSizePixels);
+
+        // Perform the crop
+
+        return new Mat(image, roi);
+
+    }
+
+    private double[] calculateRealDimensions(double altitude) {
+        // Based on the given cases, we can derive a linear relationship
+        // between altitude and real-world dimensions
+        double widthToAltitudeRatio = 1.3333; // Derived from case 2 and 3
+        double heightToAltitudeRatio = 1.0; // Derived from all cases
+
+        double realWidth = altitude * widthToAltitudeRatio;
+        double realHeight = altitude * heightToAltitudeRatio;
+
+        return new double[]{realWidth, realHeight};
+    }
 
     // Track the selected line in a new image - first try
 //    public Point[] trackSelectedLineUsingOpticalFlow(Mat newImage) {
@@ -322,6 +366,7 @@ public class TrackLine {
 
         return mask;
     }
+
     public void saveImage(Bitmap bitmap) {
         File pictureFile = getOutputMediaFile();
         if (pictureFile == null) {
@@ -475,174 +520,3 @@ public class TrackLine {
 //        return numerator / denominator;
 //    }
 }
-
-
-//package com.dji.sdk.sample.demo.accurateLandingController;
-//
-//import android.content.Context;
-//import android.util.Log;
-//
-//import org.opencv.core.Core;
-//import org.opencv.core.CvType;
-//import org.opencv.core.Mat;
-//import org.opencv.core.MatOfByte;
-//import org.opencv.core.MatOfFloat;
-//import org.opencv.core.MatOfPoint;
-//import org.opencv.core.MatOfPoint2f;
-//import org.opencv.core.Point;
-//import org.opencv.core.Scalar;
-//import org.opencv.core.Size;
-//import org.opencv.imgproc.Imgproc;
-//import org.opencv.video.Video;
-//
-//import java.util.ArrayList;
-//import java.util.List;
-//
-//public class TrackLine {
-//    private static final String TAG = "TrackLine";
-//    private static final double SLOPE_THRESHOLD = 0.1;
-//    private static final int MAX_CORNERS = 100;
-//    private static final double QUALITY_LEVEL = 0.01;
-//    private static final double MIN_DISTANCE = 10;
-//
-//    private Context context;
-//    private Mat previousImage;
-//    private MatOfPoint2f prevPoints;
-//    private double originalSlope;
-//    private double originalLength;
-//
-//    public TrackLine(Context context) {
-//        this.context = context;
-//    }
-//
-//    public void initializeTracking(Mat image, Point[] selectedLine) {
-//        if (selectedLine == null || selectedLine.length != 2) {
-//            throw new IllegalArgumentException("Selected line must contain exactly two points");
-//        }
-//
-//        previousImage = new Mat();
-//        image.copyTo(previousImage);
-//
-//        originalSlope = calculateSlope(selectedLine[0], selectedLine[1]);
-//        originalLength = calculateDistance(selectedLine[0], selectedLine[1]);
-//
-//        Mat mask = createLineMask(selectedLine, image.size());
-//        Mat grayImage = new Mat();
-//        Imgproc.cvtColor(image, grayImage, Imgproc.COLOR_BGR2GRAY);
-//
-//        MatOfPoint corners = new MatOfPoint();
-//        Imgproc.goodFeaturesToTrack(grayImage, corners, MAX_CORNERS, QUALITY_LEVEL, MIN_DISTANCE, mask);
-//
-//        prevPoints = new MatOfPoint2f(corners.toArray());
-//    }
-//
-//    public Point[] trackLine(Mat newImage) {
-//        if (previousImage == null || prevPoints == null || prevPoints.empty()) {
-//            Log.e(TAG, "Tracking not initialized properly");
-//            return null;
-//        }
-//
-//        MatOfPoint2f nextPoints = new MatOfPoint2f();
-//        MatOfByte status = new MatOfByte();
-//        MatOfFloat err = new MatOfFloat();
-//
-//        Mat grayPrev = new Mat();
-//        Mat grayNext = new Mat();
-//        Imgproc.cvtColor(previousImage, grayPrev, Imgproc.COLOR_BGR2GRAY);
-//        Imgproc.cvtColor(newImage, grayNext, Imgproc.COLOR_BGR2GRAY);
-//
-//        Video.calcOpticalFlowPyrLK(grayPrev, grayNext, prevPoints, nextPoints, status, err);
-//
-//        List<Point> goodNew = new ArrayList<>();
-//        List<Point> goodPrev = new ArrayList<>();
-//
-//        for (int i = 0; i < status.rows(); i++) {
-//            if (status.get(i, 0)[0] == 1) {
-//                goodNew.add(nextPoints.toArray()[i]);
-//                goodPrev.add(prevPoints.toArray()[i]);
-//            }
-//        }
-//
-//        if (goodNew.size() < 2) {
-//            Log.e(TAG, "Not enough points tracked");
-//            return null;
-//        }
-//
-//        Point[] trackedLine = fitLineRobust(goodNew);
-//
-//        if (trackedLine != null) {
-//            double currentSlope = calculateSlope(trackedLine[0], trackedLine[1]);
-//            if (Math.abs(currentSlope - originalSlope) > SLOPE_THRESHOLD) {
-//                Log.w(TAG, "Slope changed too much, reverting to previous line");
-//                trackedLine = fitLineRobust(goodPrev);
-//            }
-//
-//            // Adjust line length to match original
-//            trackedLine = adjustLineLength(trackedLine[0], trackedLine[1], originalLength);
-//        }
-//
-//        // Update for next iteration
-//        MatOfPoint2f goodNewMat = new MatOfPoint2f();
-//        goodNewMat.fromList(goodNew);
-//        prevPoints = goodNewMat;
-//        newImage.copyTo(previousImage);
-//
-//        return trackedLine;
-//    }
-//
-//    private Mat createLineMask(Point[] selectedLine, Size imageSize) {
-//        Mat mask = Mat.zeros(imageSize, CvType.CV_8U);
-//        Imgproc.line(mask, selectedLine[0], selectedLine[1], new Scalar(255), 5);
-//        return mask;
-//    }
-//
-//    private Point[] fitLineRobust(List<Point> points) {
-//        if (points.size() < 2) {
-//            return null;
-//        }
-//
-//        MatOfPoint2f pointsMat = new MatOfPoint2f();
-//        pointsMat.fromList(points);
-//
-//        Mat lineParams = new Mat();
-//        Imgproc.fitLine(pointsMat, lineParams, Imgproc.DIST_HUBER, 0, 0.01, 0.01);
-//
-//        double vx = lineParams.get(0, 0)[0];
-//        double vy = lineParams.get(1, 0)[0];
-//        double x = lineParams.get(2, 0)[0];
-//        double y = lineParams.get(3, 0)[0];
-//
-//        Point start = new Point(x - vx * 1000, y - vy * 1000);
-//        Point end = new Point(x + vx * 1000, y + vy * 1000);
-//
-//        return new Point[]{start, end};
-//    }
-//
-//    private double calculateSlope(Point p1, Point p2) {
-//        return (p2.y - p1.y) / (p2.x - p1.x);
-//    }
-//
-//    private double calculateDistance(Point p1, Point p2) {
-//        return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-//    }
-//
-//    private Point[] adjustLineLength(Point start, Point end, double targetLength) {
-//        double currentLength = calculateDistance(start, end);
-//        double scale = targetLength / currentLength;
-//
-//        double midX = (start.x + end.x) / 2;
-//        double midY = (start.y + end.y) / 2;
-//
-//        Point newStart = new Point(
-//                midX + (start.x - midX) * scale,
-//                midY + (start.y - midY) * scale
-//        );
-//
-//        Point newEnd = new Point(
-//                midX + (end.x - midX) * scale,
-//                midY + (end.y - midY) * scale
-//        );
-//
-//        return new Point[]{newStart, newEnd};
-//    }
-//}
