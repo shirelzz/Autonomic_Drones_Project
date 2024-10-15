@@ -27,15 +27,14 @@ public class AccuracyLog {
             "satelliteCount", "gpsSignalLevel", "batRemainingTime", "batCharge",
             "saw_target", "edgeX", "edgeY", "edgeDist", "PitchOutput", "RollOutput", "ThrottleOutput",
 //            "ErrorX","ErrorY","Pp","Ip","Dp","Pr","Ir","Dr","Pt","It","Dt","MaxI",
-            "AutonomousMode", "EdgeDetectionMode", "GuardianMode", "movementDetectionMessage"};
+            "AutonomousMode", "EdgeDetectionMode", "GuardianMode", "movementDetectionMessage", "LandingSteps", "isLanding"};
+    @SuppressLint("SimpleDateFormat")
     private final DateFormat df = new SimpleDateFormat("dd/MM/yyyy , HH:mm:ss");
     private final DecimalFormat dcF = new DecimalFormat("##.####");
     public Map<String, Double> algoLog;
     TextView textViewLog, text;
     private BufferedWriter logFile;
-    private StringBuilder currentRow;
-    //            + ",Real/kalman,MarkerX,MarkerY,MarkerZ,PitchOutput,RollOutput,ErrorX,ErrorY,Pp,Ip,Dp,Pr,Ir,Dr,Pt,It,Dt,MaxI,AutonomousMode"
-    private Context context;
+    private final Context context;
 
     /**
      * Constructor initializing the log file and setting up the TextView for displaying information.
@@ -60,6 +59,7 @@ public class AccuracyLog {
      */
     private void initLogFile() {
         File externalStorage = context.getExternalFilesDir(null);
+        assert externalStorage != null;
         String fileName = externalStorage.getAbsolutePath() + "/DroneLog" + System.currentTimeMillis() + ".csv";
         File log = new File(fileName);
 
@@ -101,7 +101,7 @@ public class AccuracyLog {
         this.algoLog = algo;
     }
 
-    public void appendLog(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus, boolean isEdgeDetectionMode, boolean isMovementDetectionRunning, String movementDetectionMessage) {
+    public void appendLog(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus, boolean isEdgeDetectionMode, boolean isMovementDetectionRunning, String movementDetectionMessage, boolean isLanding) {
 
         if (logFile == null) {
             return;
@@ -171,6 +171,9 @@ public class AccuracyLog {
                 sb.append(isEdgeDetectionMode).append(",");
                 sb.append(isMovementDetectionRunning).append(",");
                 sb.append(movementDetectionMessage).append(",");
+                sb.append(format(controlStatus.get("LandingSteps"))).append(",");
+                sb.append(isLanding).append(",");
+
             }
 
         } catch (Exception e) {
@@ -185,11 +188,6 @@ public class AccuracyLog {
             text.setText(e.getMessage());
             e.printStackTrace();
         }
-    }
-
-    public String getCurrentRow() {
-        if (currentRow == null) return null;
-        return currentRow.toString();
     }
 
     private String format(Double data) {
@@ -223,9 +221,9 @@ public class AccuracyLog {
             textViewLog.setText(debug.toString());
     }
 
-    public void updateData(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus, boolean isEdgeDetectionMode, boolean isMovementDetectionRunning, String movementDetectionMessage) {
+    public void updateData(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus, boolean isEdgeDetectionMode, boolean isMovementDetectionRunning, String movementDetectionMessage, boolean isLanding) {
         dataOnScreen(droneTelemetry);
-        appendLog(droneTelemetry, controlStatus, isEdgeDetectionMode, isMovementDetectionRunning, movementDetectionMessage);
+        appendLog(droneTelemetry, controlStatus, isEdgeDetectionMode, isMovementDetectionRunning, movementDetectionMessage, isLanding);
     }
 
 }

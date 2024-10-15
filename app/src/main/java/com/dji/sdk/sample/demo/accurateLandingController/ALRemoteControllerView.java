@@ -371,7 +371,7 @@ public class ALRemoteControllerView extends RelativeLayout
         if (controllerImageDetection.isEdgeDetectionMode() && gimbalController.isFinishRotate()) {
             controllerImageDetection.setBitmapFrame(droneIMG);
         }
-        accuracyLog.updateData(dataFromDrone.getAll(), controllerImageDetection.getControlStatus(), controllerImageDetection.isEdgeDetectionMode(), isMovementDetectionRunning, movementDetector.getPrevAlertMessage());
+        accuracyLog.updateData(dataFromDrone.getAll(), controllerImageDetection.getControlStatus(), controllerImageDetection.isEdgeDetectionMode(), isMovementDetectionRunning, movementDetector.getPrevAlertMessage(), flightControlMethods.isStartLanding());
         if (!onGoToMode && !onGoToFMMMode) {
 //            mVideoSurface.setVisibility(View.VISIBLE);
             imgView.setVisibility(View.VISIBLE);

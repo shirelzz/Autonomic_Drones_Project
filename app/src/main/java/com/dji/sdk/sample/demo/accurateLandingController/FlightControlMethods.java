@@ -42,7 +42,11 @@ public class FlightControlMethods {
     private boolean virtualStickEnabled = false;
     //    private boolean inLandingMode = false;
     private long startTime; // Record the start time
+    private boolean startLanding = false; // Record the start time
 
+    public boolean isStartLanding() {
+        return startLanding;
+    }
 
     /**
      * Default constructor initializes the FlightControlMethods class
@@ -193,8 +197,10 @@ public class FlightControlMethods {
         flightController.startLanding(djiError -> {
             if (djiError != null)
                 showToast(djiError.getDescription());
+            else startLanding = true;
         });
         flightController.confirmLanding(djiError -> {
+            startLanding = false;
             if (djiError != null) {
                 showToast(djiError.getDescription());
             } else {
@@ -350,7 +356,7 @@ public class FlightControlMethods {
 
             flightController.sendVirtualStickFlightControlData(flightControlData, djiError -> {
                         Log.i("djiError", String.valueOf(djiError));
-                        ToastUtils.showToast("VS:" + flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
+//                        ToastUtils.showToast("VS:" + flightControlData.getPitch() + ", " + flightControlData.getRoll() + ", " + flightControlData.getYaw() + ", " + flightControlData.getVerticalThrottle());
 //                        movementFinished = true;
 //                            if (command.getControllMode() == VerticalControlMode.VELOCITY) {
 //

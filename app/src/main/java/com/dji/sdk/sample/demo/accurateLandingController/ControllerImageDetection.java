@@ -14,6 +14,8 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import androidx.annotation.Nullable;
+
 import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 import com.chaquo.python.android.AndroidPlatform;
@@ -65,10 +67,8 @@ public class ControllerImageDetection {
     private PyObject getOutputFunc;
     private int frameCounter = 0;
     private Map<String, Double> controlStatus = new HashMap<>();
-    private boolean inLandingProcess = false;
     //    private final ALRemoteControllerView mainView;
     private long prevTime = System.currentTimeMillis();
-    private boolean first_detect = true;
     private int not_found = 0;
     //    private double aspectRatio = 0;
 //    private double VerticalFOV = 0;
@@ -88,11 +88,11 @@ public class ControllerImageDetection {
     private Point clickedPoint = null;
     private double prevDyReal = 0;
     //    private VLD_PID pitch_pid = new VLD_PID(0.2, 0.005, 0.03, 0.5); // Further reduced gains
-    private VLD_PID throttle_pid = new VLD_PID(0.3, 0.005, 0.05, 0.5); // Reduced gains    private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); // side-to-side tilt of the drone
+//    private VLD_PID throttle_pid = new VLD_PID(0.3, 0.005, 0.05, 0.5); // Reduced gains
     private VLD_PID roll_pid = new VLD_PID(PP, II, DD, MAX_I); // side-to-side tilt of the drone
     private VLD_PID pitch_pid = new VLD_PID(PP, II, DD, MAX_I); // forward and backward tilt of the drone
     private VLD_PID yaw_pid = new VLD_PID(PP, II, DD, MAX_I); // left and right rotation
-    //    private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I); //vertical up and down motion
+    private VLD_PID throttle_pid = new VLD_PID(PP, II, DD, MAX_I); //vertical up and down motion
     private Context context;
     private int frameHeight, frameWidth;
     private GimbalController gimbalController;
@@ -170,7 +170,7 @@ public class ControllerImageDetection {
         this.lineSelected = false;
     }
 
-    private void updateLog(ControlCommand control, int numEdges, Point[] chosenEdge, double dy) {
+    private void updateLog(@Nullable ControlCommand control, int numEdges, Point[] chosenEdge, double dy, double steps) {
 
 //        saw_target, edgeX,edgeY,edgeDist,PitchOutput,RollOutput,ErrorX,ErrorY,P,I,D,MaxI
 
@@ -181,10 +181,11 @@ public class ControllerImageDetection {
             controlStatus.put("edgeY", (chosenEdge[0].y + chosenEdge[1].y) / 2.0);
             controlStatus.put("edgeDist", dy);
         }
-
-        controlStatus.put("PitchOutput", (double) control.getPitch());
-        controlStatus.put("RollOutput", (double) control.getRoll());
-        controlStatus.put("ThrottleOutput", (double) control.getVerticalThrottle());
+        if (control != null) {
+            controlStatus.put("PitchOutput", (double) control.getPitch());
+            controlStatus.put("RollOutput", (double) control.getRoll());
+            controlStatus.put("ThrottleOutput", (double) control.getVerticalThrottle());
+        }
 
 //        controlStatus.put("ErrorX", control.xError);
 //        controlStatus.put("ErrorY", control.yError);
@@ -202,6 +203,7 @@ public class ControllerImageDetection {
 //        controlStatus.put("Dt", control.d_Throttle);
 
 //        controlStatus.put("maxI", control.maxI);
+        controlStatus.put("LandingSteps", steps);
 
 
         boolean autonomous_mode = Objects.requireNonNull(DJISampleApplication.getAircraftInstance()).getFlightController().isVirtualStickControlModeAvailable();
@@ -304,7 +306,6 @@ public class ControllerImageDetection {
         lineSelected = false;
         clickedPoint = null;
         setEdgeDetectionMode(false);
-        first_detect = true;
     }
 
     public void rotateGimbalToMinus45() {
@@ -351,12 +352,26 @@ public class ControllerImageDetection {
         current_image_pos = pos;
     }
 
+    public void edgeNotFound() {
+        selectedLine = null; // The Line class represents a detected line in the image
+        lineSelected = false;
+        clickedPoint = null;
+    }
+
+    public void edgeNotFoundWithClickedPoint(Point clickedPoint) {
+        selectedLine = null; // The Line class represents a detected line in the image
+        lineSelected = false;
+        this.clickedPoint = clickedPoint;
+    }
+
     public ControlCommand moveDroneToLine(Mat imgToProcess) {
         long currTime = System.currentTimeMillis();
         double dt = (currTime - prevTime) / 1000.0;
         prevTime = currTime;
 
         if (selectedLine == null) {
+            showToast("Edge disappeared");
+            edgeNotFound();
             return null;
         }
 
@@ -365,6 +380,7 @@ public class ControllerImageDetection {
         double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
 
         if (currentLine == null) {
+            showToast("Edge disappeared");
             if (droneRelativeHeight <= 0.2f) {
                 showToast("Landing - Line lost");
                 pitchPID.reset();
@@ -372,6 +388,7 @@ public class ControllerImageDetection {
                 flightControlMethods.land(toggleMovementDetection, this::stopEdgeDetection);
                 return null;
             } else {
+                edgeNotFound();
                 return stayOnPlace();
             }
         }
@@ -384,7 +401,7 @@ public class ControllerImageDetection {
 //        double dyRealPitch = adjustDronePosition(selectedLine, imgToProcess.height(), droneRelativeHeight, 0);
 //        ControlCommand command = buildControlCommandEdgeFixedVelocity(dyRealPitch, dt, imgToProcess);
 
-        updateLog(command, 1, selectedLine, pixel_distance);
+        updateLog(command, 1, selectedLine, pixel_distance, 0);
         return command;
     }
 
@@ -400,9 +417,8 @@ public class ControllerImageDetection {
 //        showToast(Arrays.toString(detectedLine));
         Log.d(TAG, Arrays.toString(detectedLine));
 
-        if (detectedLine != null && ( (detectedLine[0].y > 0 && detectedLine[0].y < 480) || (detectedLine[1].y > 0 && detectedLine[1].y < 480) ) ) {
+        if (detectedLine != null && ((detectedLine[0].y > 0 && detectedLine[0].y < 480) || (detectedLine[1].y > 0 && detectedLine[1].y < 480))) {
             // Line is detected, proceed to position it at the bottom range
-            inLandingProcess = false;
             Imgproc.line(imgToProcess, detectedLine[0], detectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
             // Calculate the y position of the line center
@@ -411,29 +427,35 @@ public class ControllerImageDetection {
             // Step 2: Move forward until the line is in target range (10-20 pixels from the bottom)
             if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
 //                showToast("Aligning line to bottom range.");
-                return landingAlgorithm.moveForward(dt, imgToProcess);
+                ControlCommand landingCommand = landingAlgorithm.moveForward(dt, imgToProcess);
+
+                updateLog(landingCommand, 1, detectedLine, lineCenterY, 1);
+                return landingCommand;
             }
 
             // If the line is in the target position, adjust gimbal to prepare for blind spot movement
             showToast("Line positioned correctly. Preparing for blind spot movement.");
             gimbalController.rotateGimbalToDegree(-90);
-
             step2 = true;
 
+        } else if (!step2 && !step3) {
+            updateLog(null, 0, null, 0, 0);
+            Point[] prevLine = trackLine.getPrevLine();
+            Point middlePoint = new Point((prevLine[0].x + prevLine[1].x) / 2.0, (prevLine[0].y + prevLine[1].y) / 2.0);
+            edgeNotFoundWithClickedPoint(middlePoint);
         }
 
-        ControlCommand blindSpotMoveCommand = null;
-
-        if (step2){
+        if (step2) {
             // If we lose the line (likely due to close proximity), proceed with blind spot movement
             showToast("Step 2: Moving by blind spot distance.");
 
             double blindSpotDistance = calculateBlindSpotDistance(altitude);
             showToast("blindSpotDistance: " + blindSpotDistance);
-            blindSpotMoveCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
+            ControlCommand blindSpotMoveCommand = landingAlgorithm.moveForwardByDistance(blindSpotDistance, dt, imgToProcess);
 
             step2 = false;
             step3 = true;
+//            updateLog(blindSpotMoveCommand, 1, detectedLine, blindSpotDistance, 2);
 
             return blindSpotMoveCommand;
         }
@@ -444,14 +466,19 @@ public class ControllerImageDetection {
 
 //            detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
 //            if (detectedLine != null) {
-                showToast("Line detected. Landing now.");
+            showToast("Line detected. Landing now.");
 
-                if (isHazardous()){
-                    showToast("Landing aborted due to hazards.");
-                    stayOnPlace();
-                } else {
-                    flightControlMethods.land(this::stopEdgeDetection, this::rotateGimbalToMinus45);
-                }
+            if (isHazardous()) {
+                showToast("Landing aborted due to hazards.");
+
+                ControlCommand stayOnPlaceCommand = stayOnPlace();
+                updateLog(stayOnPlaceCommand, 0, detectedLine, 0, 3);
+                return stayOnPlaceCommand;
+
+            } else {
+                updateLog(null, 0, detectedLine, 0, 3);
+                flightControlMethods.land(this::stopEdgeDetection, this::rotateGimbalToMinus45);
+            }
 
 //            } else {
 //                showToast("No line detected. Hovering in place.");
@@ -709,10 +736,14 @@ public class ControllerImageDetection {
 
         // Step 3: Apply deadband
         if (Math.abs(distanceToLineMeters) < DEADBAND) {
+            if (altitudeMeters <= 0.2 && Math.abs(distanceToLineMeters) <= 0.01) {
+                showToast("Get Closer");
+                return new double[]{Math.max(-MAX_VELOCITY, Math.min(pitch_pid.update(0.0002, dt, 0.02), MAX_VELOCITY)), distanceToLineMeters};
+            }
             stayOnPlace();
             pitch_pid.reset();
             throttle_pid.reset();
-            return new double[]{0, 0};
+            return new double[]{0, distanceToLineMeters};
         }
 
         // Step 4: Use the PID controller to calculate the pitch velocity

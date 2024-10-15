@@ -38,6 +38,7 @@ public class TrackLine {
     MatOfPoint2f prevPoints, currPoints;
     Mat previousImage = null;
     // Variables to store original line properties
+    private Point[] currentLine;
     private Point[] prevLine;
     private double originalSlope, originalLineLength;
     private Context context;
@@ -46,8 +47,9 @@ public class TrackLine {
     private static final int MAX_CORNERS = 100;
     private static final double QUALITY_LEVEL = 0.01;
     private static final double MIN_DISTANCE = 10;
-    private static final int FEATURE_DISTANCE = 10;
+    private static final int FEATURE_DISTANCE = 3;
 
+    private static final int MAX_FRAMES_WITHOUT_DETECTION = 10;
 
     public TrackLine(Context context) {
         this.context = context;
@@ -63,6 +65,10 @@ public class TrackLine {
         originalSlope = (selectedLine[1].y - selectedLine[0].y) / (selectedLine[1].x - selectedLine[0].x);
     }
 
+    public Point[] getPrevLine() {
+        return prevLine;
+    }
+
     // Method to define the ROI around the previous line
     Point[] defineROI(Point[] previousLine, int margin) {
         // Calculate the points that define the rectangle ROI based on the line position and margin
@@ -75,7 +81,8 @@ public class TrackLine {
     public void detectLineFeatures(Point[] selectedLine, Mat image) {
         // Create a mask around the selected line
         Mat mask = createLineMask(selectedLine, image.size());
-        this.prevLine = selectedLine;
+        this.prevLine = this.currentLine;
+        this.currentLine = selectedLine;
         // Detect good features (corners, edges) along the selected line
         selectedLineFeatures = new MatOfPoint();
         storeOriginalLineProperties(selectedLine);
@@ -147,12 +154,12 @@ public class TrackLine {
 //            return trackedLine;
 //        }
 ////         // Check if the new line deviates too much from the original position
-////            double distance = Math.sqrt(Math.pow(trackedLine[0].x - prevLine[0].x, 2) +
-////                    Math.pow(trackedLine[0].y - prevLine[0].y, 2));
+////            double distance = Math.sqrt(Math.pow(trackedLine[0].x - currentLine[0].x, 2) +
+////                    Math.pow(trackedLine[0].y - currentLine[0].y, 2));
 ////
 ////            if (distance < 50) {  // Adjust based on your requirements
 ////                prevPoints = validCurrMat;
-////                this.prevLine = trackedLine;
+////                this.currentLine = trackedLine;
 ////                return trackedLine;
 ////            } else {
 ////                return null;  // Line has drifted too much, discard it
@@ -161,7 +168,7 @@ public class TrackLine {
 //    }
 
     public Point[] trackSelectedLineUsingOpticalFlow(Mat newImage) {
-        if (prevLine == null || previousImage == null || originalLineFeatures.empty()) {
+        if (currentLine == null || previousImage == null || originalLineFeatures.empty()) {
             return null;
         }
 
@@ -196,21 +203,21 @@ public class TrackLine {
             Mat homography = Calib3d.findHomography(goodPrevMat, goodNextMat, Calib3d.RANSAC, 3);
 
             if (!homography.empty()) {
-                MatOfPoint2f initialLineMat = new MatOfPoint2f(prevLine);
+                MatOfPoint2f initialLineMat = new MatOfPoint2f(currentLine);
                 MatOfPoint2f transformedPoints = new MatOfPoint2f();
                 Core.perspectiveTransform(initialLineMat, transformedPoints, homography);
 
                 Point[] transformedArray = transformedPoints.toArray();
                 if (transformedArray.length >= 2) {
-                    prevLine = new Point[]{transformedArray[0], transformedArray[1]};
+                    currentLine = new Point[]{transformedArray[0], transformedArray[1]};
                 }
             }
         }
 
-        detectLineFeatures(prevLine, newImage);
+        detectLineFeatures(currentLine, newImage);
         newImage.copyTo(previousImage);
 
-        return prevLine;
+        return currentLine;
     }
 
 
@@ -231,7 +238,7 @@ public class TrackLine {
 //            Point[] line = (Point[]) entry;
 //
 //            // Calculate how close the line is to the original line (Euclidean distance)
-//            double distance = Math.sqrt(Math.pow(line[0].x - prevLine[0].x, 2) + Math.pow(line[0].y - prevLine[0].y, 2));
+//            double distance = Math.sqrt(Math.pow(line[0].x - currentLine[0].x, 2) + Math.pow(line[0].y - currentLine[0].y, 2));
 //
 //            // Compare line features with the original line features
 //            Mat mask = createLineMask(line, image.size());
