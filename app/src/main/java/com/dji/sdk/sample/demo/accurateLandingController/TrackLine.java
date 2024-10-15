@@ -49,7 +49,7 @@ public class TrackLine {
     private static final int MAX_CORNERS = 100;
     private static final double QUALITY_LEVEL = 0.01;
     private static final double MIN_DISTANCE = 10;
-    private static final int FEATURE_DISTANCE = 3;
+    private static final int FEATURE_DISTANCE = 10;
 
     private static final int MAX_FRAMES_WITHOUT_DETECTION = 10;
 
@@ -385,7 +385,7 @@ public class TrackLine {
 //        }
         // Enforce the original slope
         double currentSlope = vy / vx;
-        if (Math.abs(currentSlope - originalSlope) > 0.1) {  // Adjust the tolerance based on your needs
+        if (Math.abs(currentSlope - originalSlope) > 0) {  // Adjust the tolerance based on your needs
             vy = originalSlope * vx; // Adjust the new slope to match the original
         }
         // Create a start and end point based on the direction (vx, vy) and a point on the line (x0, y0)
