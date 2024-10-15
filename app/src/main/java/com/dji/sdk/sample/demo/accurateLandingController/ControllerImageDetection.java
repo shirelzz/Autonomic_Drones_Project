@@ -117,7 +117,7 @@ public class ControllerImageDetection {
     private int imageWidth = 640;  // Width of the camera feed in pixels
     private int imageHeight = 480;  // Width of the camera feed in pixels
     private double blindSpotRatio = 0.3 / 0.7;  // 0.3 meters blind spot per 0.7 meters altitude
-    private int bottomTargetRangeMin = imageHeight - 30;  // Target range 20-50 pixels from bottom
+    private int bottomTargetRangeMin = imageHeight - 20;  // Target range 20-50 pixels from bottom
     private int bottomTargetRangeMax = imageHeight - 10;
     private double[] recentDistances = new double[DISTANCE_HISTORY_SIZE];
     private int distanceIndex = 0;
@@ -125,6 +125,8 @@ public class ControllerImageDetection {
 
     private boolean step2 = false;
     private boolean step3 = false;
+    private Point[] currentTrackedLine;
+
 
     //constructor
     public ControllerImageDetection(DataFromDrone dataFromDrone,
@@ -323,6 +325,7 @@ public class ControllerImageDetection {
         trackLine.detectLineFeatures(closestLine, imgToProcess);
 //        trackLine.initializeTracking(imgToProcess, selectedLine);
 
+
         // Store the closest line as the selected line and mark that a line has been selected
         if (closestLine != null) {
             selectedLine = closestLine;
@@ -334,6 +337,16 @@ public class ControllerImageDetection {
 
     }
 
+    private void initCurrentTrackedLine() {
+        double droneRelativeHeight = dataFromDrone.getAltitudeBelow();
+        List<Object[]> pointArr = EdgeDetection.detectLines(current_image, droneRelativeHeight, false, 0.0);
+        Point[] closestLine = selectBestLinePoint(pointArr);
+
+        currentTrackedLine = closestLine;
+        lineSelected = true;
+    }
+
+    // Do not delete
     public void setCurrentImage(Bitmap frame, double[] pos) {
         Mat newCurrentImg = new Mat();
         Utils.bitmapToMat(frame, newCurrentImg);
@@ -341,6 +354,7 @@ public class ControllerImageDetection {
         if (previous_image == null) {
             previous_image = newCurrentImg;
             previous_image_pos = pos;
+
         } else {
             previous_image = current_image;
             previous_image_pos = current_image_pos;
@@ -412,59 +426,70 @@ public class ControllerImageDetection {
 
         double altitude = dataFromDrone.getAltitudeBelow();
 
-
         // Step 1: Detect the line and get the center of the line segment
-        Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
-//        showToast(Arrays.toString(detectedLine));
+        List<Object[]> detectedLines = EdgeDetection.detectLines(imgToProcess, altitude,true, 0.0);
+        Point[] detectedLine = trackLine.updateLineUsingDetectedLines(detectedLines, currentTrackedLine);
         Log.d(TAG, Arrays.toString(detectedLine));
 
-        if (!step2 && !step3 && detectedLine != null && ((detectedLine[0].y > 0 && detectedLine[0].y < 480) || (detectedLine[1].y > 0 && detectedLine[1].y < 480))) {
-            // Line is detected, proceed to position it at the bottom range
-            Imgproc.line(imgToProcess, detectedLine[0], detectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
+        // Check if the line was updated
+        boolean lineUpdated = (detectedLine != null);
+        if (lineUpdated) {
+            currentTrackedLine = detectedLine;  // Update to the new detected line or keep current
+        }
 
-            // Calculate the y position of the line center
-            double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
+        //        showToast(Arrays.toString(detectedLine));
+        Log.d(TAG, Arrays.toString(detectedLine));
 
-            Imgproc.putText(imgToProcess, "Y: " + lineCenterY , new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 20),
-                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
-            //
+        if (detectedLine != null) {
 
-            Imgproc.putText(imgToProcess, "YS: " + detectedLine[0].y , new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 40),
-                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+            if (!step2 && !step3 && (detectedLine[0].y > 0 && detectedLine[0].y < 480 || detectedLine[1].y > 0 && detectedLine[1].y < 480)) {
+                // Line is detected, proceed to position it at the bottom range
+                Imgproc.line(imgToProcess, detectedLine[0], detectedLine[1], new Scalar(255, 0, 0), 3, Imgproc.LINE_AA, 0);
 
-            Imgproc.putText(imgToProcess, "YE: " + detectedLine[1].y, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 60),
-                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+                // Calculate the y position of the line center
+                double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
 
-            // Step 2: Move forward until the line is in target range (10-20 pixels from the bottom)
-            if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
+                Imgproc.putText(imgToProcess, "Y: " + lineCenterY, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 20),
+                        Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+                //
+
+                Imgproc.putText(imgToProcess, "YS: " + detectedLine[0].y, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 40),
+                        Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+
+                Imgproc.putText(imgToProcess, "YE: " + detectedLine[1].y, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 60),
+                        Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+
+                // Move forward until the line is in target range (10-20 pixels from the bottom)
+                if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
 //                450, 470
 //                showToast("Aligning line to bottom range.");
 
-                ControlCommand moveForwardCommand = landingAlgorithm.moveForward(dt, imgToProcess);
+                    ControlCommand moveForwardCommand = landingAlgorithm.moveForward(dt, imgToProcess);
 
-                updateLog(moveForwardCommand, 1, detectedLine, lineCenterY, 2);
+                    updateLog(moveForwardCommand, 1, detectedLine, lineCenterY, 2);
 
-                return moveForwardCommand;
+                    return moveForwardCommand;
+                }
+
+                // If the line is in the target position, adjust gimbal to prepare for blind spot movement
+                showToast("Line positioned correctly. Preparing for blind spot movement.");
+                gimbalController.rotateGimbalToDegree(-90);
+                step2 = true;
+
             }
-
-            // If the line is in the target position, adjust gimbal to prepare for blind spot movement
-            showToast("Line positioned correctly. Preparing for blind spot movement.");
-            gimbalController.rotateGimbalToDegree(-90);
-            step2 = true;
-
         }
 
-        else if (!step2 && !step3) {
-//            updateLog(null, 0, null, 0, 0);
-//            Point[] prevLine = trackLine.getPrevLine();
-//            Point middlePoint = new Point((prevLine[0].x + prevLine[1].x) / 2.0, (prevLine[0].y + prevLine[1].y) / 2.0);
-//            edgeNotFoundWithClickedPoint(middlePoint);
-            gimbalController.rotateGimbalToDegree(-90);
+//        else if (!step2 && !step3) {
+////            updateLog(null, 0, null, 0, 0);
+////            Point[] prevLine = trackLine.getPrevLine();
+////            Point middlePoint = new Point((prevLine[0].x + prevLine[1].x) / 2.0, (prevLine[0].y + prevLine[1].y) / 2.0);
+////            edgeNotFoundWithClickedPoint(middlePoint);
+//            gimbalController.rotateGimbalToDegree(-90);
+//
+//            step2 = true;
+//        }
 
-            step2 = true;
-        }
-
-        if (step2){
+        if (step2 && !step3) {
             // If we lose the line (likely due to close proximity), proceed with blind spot movement
             showToast("Step 2: Moving by blind spot distance.");
 
@@ -617,6 +642,7 @@ public class ControllerImageDetection {
 
             if (!lineSelected) {
                 findClosestLine(imgToProcess);
+                initCurrentTrackedLine();
                 frameCount = 0;
             }
 
@@ -658,6 +684,8 @@ public class ControllerImageDetection {
 
     public void setEdgeDetectionMode(boolean edgeDetectionMode) {
         this.edgeDetectionMode = edgeDetectionMode;
+
+
     }
 
     private ControlCommand stayOnPlace() {
