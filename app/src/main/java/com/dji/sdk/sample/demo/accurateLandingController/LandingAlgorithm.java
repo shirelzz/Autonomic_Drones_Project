@@ -13,6 +13,8 @@ public class LandingAlgorithm {
     private double targetDistance = 0.03;  // Target distance of 3 cm before the line
     private double currentVelocity = 0.01;  // Starting velocity
     private double maxVelocity = 1.0;  // Cap the maximum velocity
+
+    private double cumulativeDistance = 0;  // Track the distance traveled
     private double minVelocity = 0.005;  // Minimum safe velocity
     private double accelerationRate = 0.02;  // Rate to increase velocity
     private double decelerationThreshold = 0.1;  // Distance where deceleration begins
@@ -35,12 +37,42 @@ public class LandingAlgorithm {
         return new ControlCommand(pitchCommand, 0, 0);
     }
 
+//    public ControlCommand moveForwardByDistance(double targetDistance, double dt, Mat imgToProcess) {
+//        // Calculate remaining distance to target
+//        double remainingDistance = targetDistance - cumulativeDistance;
+//
+//        // Stop if we’re within the 3 cm tolerance
+//        if (remainingDistance <= 0.03) {
+//            // Reset cumulative distance for next movement
+//            cumulativeDistance = 0;
+//            Imgproc.putText(imgToProcess, "(3) Stopping", new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
+//                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+//            return new ControlCommand(0, 0, 0);
+//        }
+//
+//        // Calculate adjusted velocity based on remaining distance
+//        float adjustedVelocity = (float) Math.min(remainingDistance / 2.0, maxVelocity);
+//
+//        // Update pitch command using PID
+//        float pitchCommand = (float) pitchPID.update(adjustedVelocity, dt, maxVelocity);
+//
+//        // Calculate the distance traveled this cycle and update cumulative distance
+//        double distanceTraveledThisCycle = adjustedVelocity * dt;
+//        cumulativeDistance += distanceTraveledThisCycle;
+//
+//        Imgproc.putText(imgToProcess, "(2) Moving Forward by " + remainingDistance, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
+//                Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+//        return new ControlCommand(pitchCommand, 0, 0);
+//    }
+
     public ControlCommand moveForwardByDistance(double distance, double dt, Mat imgToProcess) {
 
         // Decelerate as we approach the target
         if (distance > 0.03) {  // Stop when within a 5 cm tolerance
-            float adjustedVelocity = (float) Math.min(distance / 2.0, maxVelocity);
-            float pitchCommand = (float) pitchPID.update(adjustedVelocity, dt, maxVelocity);
+            float adjustedVelocity = (float) Math.min(distance, maxVelocity);
+            showToast("adjustedVelocity: " + adjustedVelocity);
+            pitchPID.reset();
+            float pitchCommand = (float) adjustedVelocity;
             showToast("(2) Moving Forward" + distance);
             Imgproc.putText(imgToProcess, "(2) Moving Forward by " + distance, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
                     Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);

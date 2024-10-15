@@ -117,8 +117,8 @@ public class ControllerImageDetection {
     private int imageWidth = 640;  // Width of the camera feed in pixels
     private int imageHeight = 480;  // Width of the camera feed in pixels
     private double blindSpotRatio = 0.3 / 0.7;  // 0.3 meters blind spot per 0.7 meters altitude
-    private int bottomTargetRangeMin = imageHeight - 50;  // Target range 10-50 pixels from bottom
-    private int bottomTargetRangeMax = imageHeight - 20;
+    private int bottomTargetRangeMin = imageHeight - 30;  // Target range 20-50 pixels from bottom
+    private int bottomTargetRangeMax = imageHeight - 10;
     private double[] recentDistances = new double[DISTANCE_HISTORY_SIZE];
     private int distanceIndex = 0;
     private int consistentFrameCount = 0;
@@ -261,33 +261,6 @@ public class ControllerImageDetection {
 //        }
 //    }
 
-    public void initPIDs(double p, double i, double d, double max_i, String type) {
-
-        if (type.equals("roll")) {
-            if (roll_pid == null) {
-                roll_pid = new VLD_PID(p, i, d, max_i);
-            } else {
-                roll_pid.setPID(p, i, d, max_i);
-            }
-        }
-
-        if (type.equals("pitch")) {
-            if (pitch_pid == null) {
-                pitch_pid = new VLD_PID(p, i, d, max_i);
-            } else {
-                pitch_pid.setPID(p, i, d, max_i);
-            }
-        }
-
-        if (type.equals("throttle")) {
-            if (throttle_pid == null) {
-                throttle_pid = new VLD_PID(p, i, d, max_i);
-            } else {
-                throttle_pid.setPID(p, i, d, max_i);
-            }
-        }
-    }
-
     public void setBitmapFrame(Bitmap bitmap) {
         try {
             double droneHeight = dataFromDrone.getGPS().getAltitude();
@@ -413,6 +386,7 @@ public class ControllerImageDetection {
 
         double altitude = dataFromDrone.getAltitudeBelow();
 
+
         // Step 1: Detect the line and get the center of the line segment
         Point[] detectedLine = trackLine.trackSelectedLineUsingOpticalFlow(imgToProcess);
 //        showToast(Arrays.toString(detectedLine));
@@ -424,9 +398,21 @@ public class ControllerImageDetection {
 
             // Calculate the y position of the line center
             double lineCenterY = (detectedLine[0].y + detectedLine[1].y) / 2.0;
+
+            Imgproc.putText(imgToProcess, "Y: " + lineCenterY , new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 20),
+                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+            //
+
+            Imgproc.putText(imgToProcess, "YS: " + detectedLine[0].y , new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 40),
+                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+
+            Imgproc.putText(imgToProcess, "YE: " + detectedLine[1].y, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0 - 60),
+                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
+
             prevDistance = lineCenterY;
             // Step 2: Move forward until the line is in target range (10-20 pixels from the bottom)
             if (lineCenterY < bottomTargetRangeMin || lineCenterY > bottomTargetRangeMax) {
+//                450, 470
 //                showToast("Aligning line to bottom range.");
 
                 ControlCommand moveForwardCommand = landingAlgorithm.moveForward(dt, imgToProcess);
@@ -441,8 +427,11 @@ public class ControllerImageDetection {
             gimbalController.rotateGimbalToDegree(-90);
             step2 = true;
 
-        } 
+
 //        else if (!step2 && !step3 && (prevDistance < bottomTargetRangeMin || prevDistance > bottomTargetRangeMax)) {
+        }
+
+        else if (!step2 && !step3) {
 //            updateLog(null, 0, null, 0, 0);
 //            Point[] prevLine = trackLine.getPrevLine();
 //            Point middlePoint = new Point((prevLine[0].x + prevLine[1].x) / 2.0, (prevLine[0].y + prevLine[1].y) / 2.0);
@@ -453,6 +442,10 @@ public class ControllerImageDetection {
 //            gimbalController.rotateGimbalToDegree(-90);
 //            step2 = true;
 //        }
+            gimbalController.rotateGimbalToDegree(-90);
+
+            step2 = true;
+        }
 
         if (step2) {
             // If we lose the line (likely due to close proximity), proceed with blind spot movement
