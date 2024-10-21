@@ -129,6 +129,31 @@ This research addresses these challenges by developing a visual-based landing sy
 \subsection{Authors Contribution}
 We propose a visual processing framework that enables the drone to autonomously land by utilizing object (obstacle) detection and edge detection. Our approach is tested on a DJI drone equipped with a standard camera, using the DJI SDK for implementation on Android devices. Additionally, we have implemented a "guard" mode in the app — a button that, when activated, is designed to detect movement (such as people, cars, etc.) and send alerts. The system's robustness is further enhanced by incorporating basic voice commands through a speech recognition module, meeting the requirements outlined by MAFAT.\\
 
+\section{Related Work} \label{sec:related}
+\subsection{Obstacle Avoidance}
+Obstacle avoidance is a critical aspect of autonomous drone operations, especially in dynamic environments where both static and moving obstacles are present. One approach is integrating depth images with an occupancy voxel map to detect and track dynamic obstacles \cite{xu2023real}. This approach effectively balances computational efficiency with the need for accurate detection and tracking, making it suitable for real-time UAV operations. Another approach involves deep learning techniques like the YOLO (You Only Look Once) framework, which excels at real-time obstacle detection in dynamic environments \cite{redmon2017yolo9000}. YOLO9000 enables rapid detection of multiple objects, making it ideal for fast decision-making in complex surroundings. Its efficiency and accuracy have made it a popular choice for enhancing UAV obstacle avoidance systems.
+
+\subsection{Motion Detection and Object Detection: Yolo (You Only Look Once)}
+Recent advancements in motion and object detection have been significantly influenced by the YOLO (You Only Look Once) framework. As highlighted by \cite{dahirou2021motion}, YOLO enables real-time object detection by predicting bounding boxes and class probabilities from full images in a single evaluation, enhancing both speed and accuracy. This capability makes YOLO particularly effective for applications requiring immediate responsiveness, such as surveillance and autonomous navigation.
+
+\subsection{Speech Recognition}
+Speech recognition has been explored as a key component in enhancing drone operation through voice commands, particularly in environments where manual control is impractical. Various systems have been developed for continuous speech recognition on Android devices, such as the one proposed by Srivastav et al. \cite{SpeechRecognition}, which enables real-time voice command processing for mobile platforms. This technology is critical for integrating human-drone interaction, especially in hands-free scenarios, allowing operators to issue commands without physical intervention. Such advancements enable drones to act upon voice inputs for tasks like navigation, object detection, or activation of specific modes. Similar systems have been implemented to facilitate the control of unmanned aerial vehicles (UAVs) in real-time, optimizing human-machine interaction and expanding the use cases for drones in dynamic, complex environments.
+
+\subsection{A Robust and Accurate Landing Methodology for Drones on Moving Targets}
+Recent work has explored the use of ArUco markers for precision landing in autonomous drones, offering an efficient visual processing solution for target detection and tracking. As demonstrated in \cite{drones6040098}, ArUco markers provide high accuracy in identifying landing zones, especially when combined with robust visual algorithms. This approach addresses common challenges such as variable lighting conditions and drone stability during descent. Implementing these markers has shown success in enhancing landing precision, contributing to safer and more reliable autonomous operations.
+
+\subsection{An improved Canny edge detection algorithm}
+Edge detection algorithms play a critical role in enhancing the visual processing capabilities of drones by accurately identifying boundaries and objects within an image. The Canny Edge Detection Algorithm, as discussed in \cite{rong2014improved}, has proven to be highly effective due to its ability to detect edges with minimal noise while maintaining high accuracy. This method ensures that drones can detect and track obstacles, aiding in precise navigation and autonomous landing. Its application in real-time drone systems highlights its importance in improving the robustness of visual navigation and obstacle avoidance.
+
+\section{Drone Control Mechanisms} \label{sec:mechanisms}
+The drone’s movement is governed by four fundamental control parameters: yaw, pitch, roll, and throttle. These parameters allow the drone to maneuver in 3D space with precision, facilitating both object tracking and navigation during various flight operations.\\
+\begin{description}
+\item $\bullet$ Yaw - controls the rotation around the vertical axis, allowing the drone to turn left or right to face objects.
+\item $\bullet$ Pitch - adjusts the forward and backward tilt, moving the drone in those directions.
+\item $\bullet$ Roll - manages side-to-side tilt, shifting the drone left or right.
+\item $\bullet$ Throttle - regulates altitude by increasing or decreasing the drone’s lift.
+\end{description}
+
 \newpage \section{Algorithm Design} \label{sec:algorithm}
 Our proposed algorithm for autonomous drone landing consists of three key components: Target Line Selection, Flight Control, and Object Detection. Each part contributes to the overall reliability and precision of the landing process, ensuring safe navigation and obstacle avoidance.
 
@@ -155,34 +180,19 @@ After target line selection, the system activates the flight control module. The
 \subsection{Object Detection}
 Upon reaching the target area, object detection is initiated to scan for potential hazards in the intended landing zone. The detection algorithm examines the area for obstacles such as people, vehicles, or other objects that may hinder safe landing. The landing zone's dimensions are calculated based on prior measurements from different drone positions, ensuring the detection area is appropriately scaled for accurate hazard identification. If no hazards are detected, the system proceeds with the landing sequence, ensuring a safe and precise touchdown.
 
-\newpage \section{Related Work} \label{sec:related}
+\section{Movement Detection}
+An important aspect of this project is the integration of movement detection, designed to enhance the drone’s functionality as a surveillance tool. Once the drone has landed on a designated edge, it operates as a stationary surveillance camera. In this mode, the system continuously monitors the surrounding environment for movement.\\
 
-\subsection{Obstacle Avoidance}
-Obstacle avoidance is a critical aspect of autonomous drone operations, especially in dynamic environments where both static and moving obstacles are present. One approach is integrating depth images with an occupancy voxel map to detect and track dynamic obstacles \cite{xu2023real}. This approach effectively balances computational efficiency with the need for accurate detection and tracking, making it suitable for real-time UAV operations. Another approach involves deep learning techniques like the YOLO (You Only Look Once) framework, which excels at real-time obstacle detection in dynamic environments \cite{redmon2017yolo9000}. YOLO9000 enables rapid detection of multiple objects, making it ideal for fast decision-making in complex surroundings. Its efficiency and accuracy have made it a popular choice for enhancing UAV obstacle avoidance systems.
+Movement detection is implemented using the YOLO (You Only Look Once) object detection framework, which enables real-time identification of objects such as people, vehicles, or other moving entities. When movement is detected, the system immediately alerts the user through the app. This alert includes both a voice notification, specifying what has been detected, and a text message displayed on the screen. These alerts provide real-time updates, enabling timely responses to any potential security concerns.
 
-\subsection{Motion Detection and Object Detection: Yolo (You Only Look Once)}
-Recent advancements in motion and object detection have been significantly influenced by the YOLO (You Only Look Once) framework. As highlighted by \cite{dahirou2021motion}, YOLO enables real-time object detection by predicting bounding boxes and class probabilities from full images in a single evaluation, enhancing both speed and accuracy. This capability makes YOLO particularly effective for applications requiring immediate responsiveness, such as surveillance and autonomous navigation.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{movementDetect.jpeg}  % Reduced the size here
+    % \caption{Guardian mode activated.}
+    \label{fig:movementDetect.}
+\end{figure}
 
-\subsection{Speech Recognition}
-Speech recognition has been explored as a key component in enhancing drone operation through voice commands, particularly in environments where manual control is impractical. Various systems have been developed for continuous speech recognition on Android devices, such as the one proposed by Srivastav et al. \cite{SpeechRecognition}, which enables real-time voice command processing for mobile platforms. This technology is critical for integrating human-drone interaction, especially in hands-free scenarios, allowing operators to issue commands without physical intervention. Such advancements enable drones to act upon voice inputs for tasks like navigation, object detection, or activation of specific modes. Similar systems have been implemented to facilitate the control of unmanned aerial vehicles (UAVs) in real-time, optimizing human-machine interaction and expanding the use cases for drones in dynamic, complex environments.
-
-\subsection{A Robust and Accurate Landing Methodology for Drones on Moving Targets}
-Recent work has explored the use of ArUco markers for precision landing in autonomous drones, offering an efficient visual processing solution for target detection and tracking. As demonstrated in \cite{drones6040098}, ArUco markers provide high accuracy in identifying landing zones, especially when combined with robust visual algorithms. This approach addresses common challenges such as variable lighting conditions and drone stability during descent. Implementing these markers has shown success in enhancing landing precision, contributing to safer and more reliable autonomous operations.
-
-\subsection{An improved Canny edge detection algorithm}
-Edge detection algorithms play a critical role in enhancing the visual processing capabilities of drones by accurately identifying boundaries and objects within an image. The Canny Edge Detection Algorithm, as discussed in \cite{rong2014improved}, has proven to be highly effective due to its ability to detect edges with minimal noise while maintaining high accuracy. This method ensures that drones can detect and track obstacles, aiding in precise navigation and autonomous landing. Its application in real-time drone systems highlights its importance in improving the robustness of visual navigation and obstacle avoidance.
-
-\section{Drone Control Mechanisms} \label{sec:framework}
-The drone’s movement is governed by four fundamental control parameters: yaw, pitch, roll, and throttle. These parameters allow the drone to maneuver in 3D space with precision, facilitating both object tracking and navigation during various flight operations.\\
-\begin{description}
-\item $\bullet$ Yaw - controls the rotation around the vertical axis, allowing the drone to turn left or right to face objects.
-\item $\bullet$ Pitch - adjusts the forward and backward tilt, moving the drone in those directions.
-\item $\bullet$ Roll - manages side-to-side tilt, shifting the drone left or right.
-\item $\bullet$ Throttle - regulates altitude by increasing or decreasing the drone’s lift.
-\end{description}
-
-\section{Framework} \label{sec:framework}
-\subsection{Speech Recognition}
+\section{Speech Recognition} \label{sec:SpeechRecognition}
 The speech recognition system, powered by Google Speech Recognition, continuously listens for the user’s voice until it detects the wake word "hey rexi." Once activated, the system checks subsequent speech for commands from the predefined list, enabling real-time control of the drone without touching the screen. This approach allows the system to remain responsive while minimizing unnecessary processing, facilitating a hands-free operation experience.
 
 Each recognized command triggers a specific action in the drone. The key commands and their associated actions are:
@@ -197,21 +207,18 @@ Each recognized command triggers a specific action in the drone. The key command
 \item $\bullet$ Edge detection - Activates the edge detection algorithm, allowing the system to identify and process edges for navigation or object tracking.
 
 \end{description}
-\subsection{Object Tracking?}
-\subsection{Landing Algorithm}
-\subsection{Movement Detection}
 
-\section{Discussion} \label{sec:discussion}
+% \section{Discussion} \label{sec:discussion}
 
-Advancements in language recognition technologies have been noteworthy, yet they confront several challenges and limitations. This discussion highlights some of the prevalent issues:
+% Advancements in language recognition technologies have been noteworthy, yet they confront several challenges and limitations. This discussion highlights some of the prevalent issues:
 
-\begin{enumerate}
+% \begin{enumerate}
 
-    \item \textbf{Linguistic Ambiguity.} Distinguishing between languages with shared linguistic traits
+%     \item \textbf{Linguistic Ambiguity.} Distinguishing between languages with shared linguistic traits
 
-    \item \textbf{Code-Switching Phenomenon.} In multilingual settings,
+%     \item \textbf{Code-Switching Phenomenon.} In multilingual settings,
 
-\end{enumerate}
+% \end{enumerate}
 
 \newpage \section{Future Work} \label{sec:future}
 An important area for future improvement is the algorithm's ability to handle wind conditions, particularly in outdoor environments and at higher altitudes. While the current implementation performs reliably in controlled settings, real-world scenarios—such as fluctuating wind speeds and changing directions—pose significant challenges to the drone's stability and landing accuracy. Specifically, turbulence at great heights can disrupt the drone's trajectory, leading to deviations from the intended flight path and reducing the precision of both target line tracking and landing position.
