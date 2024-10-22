@@ -1,13 +1,10 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
-import com.dji.sdk.sample.demo.kcgremotecontroller.Controller;
 import com.dji.sdk.sample.demo.kcgremotecontroller.gimbelListener;
 import com.dji.sdk.sample.internal.utils.CallbackHandlers;
 import com.dji.sdk.sample.internal.utils.ModuleVerificationUtil;
 import com.dji.sdk.sample.internal.utils.ToastUtils;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
@@ -30,9 +27,7 @@ public class GimbalController implements gimbelListener {
     FlightController flightController;
     boolean finishRotate = false;
     private float gimbalValue = 0;
-    private Controller controller;
     private Gimbal gimbal = null;
-    private List<gimbelListener> gimbelListenersList = new LinkedList<gimbelListener>();
     private float prevDegree = -1000;
     private int maxGimbalDegree = 1000;
     private int minGimbalDegree = -1000;

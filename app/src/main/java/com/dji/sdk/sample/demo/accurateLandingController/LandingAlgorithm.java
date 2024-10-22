@@ -37,34 +37,6 @@ public class LandingAlgorithm {
         return new ControlCommand(pitchCommand, 0, 0);
     }
 
-//    public ControlCommand moveForwardByDistance(double targetDistance, double dt, Mat imgToProcess) {
-//        // Calculate remaining distance to target
-//        double remainingDistance = targetDistance - cumulativeDistance;
-//
-//        // Stop if we’re within the 3 cm tolerance
-//        if (remainingDistance <= 0.03) {
-//            // Reset cumulative distance for next movement
-//            cumulativeDistance = 0;
-//            Imgproc.putText(imgToProcess, "(3) Stopping", new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
-//                    Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
-//            return new ControlCommand(0, 0, 0);
-//        }
-//
-//        // Calculate adjusted velocity based on remaining distance
-//        float adjustedVelocity = (float) Math.min(remainingDistance / 2.0, maxVelocity);
-//
-//        // Update pitch command using PID
-//        float pitchCommand = (float) pitchPID.update(adjustedVelocity, dt, maxVelocity);
-//
-//        // Calculate the distance traveled this cycle and update cumulative distance
-//        double distanceTraveledThisCycle = adjustedVelocity * dt;
-//        cumulativeDistance += distanceTraveledThisCycle;
-//
-//        Imgproc.putText(imgToProcess, "(2) Moving Forward by " + remainingDistance, new Point(imgToProcess.cols() / 2.0, imgToProcess.rows() / 2.0),
-//                Imgproc.FONT_HERSHEY_SIMPLEX, 1, new Scalar(0, 255, 0), 2);
-//        return new ControlCommand(pitchCommand, 0, 0);
-//    }
-
     public ControlCommand moveForwardByDistance(double distance, double dt, Mat imgToProcess) {
 
         // Decelerate as we approach the target
@@ -117,9 +89,5 @@ public class LandingAlgorithm {
             initialDistance = 0;  // Reset for next movement
             return new ControlCommand(0, 0, 0);  // Stop movement
         }
-    }
-
-    public void resetDistance() {
-        initialDistance = 0;
     }
 }
