@@ -77,13 +77,6 @@ public class HandleSpeechToText {
             this.stopRecording.run();
         }
 
-        // Stop Commands
-        else if (containsAny(text, "stop", "scope", "dope", "panic", "funny", "abort",
-                "a bird", "about", "a boat")) {
-            showToast("Stop");
-            this.stopButton.run();
-        }
-
         // Follow Commands
         else if (containsAny(text, "follow me", "photo me")) {
             showToast("follow me");
@@ -97,6 +90,25 @@ public class HandleSpeechToText {
                 "angie deduction", "and the deduction")) {
             showToast("Edge algo");
             this.edgeDetect.run();
+        }
+        else if (containsAny(text, "movement detection", "guard mode", "guard",
+                "movement is action", "god mode")) {
+            showToast("movement detection");
+            if (containsAny(text, "start", "that", "stuff")) {
+                showToast("Start");
+                this.movementDetectedStart.run();
+            }
+           else if (containsAny(text, "stop", "scope", "dope")) {
+                showToast("Stop");
+                this.movementDetectedEnd.run();
+            }
+        }
+
+        // Stop Commands
+        else if (containsAny(text, "stop", "scope", "dope", "panic", "funny", "abort",
+                "a bird", "about", "a boat")) {
+            showToast("Stop");
+            this.stopButton.run();
         }
 
         // Drone Commands

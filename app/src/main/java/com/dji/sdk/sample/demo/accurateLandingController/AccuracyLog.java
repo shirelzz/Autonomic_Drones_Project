@@ -2,6 +2,7 @@ package com.dji.sdk.sample.demo.accurateLandingController;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.dji.sdk.sample.internal.utils.ToastUtils;
@@ -31,7 +32,6 @@ public class AccuracyLog {
     @SuppressLint("SimpleDateFormat")
     private final DateFormat df = new SimpleDateFormat("dd/MM/yyyy , HH:mm:ss");
     private final DecimalFormat dcF = new DecimalFormat("##.####");
-    public Map<String, Double> algoLog;
     TextView textViewLog, text;
     private BufferedWriter logFile;
     private final Context context;
@@ -43,12 +43,6 @@ public class AccuracyLog {
      */
     public AccuracyLog(TextView textViewLog, TextView text, Context context) {
         this.textViewLog = textViewLog;
-        this.text = text;
-        this.context = context;
-        initLogFile();
-    }
-
-    public AccuracyLog(TextView text, Context context) {
         this.text = text;
         this.context = context;
         initLogFile();
@@ -66,6 +60,7 @@ public class AccuracyLog {
         try {
             if (!log.exists()) {
                 boolean data = log.createNewFile();
+                Log.i("AccuracyLog:", String.valueOf(data));
             }
         } catch (IOException e) {
             ToastUtils.showToast(e.getMessage());
@@ -95,12 +90,6 @@ public class AccuracyLog {
         }
     }
 
-    //-----------------------
-
-    public void addAlgoLogs(Map<String, Double> algo) {
-        this.algoLog = algo;
-    }
-
     public void appendLog(Map<String, Double> droneTelemetry, Map<String, Double> controlStatus, boolean isEdgeDetectionMode, boolean isMovementDetectionRunning, String movementDetectionMessage, boolean isLanding) {
 
         if (logFile == null) {
@@ -122,14 +111,9 @@ public class AccuracyLog {
             sb.append(droneTelemetry.get("altitudeBelow")).append(",");
             sb.append(droneTelemetry.get("HeadDirection")).append(",");
 
-//            sb.append(format(droneTelemetry.get("velX"))).append(",");
-//            sb.append(format(droneTelemetry.get("velY"))).append(",");
-//            sb.append(format(droneTelemetry.get("velZ"))).append(",");
-
             sb.append(format(droneTelemetry.get("yaw"))).append(",");
             sb.append(format(droneTelemetry.get("pitch"))).append(",");
             sb.append(format(droneTelemetry.get("roll"))).append(",");
-//            sb.append(format(controlStatus.get("Throttle"))).append(",");
 
             sb.append(format(droneTelemetry.get("gimbalPitch"))).append(",");
 
@@ -150,23 +134,6 @@ public class AccuracyLog {
                 sb.append(format(controlStatus.get("RollOutput"))).append(",");
                 sb.append(format(controlStatus.get("ThrottleOutput"))).append(",");
 
-//                sb.append(format(controlStatus.get("ErrorX"))).append(",");
-//
-//                sb.append(format(controlStatus.get("ErrorY"))).append(",");
-//                sb.append(format(controlStatus.get("Pp"))).append(",");
-//                sb.append(format(controlStatus.get("Ip"))).append(",");
-//                sb.append(format(controlStatus.get("Dp"))).append(",");
-//
-//                sb.append(format(controlStatus.get("Pr"))).append(",");
-//                sb.append(format(controlStatus.get("Ir"))).append(",");
-//                sb.append(format(controlStatus.get("Dr"))).append(",");
-//
-//                sb.append(format(controlStatus.get("Pt"))).append(",");
-//                sb.append(format(controlStatus.get("It"))).append(",");
-//                sb.append(format(controlStatus.get("Dt"))).append(",");
-
-//                sb.append(format(controlStatus.get("MaxI"))).append(",");
-
                 sb.append(format(controlStatus.get("AutonomousMode"))).append(",");
                 sb.append(isEdgeDetectionMode).append(",");
                 sb.append(isMovementDetectionRunning).append(",");
@@ -180,7 +147,6 @@ public class AccuracyLog {
             e.printStackTrace();
         }
         sb.append("\r\n");
-//        currentRow = sb;
 
         try {
             logFile.write(sb.toString());

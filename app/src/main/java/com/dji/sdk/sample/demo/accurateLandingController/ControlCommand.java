@@ -5,7 +5,6 @@ and object to describe controll comand to drone
  */
 
 import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
-import dji.common.flightcontroller.virtualstick.VerticalControlMode;
 
 public class ControlCommand {
 
@@ -18,31 +17,17 @@ public class ControlCommand {
     double imageDistance;
     //data
     private float pitch; // The movement of the drawn forward and backward
-    //    private float yaw;
     private float roll; // The velocity rotation on the X axis
     private float verticalThrottle = 0;
-    private float gimbalPitch = 0;
     private RollPitchControlMode pitchMode = RollPitchControlMode.VELOCITY;
-    private VerticalControlMode controllMode;
-    //constructor
 
+    //constructor
     public ControlCommand(float pitch, float roll, float verticalThrottle) {
         this.pitch = pitch;
         this.roll = roll;
 
         this.verticalThrottle = verticalThrottle;
     }
-
-    public ControlCommand(float pitch, float roll, float verticalThrottle, RollPitchControlMode pitchMode) {
-        this.pitch = pitch;
-        this.roll = roll;
-        this.pitchMode = pitchMode;
-
-        this.verticalThrottle = verticalThrottle;
-    }
-
-
-    //functions
 
     public void setErr(double confidence, double xErr, double yErr, double zErr) {
         this.confidence = confidence;
@@ -73,29 +58,16 @@ public class ControlCommand {
         return pitchMode;
     }
 
-    public void setPitchMode(RollPitchControlMode pitchMode) {
-        this.pitchMode = pitchMode;
-    }
-
     public float getRoll() {
         return roll;
-    }
-
-    public VerticalControlMode getControllMode() {
-        return controllMode;
     }
 
     public float getPitch() {
         return pitch;
     }
 
-
     public float getVerticalThrottle() {
         return verticalThrottle;
-    }
-
-    public float getGimbalPitch() {
-        return gimbalPitch;
     }
 
 }

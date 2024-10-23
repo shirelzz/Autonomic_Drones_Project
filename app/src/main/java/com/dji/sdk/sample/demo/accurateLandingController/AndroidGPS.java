@@ -1,6 +1,5 @@
 package com.dji.sdk.sample.demo.accurateLandingController;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -27,7 +26,6 @@ public class AndroidGPS {
     public AndroidGPS(Context context) {
         this.context = context;
         initializeLocationManager();
-//        startLocationUpdates();
     }
 
     private void initializeLocationManager() {
@@ -57,19 +55,6 @@ public class AndroidGPS {
         locationUpdateHandler = new Handler(Looper.getMainLooper());
         startPeriodicLocationUpdates();
     }
-
-//    private void startLocationUpdates() {
-//        // Check location permission
-//        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-//                == PackageManager.PERMISSION_GRANTED) {
-//            // Request location updates
-//            locationManager.requestLocationUpdates(
-//                    LocationManager.GPS_PROVIDER,
-//                    1000,  // Update every 1000 milliseconds (1 second)
-//                    1,     // Update every 1 meter
-//                    locationListener);
-//        }
-//    }
 
     private void startPeriodicLocationUpdates() {
         locationUpdateHandler.postDelayed(new Runnable() {
@@ -112,8 +97,4 @@ public class AndroidGPS {
     public double getAltitude() {
         return altitude;
     }
-
-    public void stopLocationUpdates() {
-        locationManager.removeUpdates(locationListener);
-        locationUpdateHandler.removeCallbacksAndMessages(null);
-    }}
+}
