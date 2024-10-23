@@ -496,13 +496,7 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.EdgeDetect:
                 accurateLanding();
                 break;
-//            case R.id.Follow_phone_FMM_btn:
-//                followPhone();
-//                break;
 
-//            case R.id.GoTo_FMM_btn:
-//                this.goToFMM_BTN();
-//                break;
             case R.id.stop_btn:
                 stopBtnFunc();
                 break;
@@ -510,9 +504,7 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.land_btn:
                 landBtnFunc();
                 break;
-//            case R.id.goTo_btn:
-//                this.goToFunc();
-//                break;
+
             //-------- set Throttle ----------
             case R.id.t_minus_btn:
                 downButton();
@@ -582,28 +574,10 @@ public class ALRemoteControllerView extends RelativeLayout
             case R.id.recordBtn:
                 setRecIconVisibility();
                 break;
-//            case R.id.start_plane_detection:
-//                startPlaneDetectionAlgo_btn.setBackgroundColor(Color.GREEN);
-//
-//                gimbalController.rotateGimbalToDegree(-90);
-//                controllerImageDetection.DepthBool();
-//                startPlaneDetectionAlgo();
-//                break;
-
-//            case R.id.start_yolo:
-//                startObjectDetectionAlgo_btn.setBackgroundColor(Color.GREEN);
-//
-//                gimbalController.rotateGimbalToDegree(-45);
-//                startObjectDetectionAlgo();
-//                break;
 
             case R.id.guardian:
                 toggleMovementDetection();
                 break;
-
-//            case R.id.startLandingAlgo:
-//                startLandingAlgo();
-//                break;
 
             case R.id.gimbal_pitch_update:
 //                ToastUtils.setResultToToast(String.valueOf(Float.parseFloat(gimbal.getText().toString())));
@@ -640,6 +614,7 @@ public class ALRemoteControllerView extends RelativeLayout
             toggleMovementDetectionEnd();
         } else {
             // Start movement detection
+            gimbalController.rotateGimbalToDegree(-45);
             toggleMovementDetectionStart();
 
         }
